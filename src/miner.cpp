@@ -4160,6 +4160,73 @@ CBlockIndex *get_chainactive(int32_t height)
 /*
  * A separate thread to stake, while the miner threads mine.
  */
+// Lucky Lode: thermal guard so mining stays safe on low-end hardware.
+// -maxtemp=<C, 0=off>: while the CPU package reads at/above the cap, mining
+// iterations are skipped (with 2C hysteresis against flapping). Default 80:
+// the miner must never cook the machine it runs on. This is the node-miner
+// equivalent of the lm-sched thermal policy (doc 07). Linux-only; elsewhere
+// the guard is a no-op and -minerduty still applies.
+static const int THERMAL_DEFAULT_CAP_C = 80;
+static const int THERMAL_HYSTERESIS_C = 2;
+// Once tripped, stay paused at least this long: prevents resume-then-
+// immediately-trip churn at the threshold (smooths the sawtooth).
+static const int THERMAL_MIN_DWELL_SECS = 30;
+// Escalating backoff per pause iteration: 5s, 10s, 20s, 40s, 60s cap.
+// A genuinely stuck-hot machine cools harder instead of burst-mining
+// forever. With the 30s dwell the first resume check lands at ~35s.
+static const int THERMAL_BACKOFF_MIN_SECS = 5;
+static const int THERMAL_BACKOFF_MAX_SECS = 60;
+
+#ifdef __linux__
+static int ReadPackageTempC()
+{
+    // Returns hottest package sensor in whole degrees C, or -1 when
+    // unavailable (containers, missing hwmon, non-x86).
+    static std::string sensorDir;
+    static bool probed = false;
+    if (!probed)
+    {
+        probed = true;
+        for (int i = 0; i < 16; i++)
+        {
+            char dir[64], nameFile[96], name[32] = {0};
+            snprintf(dir, sizeof(dir), "/sys/class/hwmon/hwmon%d", i);
+            snprintf(nameFile, sizeof(nameFile), "%s/name", dir);
+            FILE *f = fopen(nameFile, "r");
+            if (!f) continue;
+            size_t n = fread(name, 1, sizeof(name) - 1, f);
+            fclose(f);
+            if (n == 0) continue;
+            if (strncmp(name, "k10temp", 7) == 0 || strncmp(name, "coretemp", 8) == 0)
+            {
+                sensorDir = dir;
+                break;
+            }
+        }
+    }
+    if (sensorDir.empty())
+        return -1;
+    int hottest = -1;
+    for (int t = 1; t <= 8; t++)
+    {
+        char path[128];
+        snprintf(path, sizeof(path), "%s/temp%d_input", sensorDir.c_str(), t);
+        FILE *f = fopen(path, "r");
+        if (!f) continue;
+        long milli = -1;
+        if (fscanf(f, "%ld", &milli) == 1 && milli > 0)
+        {
+            int c = (int)(milli / 1000);
+            if (c > hottest) hottest = c;
+        }
+        fclose(f);
+    }
+    return hottest;
+}
+#else
+static int ReadPackageTempC() { return -1; }
+#endif
+
 void static VerusStaker(CWallet *pwallet)
 {
     LogPrintf("Verus staker thread started\n");
@@ -4208,29 +4275,38 @@ void static VerusStaker(CWallet *pwallet)
                 {
                     static bool thermalPaused = false;
                     static int pauseCount = 0;
+                    static int64_t pauseStart = 0;
+                    static int backoffSecs = THERMAL_BACKOFF_MIN_SECS;
                     int pkg = ReadPackageTempC();
                     if (!thermalPaused && pkg >= maxTemp)
                     {
                         thermalPaused = true;
                         pauseCount = 0;
+                        pauseStart = (int64_t)time(NULL);
+                        backoffSecs = THERMAL_BACKOFF_MIN_SECS;
                     }
                     if (thermalPaused)
                     {
-                        if (pkg < 0 || pkg < maxTemp - THERMAL_HYSTERESIS_C)
+                        bool dwellElapsed = (time(NULL) - pauseStart) >= THERMAL_MIN_DWELL_SECS;
+                        if (dwellElapsed && (pkg < 0 || pkg < maxTemp - THERMAL_HYSTERESIS_C))
                         {
                             thermalPaused = false;
+                            backoffSecs = THERMAL_BACKOFF_MIN_SECS;
                         }
                         else
                         {
                             if (++pauseCount % 12 == 1)
-                                LogPrintf("miner paused: package %dC at/above -maxtemp=%d (resume below %d)\n",
-                                          pkg, maxTemp, maxTemp - THERMAL_HYSTERESIS_C);
-                            MilliSleep(5000);
+                                LogPrintf("miner paused: package %dC at/above -maxtemp=%d (resume below %d after %ds dwell, backoff %ds)\n",
+                                          pkg, maxTemp, maxTemp - THERMAL_HYSTERESIS_C, THERMAL_MIN_DWELL_SECS, backoffSecs);
+                            MilliSleep(backoffSecs * 1000);
+                            if (backoffSecs < THERMAL_BACKOFF_MAX_SECS)
+                                backoffSecs = (backoffSecs * 2 < THERMAL_BACKOFF_MAX_SECS) ? backoffSecs * 2 : THERMAL_BACKOFF_MAX_SECS;
                             continue;
                         }
                     }
                 }
             }
+
 
             // Create new block
             unsigned int nTransactionsUpdatedLast = mempool.GetTransactionsUpdated();
@@ -4391,64 +4467,6 @@ bool mine_verus_v2_port(CBlockHeader &bh, CVerusHashV2bWriter &vhw, uint256 &fin
 // Lucky Lode: EmberHash v1 mining loop (doc 05). Header fields are fixed
 // during the grind; only nNonce varies (u64 domain, D3). Digest comparison
 // matches CheckProofOfWork: valid iff digest <= target (arith compare).
-// Lucky Lode: thermal guard so mining stays safe on low-end hardware.
-// -maxtemp=<C, 0=off>: while the CPU package reads at/above the cap, mining
-// iterations are skipped (with 2C hysteresis against flapping). Default 80:
-// the miner must never cook the machine it runs on. This is the node-miner
-// equivalent of the lm-sched thermal policy (doc 07). Linux-only; elsewhere
-// the guard is a no-op and -minerduty still applies.
-static const int THERMAL_DEFAULT_CAP_C = 80;
-static const int THERMAL_HYSTERESIS_C = 2;
-
-#ifdef __linux__
-static int ReadPackageTempC()
-{
-    // Returns hottest package sensor in whole degrees C, or -1 when
-    // unavailable (containers, missing hwmon, non-x86).
-    static std::string sensorDir;
-    static bool probed = false;
-    if (!probed)
-    {
-        probed = true;
-        for (int i = 0; i < 16; i++)
-        {
-            char dir[64], nameFile[96], name[32] = {0};
-            snprintf(dir, sizeof(dir), "/sys/class/hwmon/hwmon%d", i);
-            snprintf(nameFile, sizeof(nameFile), "%s/name", dir);
-            FILE *f = fopen(nameFile, "r");
-            if (!f) continue;
-            size_t n = fread(name, 1, sizeof(name) - 1, f);
-            fclose(f);
-            if (n == 0) continue;
-            if (strncmp(name, "k10temp", 7) == 0 || strncmp(name, "coretemp", 8) == 0)
-            {
-                sensorDir = dir;
-                break;
-            }
-        }
-    }
-    if (sensorDir.empty())
-        return -1;
-    int hottest = -1;
-    for (int t = 1; t <= 8; t++)
-    {
-        char path[128];
-        snprintf(path, sizeof(path), "%s/temp%d_input", sensorDir.c_str(), t);
-        FILE *f = fopen(path, "r");
-        if (!f) continue;
-        long milli = -1;
-        if (fscanf(f, "%ld", &milli) == 1 && milli > 0)
-        {
-            int c = (int)(milli / 1000);
-            if (c > hottest) hottest = c;
-        }
-        fclose(f);
-    }
-    return hottest;
-}
-#else
-static int ReadPackageTempC() { return -1; }
-#endif
 
 bool mine_ember(CBlockHeader &bh, CVerusHashV2bWriter &vhw, uint256 &finalHash, uint256 &target, uint64_t start, uint64_t *count, int32_t height)
 {
@@ -4563,6 +4581,47 @@ void static BitcoinMiner_noeq()
             waitForPeers(chainparams);
 
             pindexPrev = chainActive.LastTip();
+
+            // Thermal guard: skip mining iterations while too hot (same
+            // policy as the staking loop; this is the loop that grinds).
+            {
+                int maxTemp = GetArg("-maxtemp", THERMAL_DEFAULT_CAP_C);
+                if (maxTemp > 0)
+                {
+                    static bool thermalPausedPow = false;
+                    static int pauseCountPow = 0;
+                    static int64_t pauseStartPow = 0;
+                    static int backoffSecsPow = THERMAL_BACKOFF_MIN_SECS;
+                    int pkg = ReadPackageTempC();
+                    if (!thermalPausedPow && pkg >= maxTemp)
+                    {
+                        thermalPausedPow = true;
+                        pauseCountPow = 0;
+                        pauseStartPow = (int64_t)time(NULL);
+                        backoffSecsPow = THERMAL_BACKOFF_MIN_SECS;
+                    }
+                    if (thermalPausedPow)
+                    {
+                        bool dwellElapsed = (time(NULL) - pauseStartPow) >= THERMAL_MIN_DWELL_SECS;
+                        if (dwellElapsed && (pkg < 0 || pkg < maxTemp - THERMAL_HYSTERESIS_C))
+                        {
+                            thermalPausedPow = false;
+                            backoffSecsPow = THERMAL_BACKOFF_MIN_SECS;
+                        }
+                        else
+                        {
+                            if (++pauseCountPow % 12 == 1)
+                                LogPrintf("pow miner paused: package %dC at/above -maxtemp=%d (resume below %d after %ds dwell, backoff %ds)\n",
+                                          pkg, maxTemp, maxTemp - THERMAL_HYSTERESIS_C, THERMAL_MIN_DWELL_SECS, backoffSecsPow);
+                            MilliSleep(backoffSecsPow * 1000);
+                            if (backoffSecsPow < THERMAL_BACKOFF_MAX_SECS)
+                                backoffSecsPow = (backoffSecsPow * 2 < THERMAL_BACKOFF_MAX_SECS) ? backoffSecsPow * 2 : THERMAL_BACKOFF_MAX_SECS;
+                            continue;
+                        }
+                    }
+                }
+            }
+
 
             // prevent forking on startup before the diff algorithm kicks in,
             // but only for a startup Verus test chain. PBaaS chains have the difficulty inherited from
