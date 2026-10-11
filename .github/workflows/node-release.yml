@@ -1,0 +1,85 @@
+# Release builds for the Lucky Lode node (free-tier CI only).
+#
+# Builds verusd + verus CLI from this branch with the depends tree, runs
+# the EmberHash KAT gates, and uploads stripped release artifacts that the
+# VPS boxes download and run (VPS machines never compile anything).
+#
+# Triggers: manual dispatch, or pushing a v* tag. Actions must be enabled
+# on the fork for this to run; until then it is staged, not live.
+# Ubuntu 22.04 image: older glibc than our dev boxes, so the produced
+# binaries run on more distros. Recipe proven on 24.04; watch the first
+# 22.04 run for toolchain drift (gcc 11 vs 13).
+
+name: node-release
+
+on:
+  workflow_dispatch:
+  push:
+    tags:
+      - 'v*'
+
+jobs:
+  build:
+    runs-on: ubuntu-22.04
+    timeout-minutes: 360
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: system dependencies
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq build-essential libtool autotools-dev automake \
+            pkg-config bsdmainutils python3 libssl-dev libevent-dev libboost-all-dev \
+            libminiupnpc-dev libzmq3-dev libprotobuf-dev protobuf-compiler \
+            libsodium-dev ccache curl git
+
+      - name: ccache
+        uses: actions/cache@v4
+        with:
+          path: ~/.ccache
+          key: ccache-node-${{ github.ref }}-${{ github.run_id }}
+          restore-keys: |
+            ccache-node-
+
+      - name: proving params
+        run: ./zcutil/fetch-params.sh
+
+      - name: depends tree
+        run: |
+          export CC="ccache gcc" CXX="ccache g++"
+          HOST=$(./depends/config.guess)
+          make -j"$(nproc)" -C ./depends/ V=1 BUILD="$HOST" HOST="$HOST"
+
+      - name: configure (release, no test suite)
+        run: |
+          ./autogen.sh
+          CONFIG_SITE="$PWD/depends/$(./depends/config.guess)/share/config.site" \
+            ./configure --disable-tests
+          ccache -z || true
+
+      - name: build node
+        run: |
+          export CC="ccache gcc" CXX="ccache g++"
+          make -j"$(nproc)"
+          ccache -s || true
+
+      - name: KAT gates (EmberHash + difficulty vs Rust reference)
+        run: src/crypto/ember_kat.sh
+
+      - name: strip + package
+        run: |
+          mkdir -p dist
+          cp src/verusd dist/
+          [ -f src/verus ] && cp src/verus dist/ || true
+          [ -f src/verus-tx ] && cp src/verus-tx dist/ || true
+          strip dist/* || true
+          TAG="${{ github.ref_name }}"
+          [ -z "$TAG" ] || [ "$TAG" = "" ] && TAG="manual"
+          tar -czf "luckylode-node-${TAG}-linux-x86_64.tar.gz" -C dist .
+
+      - name: upload release artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: luckylode-node-linux-x86_64
+          path: luckylode-node-*.tar.gz
+          retention-days: 30
