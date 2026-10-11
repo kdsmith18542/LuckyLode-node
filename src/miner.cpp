@@ -6,6 +6,7 @@
 
 #include "miner.h"
 #include "crypto/ember_hash.h"
+#include <chrono>
 #ifdef ENABLE_MINING
 #include "pow/tromp/equi_miner.h"
 #endif
@@ -4359,6 +4360,12 @@ bool mine_ember(CBlockHeader &bh, CVerusHashV2bWriter &vhw, uint256 &finalHash, 
     std::vector<unsigned char> hb(ss.begin(), ss.end());
     arith_uint256 bnTarget = UintToArith256(target);
     uint64_t n = start;
+    // Lucky Lode: duty-cycle pacing so mining stays safe on low-end
+    // hardware (see -minerduty; the node-miner equivalent of the lm-sched
+    // thermal policy, doc 07). Checked per 4096-hash chunk (~seconds), so
+    // the ratio converges quickly instead of once per 64k round.
+    uint64_t sincePace = 0;
+    auto chunkStart = std::chrono::steady_clock::now();
     while (*count > 0)
     {
         uint8_t out[32];
@@ -4379,6 +4386,21 @@ bool mine_ember(CBlockHeader &bh, CVerusHashV2bWriter &vhw, uint256 &finalHash, 
         }
         n++;
         (*count)--;
+        if (++sincePace >= 4096)
+        {
+            int duty = (int)GetArg("-minerduty", 100);
+            if (duty < 1) duty = 1;
+            if (duty < 100)
+            {
+                int64_t dt = std::chrono::duration_cast<std::chrono::milliseconds>(
+                    std::chrono::steady_clock::now() - chunkStart).count();
+                int64_t sleepMs = dt * (100 - duty) / duty;
+                if (sleepMs > 0)
+                    MilliSleep((unsigned int)(sleepMs > 60000 ? 60000 : sleepMs));
+            }
+            chunkStart = std::chrono::steady_clock::now();
+            sincePace = 0;
+        }
     }
     return false;
 }
