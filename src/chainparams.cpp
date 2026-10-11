@@ -523,8 +523,9 @@ public:
         BOOST_STATIC_ASSERT(equihash_parameters_acceptable(N, K));
         consensus.nEquihashN = N;
         consensus.nEquihashK = K;
-        consensus.powLimit = uint256S("07ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff");
-        consensus.powAlternate = uint256S("07ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff");
+        // Lucky Lode: EmberHash POW_LIMIT (doc 05 §5.3, compact 0x1f00ffff)
+        consensus.powLimit = uint256S("0000ffff00000000000000000000000000000000000000000000000000000000");
+        consensus.powAlternate = uint256S("0000ffff00000000000000000000000000000000000000000000000000000000");
         consensus.nPowAveragingWindow = 17;
         assert(maxUint/UintToArith256(consensus.powLimit) >= consensus.nPowAveragingWindow);
         consensus.nMaxFutureBlockTime = 7 * 60;
@@ -661,9 +662,9 @@ public:
         BOOST_STATIC_ASSERT(equihash_parameters_acceptable(N, K));
         consensus.nEquihashN = N;
         consensus.nEquihashK = K;
-        consensus.powLimit = uint256S("0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f");
-        consensus.powAlternate = uint256S("0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f");
-        consensus.nPowAveragingWindow = 17;
+        // Lucky Lode: EmberHash POW_LIMIT (doc 05 §5.3, compact 0x1f00ffff)
+        consensus.powLimit = uint256S("0000ffff00000000000000000000000000000000000000000000000000000000");
+        consensus.powAlternate = uint256S("0000ffff00000000000000000000000000000000000000000000000000000000");
         consensus.nMaxFutureBlockTime = 7 * 60; // 7 mins
         assert(maxUint/UintToArith256(consensus.powLimit) >= consensus.nPowAveragingWindow);
         consensus.nPowMaxAdjustDown = 0; // Turn off adjustment down

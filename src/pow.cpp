@@ -20,10 +20,11 @@
 #ifdef ENABLE_RUST
 #include "librustzcash.h"
 #endif // ENABLE_RUST
+#include "crypto/ember_difficulty.h"
 uint32_t komodo_chainactive_timestamp();
 int64_t komodo_current_supply(uint32_t nHeight);
 
-extern uint32_t ASSETCHAINS_ALGO, ASSETCHAINS_EQUIHASH, ASSETCHAINS_VERUSHASH, ASSETCHAINS_STAKED, ASSETCHAINS_LWMAPOS, ASSETCHAINS_STARTING_DIFF;
+extern uint32_t ASSETCHAINS_ALGO, ASSETCHAINS_EQUIHASH, ASSETCHAINS_VERUSHASH, ASSETCHAINS_EMBERHASH, ASSETCHAINS_STAKED, ASSETCHAINS_LWMAPOS, ASSETCHAINS_STARTING_DIFF;
 extern char ASSETCHAINS_SYMBOL[65];
 extern int32_t VERUS_BLOCK_POSUNITS, VERUS_CONSECUTIVE_POS_THRESHOLD, VERUS_PBAAS_CONSECUTIVE_POS_THRESHOLD, VERUS_NOPOS_THRESHHOLD, VERUS_PBAAS_NOPOS_THRESHHOLD;
 unsigned int lwmaGetNextWorkRequired(const CBlockIndex* pindexLast, const CBlockHeader *pblock, const Consensus::Params& params);
@@ -123,6 +124,44 @@ unsigned int lwmaGetNextWorkRequired(const CBlockIndex* pindexLast, const CBlock
 
 unsigned int lwmaCalculateNextWorkRequired(const CBlockIndex* pindexLast, const Consensus::Params& params)
 {
+    // Lucky Lode: exact integer LWMA (doc 05 §5.3 rev 1.1, N=60, K=1830,
+    // ±1/3 clamp, POW_LIMIT) for the EmberHash fresh chain. Early heights
+    // (fewer than N blocks) use the starting difficulty clamped to limit.
+    if (ASSETCHAINS_ALGO == ASSETCHAINS_EMBERHASH)
+    {
+        arith_uint256 emberLimit = ember::PowLimit();
+        if (pindexLast != NULL && pindexLast->GetHeight() + 1 > (int32_t)ember::LWMA_N)
+        {
+            const CBlockIndex* idx[(int)ember::LWMA_N + 1];
+            const CBlockIndex* cur = pindexLast;
+            bool complete = true;
+            for (int j = (int)ember::LWMA_N; j >= 0; j--)
+            {
+                if (cur == NULL) { complete = false; break; }
+                idx[j] = cur;
+                cur = cur->pprev;
+            }
+            if (complete)
+            {
+                arith_uint256 targets[(int)ember::LWMA_N];
+                int64_t times[(int)ember::LWMA_N + 1];
+                for (int i = 0; i < (int)ember::LWMA_N; i++)
+                    targets[i].SetCompact(idx[i + 1]->nBits);
+                for (int i = 0; i <= (int)ember::LWMA_N; i++)
+                    times[i] = idx[i]->GetBlockTime();
+                arith_uint256 next;
+                if (ember::LwmaNextTarget(next, targets, ember::LWMA_N, times, ember::LWMA_N + 1))
+                    return next.GetCompact();
+            }
+        }
+        arith_uint256 d;
+        if (ASSETCHAINS_STARTING_DIFF != 0)
+            d.SetCompact(ASSETCHAINS_STARTING_DIFF);
+        if (d == 0 || d > emberLimit)
+            d = emberLimit;
+        return d.GetCompact();
+    }
+
     arith_uint256 nextTarget {0}, sumTarget {0}, bnTmp, bnLimit, bnDefault;
     if (_IsVerusMainnetActive() && pindexLast && pindexLast->GetHeight() <= 1568100 && pindexLast->GetHeight() >= 1567999)
     {
@@ -486,6 +525,11 @@ bool CheckProofOfWork(const CBlockHeader &blkHeader, int32_t height, const Conse
         {
             bnLimit = UintToArith256(params.powAlternate);
         }
+    }
+    else if (ASSETCHAINS_ALGO == ASSETCHAINS_EMBERHASH)
+    {
+        // EmberHash v1: easiest allowed target is POW_LIMIT (doc 05 §5.3)
+        bnLimit = ember::PowLimit();
     }
 
     if (fNegative || bnTarget == 0 || fOverflow || bnTarget > bnLimit)
