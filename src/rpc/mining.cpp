@@ -183,6 +183,10 @@ UniValue getgenerate(const UniValue& params, bool fHelp)
 extern uint8_t NOTARY_PUBKEY33[33];
 
 //Value generate(const Array& params, bool fHelp)
+bool mine_ember(CBlockHeader &bh, CVerusHashV2bWriter &vhw, uint256 &finalHash, uint256 &target, uint64_t start, uint64_t *count, int32_t height);
+extern uint32_t ASSETCHAINS_ALGO;
+extern uint32_t ASSETCHAINS_EMBERHASH;
+
 UniValue generate(const UniValue& params, bool fHelp)
 {
     if (fHelp || params.size() < 1 || params.size() > 1)
@@ -249,6 +253,35 @@ UniValue generate(const UniValue& params, bool fHelp)
             throw JSONRPCError(RPC_INTERNAL_ERROR, "Couldn't create new block");
         CBlock *pblock = &pblocktemplate->block;
 
+        // Lucky Lode: EmberHash regtest path — grind the u64 nonce directly.
+        // (The equihash solver below is a legacy loop for equihash-era
+        // chains; using it here would only add an equihash solve between
+        // EmberHash checks.)
+        if (ASSETCHAINS_ALGO == ASSETCHAINS_EMBERHASH)
+        {
+            // Lucky Lode: EmberHash regtest path — grind the u64 nonce directly.
+            arith_uint256 bnTarget;
+            bnTarget.SetCompact(pblock->nBits);
+            uint256 emberTarget = ArithToUint256(bnTarget);
+            uint256 emberFinal;
+            uint64_t emberStart = UintToArith256(pblock->nNonce).GetLow64() + 1;
+            LogPrintf("ember generate: height=%d start=%llu target_compact=0x%08x\n", nHeight + 1, (unsigned long long)emberStart, pblock->nBits);
+            uint64_t emberTotal = 0;
+            CVerusHashV2bWriter emberDummy(SER_GETHASH, PROTOCOL_VERSION);
+            while (true)
+            {
+                uint64_t hashesToGo = 1ULL << 24;
+                if (mine_ember(*pblock, emberDummy, emberFinal, emberTarget, emberStart, &hashesToGo, nHeight + 1))
+                    break;
+                emberTotal += (1ULL << 24) - hashesToGo;
+                emberStart += (1ULL << 24) - hashesToGo;
+                LogPrintf("ember generate: %llu hashes tried, still grinding (height=%d)\n", (unsigned long long)emberTotal, nHeight);
+            }
+            if (!CheckProofOfWork(*pblock, nHeight + 1, Params().GetConsensus()))
+                throw JSONRPCError(RPC_INTERNAL_ERROR, "generate: mined block failed PoW re-check");
+        }
+        else
+        {
         // Hash state
         crypto_generichash_blake2b_state eh_state;
         EhInitialiseState(n, k, eh_state);
@@ -285,13 +318,17 @@ UniValue generate(const UniValue& params, bool fHelp)
                 }
                 pblock->nSolution = soln;
                 solutionTargetChecks.increment();
-                return CheckProofOfWork(*pblock, chainActive.Height(), Params().GetConsensus());
+                // Lucky Lode: the block under construction is tip+1; EmberHash binds height
+                // into its salt, so the checked height must be the block's own (the
+                // unconditional tip height was harmless only for height-blind hashes).
+                return CheckProofOfWork(*pblock, chainActive.Height() + 1, Params().GetConsensus());
             };
             bool found = EhBasicSolveUncancellable(n, k, curr_state, validBlock);
             ehSolverRuns.increment();
             if (found) {
-                goto endloop;
+                break;
             }
+        }
         }
 endloop:
         CValidationState state;

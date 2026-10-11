@@ -155,8 +155,15 @@ unsigned int lwmaCalculateNextWorkRequired(const CBlockIndex* pindexLast, const 
             }
         }
         arith_uint256 d;
-        if (ASSETCHAINS_STARTING_DIFF != 0)
+        if (Params().NetworkIDString() == "regtest")
+        {
+            // regtest bring-up: start at the easiest allowed target
+            d = emberLimit;
+        }
+        else if (ASSETCHAINS_STARTING_DIFF != 0)
+        {
             d.SetCompact(ASSETCHAINS_STARTING_DIFF);
+        }
         if (d == 0 || d > emberLimit)
             d = emberLimit;
         return d.GetCompact();
