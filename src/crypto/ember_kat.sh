@@ -44,3 +44,7 @@ $CXX -O2 -I"$(dirname "$DIR")" $SODIUM_INC $SYS_DEFS \
 "$OUT/ember_kat"
 echo
 "$OUT/ember_diff_kat"
+
+# Jackpot money KAT (header-only math, no node libraries needed).
+$CXX -O2 -std=c++11 -I"$(dirname "$DIR")" "$DIR/ember_jackpot_kat.cpp" -o "$OUT/ember_jackpot_kat"
+"$OUT/ember_jackpot_kat"

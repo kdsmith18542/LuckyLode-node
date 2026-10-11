@@ -1941,7 +1941,41 @@ UniValue reconsiderblock(const UniValue& params, bool fHelp)
 static const CRPCCommand commands[] =
 { //  category              name                      actor (function)         okSafeMode
   //  --------------------- ------------------------  -----------------------  ----------
+UniValue getjackpotinfo(const UniValue& params, bool fHelp)
+{
+    if (fHelp || params.size() > 1)
+        throw runtime_error(
+            "getjackpotinfo ( height )\n"
+            "\nLucky Lode: jackpot reserve state (doc 06 section 6.2).\n"
+            "\nArguments:\n"
+            "1. height         (numeric, optional) block height (default: tip)\n"
+            "\nResult:\n"
+            "{\n"
+            "  \"height\": n,        (numeric) block height\n"
+            "  \"blockhash\": \"hex\", (string) block hash\n"
+            "  \"reserve\": n,       (numeric) jackpot reserve after this block, base units\n"
+            "}\n"
+        );
+    LOCK(cs_main);
+    const CBlockIndex* pindex = chainActive.Tip();
+    if (params.size() == 1)
+    {
+        int h = params[0].get_int();
+        if (h < 0 || !chainActive.Tip() || h > chainActive.Height())
+            throw JSONRPCError(RPC_INVALID_PARAMETER, "height out of range");
+        pindex = chainActive[h];
+    }
+    if (!pindex)
+        throw JSONRPCError(RPC_INVALID_PARAMETER, "no chain tip");
+    UniValue ret(UniValue::VOBJ);
+    ret.push_back(Pair("height", (int64_t)pindex->GetHeight()));
+    ret.push_back(Pair("blockhash", pindex->GetBlockHash().GetHex()));
+    ret.push_back(Pair("reserve", (int64_t)pindex->nJackpotReserve));
+    return ret;
+}
+
     { "blockchain",         "getblockchaininfo",      &getblockchaininfo,      true  },
+    { "blockchain",         "getjackpotinfo",         &getjackpotinfo,         true  },
     { "blockchain",         "getbestblockhash",       &getbestblockhash,       true  },
     { "blockchain",         "getblockcount",          &getblockcount,          true  },
     { "blockchain",         "getblock",               &getblock,               true  },

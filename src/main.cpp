@@ -19,6 +19,7 @@
 #include "clientversion.h"
 #include "consensus/upgrades.h"
 #include "consensus/validation.h"
+#include "consensus/jackpot.h"
 #include "deprecation.h"
 #include "init.h"
 #include "merkleblock.h"
@@ -5061,6 +5062,25 @@ bool ConnectBlock(const CBlock& block, CValidationState& state, CBlockIndex* pin
     }
 
     CAmount nativeBlockReward = rewardFees + validExtraNative + GetBlockSubsidy(pindex->GetHeight(), chainparams.GetConsensus());
+
+    // Lucky Lode jackpot money rules (doc 06 §6.2): the spendable ceiling
+    // for the coinbase is (R + F - levy), plus the jackpot bonus when this
+    // block's PoW digest wins the 1/100 draw. The reserve rides on the
+    // block index (reorg-safe by construction). League overflow is
+    // accounted off-chain by pools — no consensus output exists for it.
+    if (ASSETCHAINS_ALGO == ASSETCHAINS_EMBERHASH)
+    {
+        uint64_t baseReward = (uint64_t)GetBlockSubsidy(pindex->GetHeight(), chainparams.GetConsensus());
+        uint64_t feeTotal = (uint64_t)rewardFees;
+        uint64_t parentReserve = pindex->pprev ? pindex->pprev->nJackpotReserve : 0;
+        arith_uint256 bnTarget;
+        bnTarget.SetCompact(block.nBits);
+        arith_uint256 bnHundred(100);
+        bool isJackpot = UintToArith256(block.GetHash(pindex->GetHeight())) < bnTarget / bnHundred;
+        jackpot::Payout jp = jackpot::ApplyBlock(parentReserve, baseReward, feeTotal, isJackpot);
+        nativeBlockReward = (CAmount)jp.miner + validExtraNative;
+        pindex->nJackpotReserve = jp.reserve;
+    }
     // reserve reward is in totalReserveTxFees
 
     if ( ASSETCHAINS_OVERRIDE_PUBKEY33[0] != 0 && ASSETCHAINS_COMMISSION != 0 )

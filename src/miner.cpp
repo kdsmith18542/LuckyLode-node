@@ -17,6 +17,7 @@
 #include "consensus/consensus.h"
 #include "consensus/upgrades.h"
 #include "consensus/validation.h"
+#include "consensus/jackpot.h"
 #ifdef ENABLE_MINING
 #include "crypto/equihash.h"
 #include "crypto/verus_hash.h"
@@ -3758,6 +3759,14 @@ CBlockTemplate* CreateNewBlock(const CChainParams& chainparams, const std::vecto
         // printf("%s: rewardfees: %ld, verusfees: %ld\n", __func__, rewardFees, verusFees);
 
         CAmount rewardTotal = blockSubsidy + rewardFees;
+        // Lucky Lode: the normal coinbase carries R + F - levy (doc 06 §6.2).
+        // Jackpot bonus templates (J1) are served by pools, which check the
+        // draw separately; this path grinds the normal template.
+        if (ASSETCHAINS_ALGO == ASSETCHAINS_EMBERHASH)
+        {
+            uint64_t levy = jackpot::Levy((uint64_t)blockSubsidy, (uint64_t)rewardFees);
+            rewardTotal -= (CAmount)levy;
+        }
 
         // now that we have the total reward, update the coinbase outputs
         if (isStake)

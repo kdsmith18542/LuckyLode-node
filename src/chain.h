@@ -304,6 +304,11 @@ public:
     //! Verification status of this block. See enum BlockStatus
     unsigned int nStatus;
 
+    //! Lucky Lode jackpot reserve balance resulting from this block
+    //! (doc 06 §6.2). Consensus state carried per index entry, so reorgs
+    //! revert it by construction. Zero on pre-jackpot history.
+    uint64_t nJackpotReserve;
+
     //! Branch ID corresponding to the consensus rules used to validate this block.
     //! Only cached if block validity is BLOCK_VALID_CONSENSUS.
     //! Persisted at each activation height, memory-only for intervening blocks.
@@ -361,6 +366,7 @@ public:
         nTx = 0;
         nChainTx = 0;
         nStatus = 0;
+        nJackpotReserve = 0;
         nCachedBranchId = boost::none;
         hashSproutAnchor = uint256();
         hashFinalSproutRoot = uint256();
@@ -684,6 +690,11 @@ public:
         if ((s.GetType() & SER_DISK) && (nVersion >= SAPLING_VALUE_VERSION)) {
             READWRITE(nSaplingValue);
         }
+
+        // Lucky Lode: jackpot reserve resulting from this block (doc 06
+        // §6.2). Fresh chain — this is fork disk-format v1, no migration
+        // path needed.
+        READWRITE(VARINT(nJackpotReserve));
 
         // If you have just added new serialized fields above, remember to add
         // them to CBlockTreeDB::LoadBlockIndexGuts() in txdb.cpp :)
