@@ -173,8 +173,11 @@ public:
         assert(genesis.hashMerkleRoot == uint256S("0x4a5e1e4baab89f3a32518a88c31bc87f618f76673e2cc77ab2127b7afdeda33b"));
         vFixedSeeds.clear();
         vSeeds.clear();
-        base58Prefixes[PUBKEY_ADDRESS] = std::vector<unsigned char>(1,60);
-        base58Prefixes[SCRIPT_ADDRESS] = std::vector<unsigned char>(1,85);
+        // Lucky Lode: P2PKH addresses start with 'L' (48), P2SH with 'M' (50).
+        // (Regtest keeps upstream {0},{5} for test compatibility; identity
+        // prefix 102 is tracked separately for the VerusID rebrand pass.)
+        base58Prefixes[PUBKEY_ADDRESS] = std::vector<unsigned char>(1,48);
+        base58Prefixes[SCRIPT_ADDRESS] = std::vector<unsigned char>(1,50);
         base58Prefixes[IDENTITY_ADDRESS] = std::vector<unsigned char>(1,102);
         base58Prefixes[INDEX_ADDRESS] = std::vector<unsigned char>(1,137);
         base58Prefixes[QUANTUM_ADDRESS] = std::vector<unsigned char>(1,58);
@@ -577,8 +580,11 @@ public:
             0   // * estimated number of transactions per day after checkpoint
         };
         // These prefixes are the same as the testnet prefixes
-        base58Prefixes[PUBKEY_ADDRESS] = std::vector<unsigned char>(1,60);
-        base58Prefixes[SCRIPT_ADDRESS] = std::vector<unsigned char>(1,85);
+        // Lucky Lode: P2PKH addresses start with 'L' (48), P2SH with 'M' (50).
+        // (Regtest keeps upstream {0},{5} for test compatibility; identity
+        // prefix 102 is tracked separately for the VerusID rebrand pass.)
+        base58Prefixes[PUBKEY_ADDRESS] = std::vector<unsigned char>(1,48);
+        base58Prefixes[SCRIPT_ADDRESS] = std::vector<unsigned char>(1,50);
         base58Prefixes[IDENTITY_ADDRESS] = std::vector<unsigned char>(1,102);
         base58Prefixes[INDEX_ADDRESS] = std::vector<unsigned char>(1,137);
         base58Prefixes[QUANTUM_ADDRESS] = std::vector<unsigned char>(1,58);
