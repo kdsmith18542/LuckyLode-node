@@ -4532,10 +4532,19 @@ void static BitcoinMiner_noeq()
             uint32_t solutionVersion = CConstVerusSolutionVector::Version(pblock->nSolution);
             if (pblock->nVersion != CBlockHeader::VERUS_V2)
             {
-                // must not be in sync
-                printf("Mining on incorrect block version.\n");
-                sleep(2);
-                continue;
+                // Lucky Lode: on a fresh chain, ContextualCheckBlock wants
+                // GetVersionByHeight(height) — V1 when no VerusHash-era
+                // solution vector can be sourced (validation and the miner
+                // agree via that same helper). The V2 gate is VerusHash-era
+                // plumbing: skip it for EmberHash so the production miner
+                // runs on fresh chains instead of spinning on this gate.
+                if ( ASSETCHAINS_ALGO != ASSETCHAINS_EMBERHASH )
+                {
+                    // must not be in sync
+                    printf("Mining on incorrect block version.\n");
+                    sleep(2);
+                    continue;
+                }
             }
             bool verusSolutionPBaaS = solutionVersion >= CActivationHeight::ACTIVATE_PBAAS;
 
@@ -4746,12 +4755,12 @@ void static BitcoinMiner_noeq()
                                 CPBaaSPreHeader savedHeader(*pblock);
 
                                 pblock->ClearNonCanonicalData();
-                                blockFound = (*mine_verus)(*pblock, ss2, hashResult, uintTarget, start, &hashesToGo, Mining_height);
+                blockFound = (*mine_verus)(*pblock, ss2, hashResult, uintTarget, start, &hashesToGo, Mining_height);
                                 savedHeader.SetBlockData(*pblock);
                             }
                             else
                             {
-                                blockFound = (*mine_verus)(*pblock, ss2, hashResult, uintTarget, start, &hashesToGo, Mining_height);
+                blockFound = (*mine_verus)(*pblock, ss2, hashResult, uintTarget, start, &hashesToGo, Mining_height);
                             }
 
                             arithHash = UintToArith256(hashResult);
