@@ -1749,7 +1749,7 @@ void komodo_args(char *argv0)
     */
 
     // for testnet release, default to testnet
-    name = GetArg("-chain", name == "" ? "VRSC" : name);
+    name = GetArg("-chain", name == "" ? "LUCKYLODE" : name);
     name = GetArg("-ac_name", name);
 
     std::string lowerName = boost::to_lower_copy(name);
@@ -1789,10 +1789,14 @@ void komodo_args(char *argv0)
     OverrideSetArg("-ac_cc", "1");
     OverrideSetArg("-ac_veruspos", "50");
 
-    VERUS_CHAINNAME = PBAAS_TESTMODE ? "VRSCTEST" : "VRSC";
+    // Lucky Lode: the chain-name identity used by currency-name parsing
+    // (ParseSubNames appends VERUS_CHAINNAME to any other name, which would
+    // give our root currency a phantom parent). Set it to our own name so
+    // LUCKYLODE parses as a root currency.
+    VERUS_CHAINNAME = PBAAS_TESTMODE ? "VRSCTEST" : (name == "LUCKYLODE" ? "LUCKYLODE" : "VRSC");
     VERUS_CHAINID = CCrossChainRPCData::GetID(VERUS_CHAINNAME);
 
-    if (name == "VRSC" || name == "VRSCTEST")
+    if (name == "VRSC" || name == "VRSCTEST" || name == "LUCKYLODE" || name == "LUCKYLODETEST")
     {
         mainVerusCurrency = CCurrencyDefinition(name, PBAAS_TESTMODE);
 

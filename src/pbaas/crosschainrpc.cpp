@@ -1339,7 +1339,7 @@ CCurrencyDefinition::CCurrencyDefinition(const std::string &currencyName, bool t
         uniCurrency.pushKV("powaveragingwindow", (int64_t)DEFAULT_AVERAGING_WINDOW);
         uniCurrency.pushKV("notarizationperiod", (int)BLOCK_NOTARIZATION_MODULO);
 
-        if (name == "VRSC" && !testMode)
+        if ((name == "VRSC" || name == "LUCKYLODE") && !testMode)
         {
             UniValue uniEras(UniValue::VARR);
             UniValue uniEra1(UniValue::VOBJ);
@@ -1367,7 +1367,7 @@ CCurrencyDefinition::CCurrencyDefinition(const std::string &currencyName, bool t
 
             *this = CCurrencyDefinition(uniCurrency);
         }
-        else if (name == "VRSCTEST" || (testMode && name == "VRSC"))
+        else if (name == "VRSCTEST" || name == "LUCKYLODETEST" || (testMode && (name == "VRSC" || name == "LUCKYLODE")))
         {
             name = "vrsctest";
 

@@ -123,13 +123,15 @@ extern char ASSETCHAINS_SYMBOL[KOMODO_ASSETCHAIN_MAXLEN];
 bool _IsVerusActive()
 {
     std::string normalName = boost::to_lower_copy(std::string(ASSETCHAINS_SYMBOL));
-    return normalName == "vrsc" || normalName == "vrsctest";
+    // Lucky Lode is a root chain (not PBaaS): it takes the same
+    // root-chain code paths as Verus while carrying its own branding.
+    return normalName == "vrsc" || normalName == "vrsctest" || normalName == "luckylode" || normalName == "luckylodetest";
 }
 
 bool _IsVerusName(const std::string &name)
 {
     std::string normalName = boost::to_lower_copy(name);
-    return normalName == "vrsc" || normalName == "vrsctest";
+    return normalName == "vrsc" || normalName == "vrsctest" || normalName == "luckylode" || normalName == "luckylodetest";
 }
 
 bool _IsVerusMainnetActive()
