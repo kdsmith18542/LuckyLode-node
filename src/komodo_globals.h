@@ -79,9 +79,11 @@ uint64_t ASSETCHAINS_ERAOPTIONS[ASSETCHAINS_MAX_ERAS];
 uint32_t ASSETCHAINS_NUMALGOS = 2;
 uint32_t ASSETCHAINS_EQUIHASH = _ASSETCHAINS_EQUIHASH;
 uint32_t ASSETCHAINS_VERUSHASH = 1;
-const char *ASSETCHAINS_ALGORITHMS[] = {"equihash", "verushash"};
+// Lucky Lode: EmberHash v1 PoW (doc 05 rev 1.0). Fresh-chain algorithm id.
+uint32_t ASSETCHAINS_EMBERHASH = 2;
+const char *ASSETCHAINS_ALGORITHMS[] = {"equihash", "verushash", "emberhash"};
 uint64_t ASSETCHAINS_NONCEMASK[] = {0xffff,0xfffffff};
-uint32_t ASSETCHAINS_NONCESHIFT[] = {32,16};
+uint32_t ASSETCHAINS_NONCESHIFT[] = {32,16,16}; // [equihash, verushash, emberhash]
 uint32_t ASSETCHAINS_HASHESPERROUND[] = {1,0x10000};
 uint32_t ASSETCHAINS_ALGO = _ASSETCHAINS_EQUIHASH;
 uint32_t ASSETCHAINS_STARTING_DIFF = 0;

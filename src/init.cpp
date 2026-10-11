@@ -1208,8 +1208,19 @@ bool AppInit2(boost::thread_group& threadGroup, CScheduler& scheduler)
     globalVerifyHandle.reset(new ECCVerifyHandle());
 
     // set the hash algorithm to use for this chain
-    extern uint32_t ASSETCHAINS_ALGO, ASSETCHAINS_VERUSHASH;
-    if (ASSETCHAINS_ALGO == ASSETCHAINS_VERUSHASH)
+    extern uint32_t ASSETCHAINS_ALGO, ASSETCHAINS_VERUSHASH, ASSETCHAINS_EMBERHASH;
+    // Lucky Lode: -ac_algo=emberhash selects EmberHash v1 (doc 05). The
+    // chain-definition plumbing for a fresh rebranded chain is item 9;
+    // this arg keeps testnet bring-up operable today.
+    if (mapMultiArgs.count("-ac_algo") && !mapMultiArgs["-ac_algo"].empty() && mapMultiArgs["-ac_algo"][0] == "emberhash")
+    {
+        ASSETCHAINS_ALGO = ASSETCHAINS_EMBERHASH;
+    }
+    if (ASSETCHAINS_ALGO == ASSETCHAINS_EMBERHASH)
+    {
+        CBlockHeader::SetEmberHash();
+    }
+    else if (ASSETCHAINS_ALGO == ASSETCHAINS_VERUSHASH)
     {
         // initialize VerusHash
         CVerusHash::init();
