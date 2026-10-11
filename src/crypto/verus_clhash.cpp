@@ -118,7 +118,7 @@ inline void fixupkey(__m128i **pMoveScratch, verusclhash_descr *pdesc)
 }
 */
 
-bool mine_verus_v2(CBlockHeader &bh, CVerusHashV2bWriter &vhw, uint256 &finalHash, uint256 &target, uint64_t start, uint64_t *count)
+bool mine_verus_v2(CBlockHeader &bh, CVerusHashV2bWriter &vhw, uint256 &finalHash, uint256 &target, uint64_t start, uint64_t *count, int32_t height)
 {
 	CVerusHashV2 &vh = vhw.GetState();
     verusclhasher &vclh = vh.vclh;

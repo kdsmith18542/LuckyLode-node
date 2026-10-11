@@ -5,6 +5,7 @@
 // file COPYING or https://www.opensource.org/licenses/mit-license.php .
 
 #include "miner.h"
+#include "crypto/ember_hash.h"
 #ifdef ENABLE_MINING
 #include "pow/tromp/equi_miner.h"
 #endif
@@ -127,6 +128,7 @@ extern bool VERUS_MINTBLOCKS;
 extern uint64_t ASSETCHAINS_REWARD[ASSETCHAINS_MAX_ERAS], ASSETCHAINS_TIMELOCKGTE, ASSETCHAINS_NONCEMASK[];
 extern const char *ASSETCHAINS_ALGORITHMS[];
 extern int32_t VERUS_MIN_STAKEAGE, ASSETCHAINS_EQUIHASH, ASSETCHAINS_VERUSHASH, ASSETCHAINS_LASTERA, ASSETCHAINS_LWMAPOS, ASSETCHAINS_NONCESHIFT[], ASSETCHAINS_HASHESPERROUND[];
+extern uint32_t ASSETCHAINS_EMBERHASH;
 extern uint32_t ASSETCHAINS_ALGO;
 extern char ASSETCHAINS_SYMBOL[KOMODO_ASSETCHAIN_MAXLEN];
 extern uint160 ASSETCHAINS_CHAINID;
@@ -4341,9 +4343,45 @@ void static VerusStaker(CWallet *pwallet)
     }
 }
 
-typedef bool (*minefunction)(CBlockHeader &bh, CVerusHashV2bWriter &vhw, uint256 &finalHash, uint256 &target, uint64_t start, uint64_t *count);
-bool mine_verus_v2(CBlockHeader &bh, CVerusHashV2bWriter &vhw, uint256 &finalHash, uint256 &target, uint64_t start, uint64_t *count);
-bool mine_verus_v2_port(CBlockHeader &bh, CVerusHashV2bWriter &vhw, uint256 &finalHash, uint256 &target, uint64_t start, uint64_t *count);
+typedef bool (*minefunction)(CBlockHeader &bh, CVerusHashV2bWriter &vhw, uint256 &finalHash, uint256 &target, uint64_t start, uint64_t *count, int32_t height);
+bool mine_verus_v2(CBlockHeader &bh, CVerusHashV2bWriter &vhw, uint256 &finalHash, uint256 &target, uint64_t start, uint64_t *count, int32_t height);
+bool mine_verus_v2_port(CBlockHeader &bh, CVerusHashV2bWriter &vhw, uint256 &finalHash, uint256 &target, uint64_t start, uint64_t *count, int32_t height);
+
+// Lucky Lode: EmberHash v1 mining loop (doc 05). Header fields are fixed
+// during the grind; only nNonce varies (u64 domain, D3). Digest comparison
+// matches CheckProofOfWork: valid iff digest <= target (arith compare).
+bool mine_ember(CBlockHeader &bh, CVerusHashV2bWriter &vhw, uint256 &finalHash, uint256 &target, uint64_t start, uint64_t *count, int32_t height)
+{
+    (void)vhw; // writer unused: EmberHash hashes the canonical Addendum A bytes
+    CDataStream ss(SER_NETWORK, PROTOCOL_VERSION);
+    ss << bh.nVersion << bh.hashPrevBlock << bh.hashMerkleRoot << bh.hashFinalSaplingRoot
+       << bh.nTime << bh.nBits << bh.nSolution;
+    std::vector<unsigned char> hb(ss.begin(), ss.end());
+    arith_uint256 bnTarget = UintToArith256(target);
+    uint64_t n = start;
+    while (*count > 0)
+    {
+        uint8_t out[32];
+        if (!ember::Hash(out, hb.data(), hb.size(), n, (uint64_t)height))
+            return false;
+        uint256 digest;
+        for (int i = 0; i < 32; i++)
+            digest.begin()[i] = out[31 - i];
+        if (!(UintToArith256(digest) > bnTarget))
+        {
+            uint256 nval;
+            nval.SetNull();
+            for (int i = 0; i < 8; i++)
+                nval.begin()[i] = (unsigned char)(n >> (8 * i));
+            bh.nNonce = nval;
+            finalHash = digest;
+            return true;
+        }
+        n++;
+        (*count)--;
+    }
+    return false;
+}
 
 void static BitcoinMiner_noeq(CWallet *pwallet)
 #else
@@ -4612,9 +4650,9 @@ void static BitcoinMiner_noeq()
             verusclhasher &vclh = vh2->vclh;
             minefunction mine_verus;
 #if defined(ENABLE_VERUS_ISA)
-            mine_verus = IsCPUVerusOptimized() ? &mine_verus_v2 : &mine_verus_v2_port;
+            mine_verus = (ASSETCHAINS_ALGO == ASSETCHAINS_EMBERHASH) ? &mine_ember : (IsCPUVerusOptimized() ? &mine_verus_v2 : &mine_verus_v2_port);
 #else
-            mine_verus = &mine_verus_v2_port;
+            mine_verus = (ASSETCHAINS_ALGO == ASSETCHAINS_EMBERHASH) ? &mine_ember : &mine_verus_v2_port;
 #endif
 
             while (true)
@@ -4708,12 +4746,12 @@ void static BitcoinMiner_noeq()
                                 CPBaaSPreHeader savedHeader(*pblock);
 
                                 pblock->ClearNonCanonicalData();
-                                blockFound = (*mine_verus)(*pblock, ss2, hashResult, uintTarget, start, &hashesToGo);
+                                blockFound = (*mine_verus)(*pblock, ss2, hashResult, uintTarget, start, &hashesToGo, Mining_height);
                                 savedHeader.SetBlockData(*pblock);
                             }
                             else
                             {
-                                blockFound = (*mine_verus)(*pblock, ss2, hashResult, uintTarget, start, &hashesToGo);
+                                blockFound = (*mine_verus)(*pblock, ss2, hashResult, uintTarget, start, &hashesToGo, Mining_height);
                             }
 
                             arithHash = UintToArith256(hashResult);
