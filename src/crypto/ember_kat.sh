@@ -1,0 +1,46 @@
+#!/bin/sh
+# Standalone build+run of the EmberHash KAT gate (no autotools needed).
+# Usage: verus/src/crypto/ember_kat.sh   (from anywhere)
+set -e
+DIR=$(dirname "$0")
+OUT=$(mktemp -d)
+CC=${CC:-gcc}
+CXX=${CXX:-g++}
+# libsodium headers are needed only to compile verus's arith_uint256.cpp
+# (crypto/common.h includes sodium.h). Override with SODIUM_INC=... or have
+# pkg-config find libsodium.
+SODIUM_INC=${SODIUM_INC:-$(pkg-config --cflags-only-I libsodium 2>/dev/null || true)}
+if [ -z "$SODIUM_INC" ]; then
+    echo "warn: libsodium include not found (set SODIUM_INC); diff KAT will be skipped" >&2
+fi
+# The tree's compat/endian.h + byteswap.h define fallbacks unless the
+# autotools config says the platform provides them. Standalone builds say so.
+SYS_DEFS="-DHAVE_ENDIAN_H=1 -DHAVE_BYTESWAP_H=1 \
+-DHAVE_DECL_HTOBE16=1 -DHAVE_DECL_HTOLE16=1 -DHAVE_DECL_BE16TOH=1 -DHAVE_DECL_LE16TOH=1 \
+-DHAVE_DECL_HTOBE32=1 -DHAVE_DECL_HTOLE32=1 -DHAVE_DECL_BE32TOH=1 -DHAVE_DECL_LE32TOH=1 \
+-DHAVE_DECL_HTOBE64=1 -DHAVE_DECL_HTOLE64=1 -DHAVE_DECL_BE64TOH=1 -DHAVE_DECL_LE64TOH=1 \
+-DHAVE_DECL_BSWAP_16=1 -DHAVE_DECL_BSWAP_32=1 -DHAVE_DECL_BSWAP_64=1"
+
+# BLAKE3: portable path only for the KAT gate. Autotools wiring (follow-up)
+# adds per-file SIMD flags (-msse4.1, -mavx2, -mavx512f -mavx512vl) for
+# performance; the portable path is bit-identical.
+B3FLAGS="-DBLAKE3_NO_SSE2 -DBLAKE3_NO_SSE41 -DBLAKE3_NO_AVX2 -DBLAKE3_NO_AVX512 -DBLAKE3_NO_NEON"
+for f in "$DIR"/blake3/blake3.c "$DIR"/blake3/blake3_dispatch.c "$DIR"/blake3/blake3_portable.c; do
+    $CC -O2 $B3FLAGS -c -I"$DIR/blake3" "$f" -o "$OUT/$(basename "$f" .c).o"
+done
+# Argon2 reference (portable ref.c path).
+for f in "$DIR"/argon2/argon2.c "$DIR"/argon2/core.c "$DIR"/argon2/encoding.c \
+         "$DIR"/argon2/ref.c "$DIR"/argon2/thread.c "$DIR"/argon2/blake2/blake2b.c; do
+    $CC -O2 -c -I"$DIR/argon2" -I"$DIR/argon2/blake2" "$f" -o "$OUT/$(basename "$f" .c).o"
+done
+
+$CXX -O2 -I"$(dirname "$DIR")" \
+    "$DIR/ember_hash.cpp" "$DIR/ember_kat.cpp" "$OUT"/*.o -o "$OUT/ember_kat" \
+    -lpthread
+$CXX -O2 -I"$(dirname "$DIR")" $SODIUM_INC $SYS_DEFS \
+    "$DIR/ember_difficulty.cpp" "$DIR/ember_diff_kat.cpp" \
+    "$(dirname "$DIR")/arith_uint256.cpp" "$(dirname "$DIR")/uint256.cpp" \
+    -o "$OUT/ember_diff_kat"
+"$OUT/ember_kat"
+echo
+"$OUT/ember_diff_kat"
