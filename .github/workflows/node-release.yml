@@ -74,7 +74,7 @@ jobs:
           [ -f src/verus-tx ] && cp src/verus-tx dist/ || true
           strip dist/* || true
           TAG="${{ github.ref_name }}"
-          [ -z "$TAG" ] || [ "$TAG" = "" ] && TAG="manual"
+          if [ -z "$TAG" ]; then TAG="manual"; fi
           tar -czf "luckylode-node-${TAG}-linux-x86_64.tar.gz" -C dist .
 
       - name: upload release artifacts

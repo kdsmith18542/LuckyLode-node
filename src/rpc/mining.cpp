@@ -1095,8 +1095,11 @@ UniValue getblocktemplate(const UniValue& params, bool fHelp)
         // these fields in both modes.)
         uint64_t tipReserve = chainActive.Tip() ? chainActive.Tip()->nJackpotReserve : 0;
         uint64_t nextR = (uint64_t)GetBlockSubsidy(pindexPrev->GetHeight() + 1, Params().GetConsensus());
-        uint64_t cbTotal = (uint64_t)pblock->vtx[0].GetValueOut();
-        uint64_t nextF = cbTotal >= nextR ? cbTotal - nextR : 0;
+        // Exact fees: vTxFees[0] is set to -nFees when the template is built
+        // (audit fix — deriving fees from the coinbase double-counted the levy).
+        uint64_t nextF = (!pblocktemplate->vTxFees.empty() && pblocktemplate->vTxFees[0] < 0)
+                             ? (uint64_t)(-pblocktemplate->vTxFees[0])
+                             : 0;
         jackpot::Payout est = jackpot::ApplyBlock(tipReserve, nextR, nextF, false);
         result.push_back(Pair("jackpotreserve", (int64_t)tipReserve));
         result.push_back(Pair("jackpotbonus", (int64_t)jackpot::JackpotBonus(nextR, est.reserve)));

@@ -1793,7 +1793,9 @@ void komodo_args(char *argv0)
     // (ParseSubNames appends VERUS_CHAINNAME to any other name, which would
     // give our root currency a phantom parent). Set it to our own name so
     // LUCKYLODE parses as a root currency.
-    VERUS_CHAINNAME = PBAAS_TESTMODE ? "VRSCTEST" : (name == "LUCKYLODE" ? "LUCKYLODE" : "VRSC");
+    VERUS_CHAINNAME = ((name == "LUCKYLODE" || name == "LUCKYLODETEST")
+                           ? name
+                           : (PBAAS_TESTMODE ? "VRSCTEST" : "VRSC"));
     VERUS_CHAINID = CCrossChainRPCData::GetID(VERUS_CHAINNAME);
 
     if (name == "VRSC" || name == "VRSCTEST" || name == "LUCKYLODE" || name == "LUCKYLODETEST")
