@@ -1938,9 +1938,6 @@ UniValue reconsiderblock(const UniValue& params, bool fHelp)
     return NullUniValue;
 }
 
-static const CRPCCommand commands[] =
-{ //  category              name                      actor (function)         okSafeMode
-  //  --------------------- ------------------------  -----------------------  ----------
 UniValue getjackpotinfo(const UniValue& params, bool fHelp)
 {
     if (fHelp || params.size() > 1)
@@ -1973,6 +1970,10 @@ UniValue getjackpotinfo(const UniValue& params, bool fHelp)
     ret.push_back(Pair("reserve", (int64_t)pindex->nJackpotReserve));
     return ret;
 }
+
+static const CRPCCommand commands[] =
+{ //  category              name                      actor (function)         okSafeMode
+  //  --------------------- ------------------------  -----------------------  ----------
 
     { "blockchain",         "getblockchaininfo",      &getblockchaininfo,      true  },
     { "blockchain",         "getjackpotinfo",         &getjackpotinfo,         true  },
