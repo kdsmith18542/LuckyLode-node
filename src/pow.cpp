@@ -509,7 +509,13 @@ bool CheckProofOfWork(const CBlockHeader &blkHeader, int32_t height, const Conse
     tiptime = komodo_chainactive_timestamp();
     bnTarget.SetCompact(blkHeader.nBits, &fNegative, &fOverflow);
     arith_uint256 bnLimit;
-    if (height <= 1 || ASSETCHAINS_ALGO == ASSETCHAINS_EQUIHASH)
+    if (ASSETCHAINS_ALGO == ASSETCHAINS_EMBERHASH)
+    {
+        // EmberHash v1: POW_LIMIT is the bound from block 1; genesis
+        // (height 0) is pinned by its hardcoded hash, not by target.
+        bnLimit = (height == 0) ? ~arith_uint256(0) : ember::PowLimit();
+    }
+    else if (height <= 1 || ASSETCHAINS_ALGO == ASSETCHAINS_EQUIHASH)
     {
         bnLimit = UintToArith256(params.powLimit);
     }
@@ -525,11 +531,6 @@ bool CheckProofOfWork(const CBlockHeader &blkHeader, int32_t height, const Conse
         {
             bnLimit = UintToArith256(params.powAlternate);
         }
-    }
-    else if (ASSETCHAINS_ALGO == ASSETCHAINS_EMBERHASH)
-    {
-        // EmberHash v1: easiest allowed target is POW_LIMIT (doc 05 §5.3)
-        bnLimit = ember::PowLimit();
     }
 
     if (fNegative || bnTarget == 0 || fOverflow || bnTarget > bnLimit)

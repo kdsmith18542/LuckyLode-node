@@ -871,6 +871,14 @@ bool AppInit2(boost::thread_group& threadGroup, CScheduler& scheduler)
 
     std::set_new_handler(new_handler_terminate);
 
+    // Lucky Lode: select true regtest params for EmberHash bring-up.
+    // (Upstream never calls SelectParams in the daemon path, so without
+    // this pCurrentParams stays NULL and Params() returns mainParams.)
+    if (mapMultiArgs.count("-ac_algo") && !mapMultiArgs["-ac_algo"].empty() && mapMultiArgs["-ac_algo"][0] == "emberhash")
+    {
+        SelectParams(CBaseChainParams::REGTEST);
+    }
+
     // ********************************************************* Step 2: parameter interactions
     const CChainParams& chainparams = Params();
 
@@ -1216,8 +1224,16 @@ bool AppInit2(boost::thread_group& threadGroup, CScheduler& scheduler)
     {
         ASSETCHAINS_ALGO = ASSETCHAINS_EMBERHASH;
     }
+    LogPrintf("LuckyLode bring-up: -ac_algo seen='%s', ASSETCHAINS_ALGO=%u\n",
+        (mapMultiArgs.count("-ac_algo") && !mapMultiArgs["-ac_algo"].empty() ? mapMultiArgs["-ac_algo"][0].c_str() : "(none)"),
+        ASSETCHAINS_ALGO);
     if (ASSETCHAINS_ALGO == ASSETCHAINS_EMBERHASH)
     {
+        // PoS/stake internals remain on VerusHash (doc 10 keep-list), and
+        // IsPOSNonce hashes via CVerusHash — both must be initialized even
+        // when the PoW digest is EmberHash.
+        CVerusHash::init();
+        CVerusHashV2::init();
         CBlockHeader::SetEmberHash();
     }
     else if (ASSETCHAINS_ALGO == ASSETCHAINS_VERUSHASH)
