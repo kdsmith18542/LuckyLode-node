@@ -1085,19 +1085,21 @@ UniValue getblocktemplate(const UniValue& params, bool fHelp)
     } else {
         result.push_back(Pair("coinbaseaux", aux));
         result.push_back(Pair("coinbasevalue", (int64_t)pblock->vtx[0].vout[0].nValue));
-        if (ASSETCHAINS_ALGO == ASSETCHAINS_EMBERHASH)
-        {
-            // Lucky Lode: jackpot template info for pools (doc 06 §6.2, J1).
-            // Advisory only — the node re-derives everything authoritatively
-            // at ConnectBlock; pools must still handle normal templates.
-            uint64_t tipReserve = chainActive.Tip() ? chainActive.Tip()->nJackpotReserve : 0;
-            uint64_t nextR = (uint64_t)GetBlockSubsidy(pindexPrev->GetHeight() + 1, Params().GetConsensus());
-            uint64_t cbTotal = (uint64_t)pblock->vtx[0].GetValueOut();
-            uint64_t nextF = cbTotal >= nextR ? cbTotal - nextR : 0;
-            jackpot::Payout est = jackpot::ApplyBlock(tipReserve, nextR, nextF, false);
-            result.push_back(Pair("jackpotreserve", (int64_t)tipReserve));
-            result.push_back(Pair("jackpotbonus", (int64_t)jackpot::JackpotBonus(nextR, est.reserve)));
-        }
+    }
+    if (ASSETCHAINS_ALGO == ASSETCHAINS_EMBERHASH)
+    {
+        // Lucky Lode: jackpot template info for pools (doc 06 §6.2, J1).
+        // Advisory only — the node re-derives everything authoritatively
+        // at ConnectBlock; pools must still handle normal templates.
+        // (Placed outside the coinbasetxn/coinbaseaux branches: pools need
+        // these fields in both modes.)
+        uint64_t tipReserve = chainActive.Tip() ? chainActive.Tip()->nJackpotReserve : 0;
+        uint64_t nextR = (uint64_t)GetBlockSubsidy(pindexPrev->GetHeight() + 1, Params().GetConsensus());
+        uint64_t cbTotal = (uint64_t)pblock->vtx[0].GetValueOut();
+        uint64_t nextF = cbTotal >= nextR ? cbTotal - nextR : 0;
+        jackpot::Payout est = jackpot::ApplyBlock(tipReserve, nextR, nextF, false);
+        result.push_back(Pair("jackpotreserve", (int64_t)tipReserve));
+        result.push_back(Pair("jackpotbonus", (int64_t)jackpot::JackpotBonus(nextR, est.reserve)));
     }
     result.push_back(Pair("longpollid", chainActive.LastTip()->GetBlockHash().GetHex() + i64tostr(nTransactionsUpdatedLast)));
     if ( ASSETCHAINS_STAKED != 0 )
