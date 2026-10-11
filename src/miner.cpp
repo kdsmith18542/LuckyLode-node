@@ -4201,6 +4201,37 @@ void static VerusStaker(CWallet *pwallet)
             waitForPeers(chainparams);
             CBlockIndex* pindexPrev = chainActive.LastTip();
 
+            // Thermal guard: skip mining iterations while too hot.
+            {
+                int maxTemp = GetArg("-maxtemp", THERMAL_DEFAULT_CAP_C);
+                if (maxTemp > 0)
+                {
+                    static bool thermalPaused = false;
+                    static int pauseCount = 0;
+                    int pkg = ReadPackageTempC();
+                    if (!thermalPaused && pkg >= maxTemp)
+                    {
+                        thermalPaused = true;
+                        pauseCount = 0;
+                    }
+                    if (thermalPaused)
+                    {
+                        if (pkg < 0 || pkg < maxTemp - THERMAL_HYSTERESIS_C)
+                        {
+                            thermalPaused = false;
+                        }
+                        else
+                        {
+                            if (++pauseCount % 12 == 1)
+                                LogPrintf("miner paused: package %dC at/above -maxtemp=%d (resume below %d)\n",
+                                          pkg, maxTemp, maxTemp - THERMAL_HYSTERESIS_C);
+                            MilliSleep(5000);
+                            continue;
+                        }
+                    }
+                }
+            }
+
             // Create new block
             unsigned int nTransactionsUpdatedLast = mempool.GetTransactionsUpdated();
 
@@ -4360,6 +4391,65 @@ bool mine_verus_v2_port(CBlockHeader &bh, CVerusHashV2bWriter &vhw, uint256 &fin
 // Lucky Lode: EmberHash v1 mining loop (doc 05). Header fields are fixed
 // during the grind; only nNonce varies (u64 domain, D3). Digest comparison
 // matches CheckProofOfWork: valid iff digest <= target (arith compare).
+// Lucky Lode: thermal guard so mining stays safe on low-end hardware.
+// -maxtemp=<C, 0=off>: while the CPU package reads at/above the cap, mining
+// iterations are skipped (with 2C hysteresis against flapping). Default 80:
+// the miner must never cook the machine it runs on. This is the node-miner
+// equivalent of the lm-sched thermal policy (doc 07). Linux-only; elsewhere
+// the guard is a no-op and -minerduty still applies.
+static const int THERMAL_DEFAULT_CAP_C = 80;
+static const int THERMAL_HYSTERESIS_C = 2;
+
+#ifdef __linux__
+static int ReadPackageTempC()
+{
+    // Returns hottest package sensor in whole degrees C, or -1 when
+    // unavailable (containers, missing hwmon, non-x86).
+    static std::string sensorDir;
+    static bool probed = false;
+    if (!probed)
+    {
+        probed = true;
+        for (int i = 0; i < 16; i++)
+        {
+            char dir[64], nameFile[96], name[32] = {0};
+            snprintf(dir, sizeof(dir), "/sys/class/hwmon/hwmon%d", i);
+            snprintf(nameFile, sizeof(nameFile), "%s/name", dir);
+            FILE *f = fopen(nameFile, "r");
+            if (!f) continue;
+            size_t n = fread(name, 1, sizeof(name) - 1, f);
+            fclose(f);
+            if (n == 0) continue;
+            if (strncmp(name, "k10temp", 7) == 0 || strncmp(name, "coretemp", 8) == 0)
+            {
+                sensorDir = dir;
+                break;
+            }
+        }
+    }
+    if (sensorDir.empty())
+        return -1;
+    int hottest = -1;
+    for (int t = 1; t <= 8; t++)
+    {
+        char path[128];
+        snprintf(path, sizeof(path), "%s/temp%d_input", sensorDir.c_str(), t);
+        FILE *f = fopen(path, "r");
+        if (!f) continue;
+        long milli = -1;
+        if (fscanf(f, "%ld", &milli) == 1 && milli > 0)
+        {
+            int c = (int)(milli / 1000);
+            if (c > hottest) hottest = c;
+        }
+        fclose(f);
+    }
+    return hottest;
+}
+#else
+static int ReadPackageTempC() { return -1; }
+#endif
+
 bool mine_ember(CBlockHeader &bh, CVerusHashV2bWriter &vhw, uint256 &finalHash, uint256 &target, uint64_t start, uint64_t *count, int32_t height)
 {
     (void)vhw; // writer unused: EmberHash hashes the canonical Addendum A bytes

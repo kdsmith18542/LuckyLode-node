@@ -512,6 +512,7 @@ std::string HelpMessage(HelpMessageMode mode)
     strUsage += HelpMessageOpt("-equihashsolver=<name>", _("Specify the Equihash solver to be used if enabled (default: \"default\")"));
     strUsage += HelpMessageOpt("-gen", strprintf(_("Mine/generate coins (default: %u)"), 0));
     strUsage += HelpMessageOpt("-genproclimit=<n>", strprintf(_("Set the number of threads for coin mining if enabled (-1 = all cores, default: %d)"), 0));
+    strUsage += HelpMessageOpt("-maxtemp=<n>", strprintf(_("Pause mining while CPU package is at/above n Celsius (0=off, default: %d) - keeps low-end hardware safe"), 80));
     strUsage += HelpMessageOpt("-minerduty=<n>", strprintf(_("Percent of each mining round spent hashing, rest slept (1-100, default: %d) - keeps low-end hardware cool"), 100));
     strUsage += HelpMessageOpt("-mineraddress=<addr>", _("Send mined coins to a specific single address"));
     strUsage += HelpMessageOpt("-minetolocalwallet", strprintf(_("Require that mined blocks use a coinbase address in the local wallet (default: %u)"),
