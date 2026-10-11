@@ -652,8 +652,8 @@ UniValue verifytxoutproof(const UniValue& params, bool fHelp)
         return res;
 
     LOCK(cs_main);
-    uint256 idx = merkleBlock.header.GetHash();
-    if (!mapBlockIndex.count(merkleBlock.header.GetHash()) || (mapBlockIndex.count(idx) && !chainActive.Contains(mapBlockIndex[idx])))
+    uint256 idx = merkleBlock.header.GetHash(merkleBlock.header.hashPrevBlock.IsNull() ? 0 : (mapBlockIndex.count(merkleBlock.header.hashPrevBlock) ? mapBlockIndex[merkleBlock.header.hashPrevBlock]->GetHeight() + 1 : 0));
+    if (!mapBlockIndex.count(idx) || (mapBlockIndex.count(idx) && !chainActive.Contains(mapBlockIndex[idx])))
         throw JSONRPCError(RPC_INVALID_ADDRESS_OR_KEY, "Block not found in chain");
 
     BOOST_FOREACH(const uint256& hash, vMatch)

@@ -267,7 +267,7 @@ BOOST_AUTO_TEST_CASE(CreateNewBlock_validity)
         CValidationState state;
         BOOST_CHECK(ProcessNewBlock(1, 0, state, chainparams, NULL, pblock, true, NULL));
         BOOST_CHECK_MESSAGE(state.IsValid(), state.GetRejectReason());
-        pblock->hashPrevBlock = pblock->GetHash();
+        pblock->hashPrevBlock = pblock->GetHash(1);
 
         // Need to recreate the template each round because of mining slow start
         delete pblocktemplate;

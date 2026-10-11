@@ -203,7 +203,7 @@ void IncrementExtraNonce(CBlock* pblock, CBlockIndex* pindexPrev, unsigned int &
 
                 // combine blocks and set compact difficulty if necessary
                 uint32_t savebits;
-                if ((savebits = ConnectedChains.CombineBlocks(*pblock)) && pSaveBits)
+                if ((savebits = ConnectedChains.CombineBlocks(*pblock, pindexPrev->GetHeight()+1)) && pSaveBits)
                 {
                     arith_uint256 ours, merged;
                     ours.SetCompact(pblock->nBits);
@@ -4046,7 +4046,7 @@ static bool ProcessBlockFound(CBlock* pblock)
     {
         //fprintf(stderr,"lock cs_wallet\n");
         LOCK(wallet.cs_wallet);
-        wallet.mapRequestCount[pblock->GetHash()] = 0;
+        wallet.mapRequestCount[pblock->GetHash(chainActive.LastTip()->GetHeight()+1)] = 0;
     }
 #endif
     //fprintf(stderr,"process new block\n");
@@ -4056,7 +4056,7 @@ static bool ProcessBlockFound(CBlock* pblock)
     if (!ProcessNewBlock(1, chainActive.LastTip()->GetHeight()+1, state, Params(), NULL, pblock, true, NULL))
         return error("VerusMiner: ProcessNewBlock, block not accepted");
 
-    TrackMinedBlock(pblock->GetHash());
+    TrackMinedBlock(pblock->GetHash(chainActive.LastTip()->GetHeight()+1));
     komodo_broadcast(pblock,16);
     return true;
 }
@@ -4296,7 +4296,7 @@ void static VerusStaker(CWallet *pwallet)
             if (ProcessBlockFound(pblock, *pwallet, reservekey))
             {
                 LogPrintf("Using %s algorithm:\n", ASSETCHAINS_ALGORITHMS[ASSETCHAINS_ALGO]);
-                LogPrintf("Staked block found  \n  hash: %s  \ntarget: %s\n", pblock->GetHash().GetHex(), hashTarget.GetHex());
+                LogPrintf("Staked block found  \n  hash: %s  \ntarget: %s\n", pblock->GetHash(newHeight).GetHex(), hashTarget.GetHex());
                 printf("Found block %d \n", newHeight);
                 printf("staking reward %.8f %s!\n", (double)subsidy / (double)COIN, ASSETCHAINS_SYMBOL);
                 arith_uint256 post;
@@ -4720,7 +4720,7 @@ void static BitcoinMiner_noeq()
                             totalDone += hashesToGo + 1;
                             if (blockFound && IsVerusActive())
                             {
-                                ConnectedChains.QueueNewBlockHeader(*pblock);
+                                ConnectedChains.QueueNewBlockHeader(*pblock, Mining_height);
                                 if (arithHash > ourTarget)
                                 {
                                     // all blocks qualified with this hash will be submitted
@@ -4760,7 +4760,7 @@ void static BitcoinMiner_noeq()
 
 #ifdef VERUSHASHDEBUG
                             std::string validateStr = hashResult.GetHex();
-                            std::string hashStr = pblock->GetHash().GetHex();
+                            std::string hashStr = pblock->GetHash(Mining_height).GetHex();
                             uint256 *bhalf1 = (uint256 *)vh2->CurBuffer();
                             uint256 *bhalf2 = bhalf1 + 1;
 #else

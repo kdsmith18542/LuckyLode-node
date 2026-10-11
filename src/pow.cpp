@@ -498,7 +498,7 @@ bool CheckProofOfWork(const CBlockHeader &blkHeader, int32_t height, const Conse
     }
 
     // Check proof of work matches claimed amount
-    if ( UintToArith256(hash = blkHeader.GetHash()) > bnTarget && !blkHeader.IsVerusPOSBlock() )
+    if ( UintToArith256(hash = blkHeader.GetHash(height)) > bnTarget && !blkHeader.IsVerusPOSBlock() )
     {
         if ( KOMODO_LOADINGBLOCKS != 0 )
             return true;

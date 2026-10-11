@@ -628,11 +628,11 @@ int32_t komodo_isPoS(CBlock *pblock)
     return(0);
 }
 
-int32_t komodo_block2height(CBlock *block)
+int32_t komodo_block2height(CBlock *block, int32_t blockHeight)
 {
     static uint32_t match,mismatch;
     int32_t i,n,height2=-1,height = 0; uint8_t *ptr; CBlockIndex *pindex = NULL;
-    BlockMap::const_iterator it = mapBlockIndex.find(block->GetHash());
+    BlockMap::const_iterator it = mapBlockIndex.find(block->GetHash(blockHeight));
     if ( it != mapBlockIndex.end() && (pindex = it->second) != 0 )
     {
         height2 = (int32_t)pindex->GetHeight();
@@ -1095,7 +1095,7 @@ int32_t komodo_is_PoSblock(int32_t slowflag,int32_t height,CBlock *pblock,arith_
     CBlockIndex *previndex,*pindex; char voutaddr[64],destaddr[64]; uint256 txid; uint32_t txtime,prevtime=0; int32_t vout,PoSperc,txn_count,eligible=0,isPoS = 0,segid; uint64_t value; CTxDestination voutaddress;
     if ( ASSETCHAINS_STAKED == 100 && height <= 10 )
         return(1);
-    BlockMap::const_iterator it = mapBlockIndex.find(pblock->GetHash());
+    BlockMap::const_iterator it = mapBlockIndex.find(pblock->GetHash(height));
     pindex = it != mapBlockIndex.end() ? it->second : NULL;
     if ( pindex != 0 && pindex->segid >= -1 )
     {
@@ -1210,7 +1210,7 @@ int32_t komodo_checkPOW(int32_t slowflag,CBlock *pblock,int32_t height)
         fprintf(stderr,"komodo_checkPOW slowflag.%d ht.%d CheckEquihashSolution failed\n",slowflag,height);
         return -1;
     }
-    hash = pblock->GetHash();
+    hash = pblock->GetHash(height);
     bnTarget.SetCompact(pblock->nBits,&fNegative,&fOverflow);
     bhash = UintToArith256(hash);
     possible = komodo_block2pubkey33(pubkey33,pblock);

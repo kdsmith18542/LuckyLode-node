@@ -1300,7 +1300,7 @@ BOOST_AUTO_TEST_CASE(rpc_z_sendmany_taddr_to_sapling)
     block.hashPrevBlock = chainActive.Tip()->GetBlockHash();
     block.vtx.push_back(wtx);
     block.hashMerkleRoot = block.BuildMerkleTree();
-    auto blockHash = block.GetHash();
+    auto blockHash = block.GetHash(1);
     CBlockIndex fakeIndex {block};
     fakeIndex.SetHeight(1);
     mapBlockIndex.insert(std::make_pair(blockHash, &fakeIndex));

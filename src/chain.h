@@ -700,7 +700,7 @@ public:
         block.nBits           = nBits;
         block.nNonce          = nNonce;
         block.nSolution       = nSolution.nSolution();
-        return block.GetHash();
+        return block.GetHash(GetHeight());
     }
 
     std::string ToString() const

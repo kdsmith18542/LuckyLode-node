@@ -2738,8 +2738,8 @@ bool verusCheckPOSBlock(int32_t slowflag, const CBlock *pblock, int32_t height)
                                                                     HexBytes(extraData.data(), extraData.size()).c_str(),
                                                                     HexBytes(checkExtra.data(), checkExtra.size()).c_str());
                                                     }
-                                                    printf("ERROR: in staked block %s - invalid header proofs\n", pblock->GetHash().ToString().c_str());
-                                                    LogPrintf("ERROR: in staked block %s - invalid header proofs\n", pblock->GetHash().ToString().c_str());
+                                                    printf("ERROR: in staked block %s - invalid header proofs\n", pblock->GetHash(height).ToString().c_str());
+                                                    LogPrintf("ERROR: in staked block %s - invalid header proofs\n", pblock->GetHash(height).ToString().c_str());
                                                     return false;
                                                 }
                                             }
@@ -6200,7 +6200,7 @@ bool CConnectedChains::GetLastBlock(CBlock &block, uint32_t height)
 void CConnectedChains::SetLastBlock(CBlock &block, uint32_t height)
 {
     LOCK(cs_mergemining);
-    if (lastBlock.GetHash() != block.GetHash())
+    if (lastBlock.GetHash(lastBlockHeight) != block.GetHash(height))
     {
         lastBlock = block;
         lastBlockHeight = height;
@@ -6242,13 +6242,13 @@ CPBaaSMergeMinedChainData *CConnectedChains::GetChainInfo(uint160 chainID)
     }
 }
 
-void CConnectedChains::QueueNewBlockHeader(CBlockHeader &bh)
+void CConnectedChains::QueueNewBlockHeader(CBlockHeader &bh, int32_t height)
 {
-    LogPrint("mining", "QueueNewBlockHeader %s\n", bh.GetHash().GetHex().c_str());
+    LogPrint("mining", "QueueNewBlockHeader %s\n", bh.GetHash(height).GetHex().c_str());
     {
         LOCK(cs_mergemining);
 
-        qualifiedHeaders[UintToArith256(bh.GetHash())] = bh;
+        qualifiedHeaders[UintToArith256(bh.GetHash(height))] = bh;
 
     }
     sem_submitthread.post();
@@ -6427,11 +6427,11 @@ vector<pair<string, UniValue>> CConnectedChains::SubmitQualifiedBlocks()
 }
 
 // add all merge mined chain PBaaS headers into the blockheader and return the easiest nBits target in the header
-uint32_t CConnectedChains::CombineBlocks(CBlockHeader &bh)
+uint32_t CConnectedChains::CombineBlocks(CBlockHeader &bh, int32_t height)
 {
     vector<uint160> inHeader;
     vector<UniValue> toCombine;
-    arith_uint256 blkHash = UintToArith256(bh.GetHash());
+    arith_uint256 blkHash = UintToArith256(bh.GetHash(height));
     arith_uint256 target(0);
     target.SetCompact(bh.nBits);
 

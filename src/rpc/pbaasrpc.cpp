@@ -103,7 +103,7 @@ public:
 
 protected:
     virtual void BlockChecked(const CBlock& block, const CValidationState& stateIn) {
-        if (block.GetHash() != hash)
+        if (block.GetHash(block.hashPrevBlock.IsNull() ? 0 : (mapBlockIndex.count(block.hashPrevBlock) ? mapBlockIndex[block.hashPrevBlock]->GetHeight() + 1 : 0)) != hash)
             return;
         found = true;
         state = stateIn;
@@ -5533,7 +5533,7 @@ UniValue getnotarizationproofs(const UniValue& params, bool fHelp)
                             oneRetObj.pushKV("error", "could not create block proof for block at height " + std::to_string(proveHeight) + "from height " + std::to_string(atHeight));
                             break;
                         }
-                        evidence.evidence << CBlockHeaderProof(blockHeaderProof, chainActive[proveHeight]->GetBlockHeader());
+                        evidence.evidence << CBlockHeaderProof(blockHeaderProof, chainActive[proveHeight]->GetBlockHeader(), proveHeight);
 
                         UniValue challengeUni(UniValue::VOBJ);
                         challengeUni.pushKV("type", EncodeDestination(CIdentityID(challengeTypeKey)));
@@ -5736,7 +5736,7 @@ UniValue getnotarizationproofs(const UniValue& params, bool fHelp)
                                 chainActive.GetBlockProof(curMMV, blockHeaderProof, oneChallengeRoot.rootHeight);
                                 challengeRoots.push_back({oneTxOut,
                                                           oneChallengeRoot,
-                                                          CBlockHeaderProof(blockHeaderProof, chainActive[blockHeight]->GetBlockHeader())});
+                                                          CBlockHeaderProof(blockHeaderProof, chainActive[blockHeight]->GetBlockHeader(), blockHeight)});
                             }
                             else
                             {
@@ -18329,7 +18329,7 @@ UniValue submitmergedblock(const UniValue& params, bool fHelp)
     if (!DecodeHexBlk(block, params[0].get_str()))
         throw JSONRPCError(RPC_DESERIALIZATION_ERROR, "Block decode failed");
 
-    uint256 hash = block.GetHash();
+    uint256 hash = block.GetHash(block.hashPrevBlock.IsNull() ? 0 : (mapBlockIndex.count(block.hashPrevBlock) ? mapBlockIndex[block.hashPrevBlock]->GetHeight() + 1 : 0));
     bool fBlockPresent = false;
     {
         LOCK(cs_main);
@@ -18349,7 +18349,7 @@ UniValue submitmergedblock(const UniValue& params, bool fHelp)
     }
 
     CValidationState state;
-    submitblock_StateCatcher sc(block.GetHash());
+    submitblock_StateCatcher sc(block.GetHash(block.hashPrevBlock.IsNull() ? 0 : (mapBlockIndex.count(block.hashPrevBlock) ? mapBlockIndex[block.hashPrevBlock]->GetHeight() + 1 : 0)));
     RegisterValidationInterface(&sc);
     //printf("submitmergedblock, height=%d, coinbase sequence: %d, scriptSig: %s\n", chainActive.LastTip()->GetHeight()+1, block.vtx[0].vin[0].nSequence, block.vtx[0].vin[0].scriptSig.ToString().c_str());
     bool fAccepted = ProcessNewBlock(1, chainActive.LastTip()->GetHeight()+1, state, Params(), NULL, &block, true, NULL);
@@ -18376,14 +18376,14 @@ UniValue submitmergedblock(const UniValue& params, bool fHelp)
     UniValue rejected = BIP22ValidationResult(state);
     if (rejected.isNull()) {
         // queue for submission to pbaas chains being merge mined
-        ConnectedChains.QueueNewBlockHeader(block);
+        ConnectedChains.QueueNewBlockHeader(block, block.hashPrevBlock.IsNull() ? 0 : (mapBlockIndex.count(block.hashPrevBlock) ? mapBlockIndex[block.hashPrevBlock]->GetHeight() + 1 : 0));
 
         // add block hash to response
-        result.push_back(Pair("blockhash", block.GetBlockHeader().GetHash().GetHex()));
+        result.push_back(Pair("blockhash", block.GetBlockHeader().GetHash(block.hashPrevBlock.IsNull() ? 0 : (mapBlockIndex.count(block.hashPrevBlock) ? mapBlockIndex[block.hashPrevBlock]->GetHeight() + 1 : 0)).GetHex()));
 
         // check target, we may have only submitted to pbaas chains
         arith_uint256 target(0); target.SetCompact(block.nBits);
-        arith_uint256 block_hash = UintToArith256(block.GetBlockHeader().GetHash());
+        arith_uint256 block_hash = UintToArith256(block.GetBlockHeader().GetHash(block.hashPrevBlock.IsNull() ? 0 : (mapBlockIndex.count(block.hashPrevBlock) ? mapBlockIndex[block.hashPrevBlock]->GetHeight() + 1 : 0)));
         if (block_hash > target) {
             // only submitted to pbaas merge mined chains
             result.push_back(Pair("accepted", "pbaas"));

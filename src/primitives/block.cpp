@@ -6,9 +6,11 @@
 #include "primitives/block.h"
 
 #include "hash.h"
+#include "streams.h"
 #include "tinyformat.h"
 #include "utilstrencodings.h"
 #include "crypto/common.h"
+#include "crypto/ember_hash.h"
 #include "mmr.h"
 
 extern uint32_t ASSETCHAINS_ALGO, ASSETCHAINS_VERUSHASH;
@@ -16,7 +18,7 @@ extern uint160 ASSETCHAINS_CHAINID;
 extern uint160 VERUS_CHAINID;
 
 // default hash algorithm for block
-uint256 (CBlockHeader::*CBlockHeader::hashFunction)() const = &CBlockHeader::GetSHA256DHash;
+uint256 (CBlockHeader::*CBlockHeader::hashFunction)(int32_t height) const = &CBlockHeader::GetSHA256DHash;
 
 // does not check for height / sapling upgrade, etc. this should not be used to get block proofs
 // on a pre-VerusPoP chain
@@ -73,9 +75,9 @@ arith_uint256 GetCompactPower(const uint256 &nNonce, uint32_t nBits, int32_t ver
     }
 }
 
-ChainMMRNode CBlockHeader::GetBlockMMRNode() const
+ChainMMRNode CBlockHeader::GetBlockMMRNode(int32_t height) const
 {
-    uint256 blockHash = GetHash();
+    uint256 blockHash = GetHash(height);
 
     uint256 preHash = ChainMMRNode::HashObj(GetBlockMMRRoot(), blockHash);
     uint256 power = ArithToUint256(GetCompactPower(nNonce, nBits, nVersion));
@@ -266,12 +268,12 @@ bool CBlockHeader::AddUpdatePBaaSHeader()
     return false;
 }
 
-uint256 CBlockHeader::GetSHA256DHash() const
+uint256 CBlockHeader::GetSHA256DHash(int32_t height) const
 {
     return SerializeHash(*this);
 }
 
-uint256 CBlockHeader::GetVerusHash() const
+uint256 CBlockHeader::GetVerusHash(int32_t height) const
 {
     if (hashPrevBlock.IsNull())
         // always use SHA256D for genesis block
@@ -280,7 +282,7 @@ uint256 CBlockHeader::GetVerusHash() const
         return SerializeVerusHash(*this);
 }
 
-uint256 CBlockHeader::GetVerusV2Hash() const
+uint256 CBlockHeader::GetVerusV2Hash(int32_t height) const
 {
     if (hashPrevBlock.IsNull())
     {
@@ -344,6 +346,49 @@ void CBlockHeader::SetVerusV2Hash()
     CBlockHeader::hashFunction = &CBlockHeader::GetVerusV2Hash;
 }
 
+// Lucky Lode: EmberHash v1 block-header PoW digest.
+//   header_bytes = nVersion || hashPrevBlock || hashMerkleRoot ||
+//                  hashFinalSaplingRoot || nTime || nBits ||
+//                  CompactSize(len(nSolution)) || nSolution
+//   seed = BLAKE3(header_bytes || nonce_le64)
+//   salt = "LMv1" || height_le64
+//   mem  = Argon2id(seed, salt, AD="lowmine-pow/v1", m=1 MiB, t=3, p=1)
+//   out  = BLAKE3(mem || seed), compared big-endian vs target.
+// Consensus note (doc 05 Addendum A + doc 10 D2/D3): the strings "LMv1"
+// and "lowmine-pow/v1" are frozen construction identifiers, not branding.
+// Returns null on Argon2 failure (fail closed).
+uint256 CBlockHeader::GetEmberHash(int32_t height) const
+{
+    if (hashPrevBlock.IsNull())
+    {
+        // always use SHA256D for genesis block (keeps upstream behavior)
+        return SerializeHash(*this);
+    }
+    CDataStream ss(SER_NETWORK, PROTOCOL_VERSION);
+    ss << nVersion << hashPrevBlock << hashMerkleRoot << hashFinalSaplingRoot
+       << nTime << nBits << nSolution;
+    uint64_t nonce = ReadLE64(nNonce.begin()); // low 8 bytes of CPOSNonce (D3)
+    uint8_t out[32];
+    const unsigned char *hb = (const unsigned char *)&ss[0];
+    if (!ember::Hash(out, hb, ss.size(), nonce, (uint64_t)height))
+    {
+        return uint256();
+    }
+    // EmberHash output is big-endian bytes; uint256 stores little-endian,
+    // so reverse on copy (GetHex then matches the frozen vectors).
+    uint256 digest;
+    for (int i = 0; i < 32; i++)
+    {
+        digest.begin()[i] = out[31 - i];
+    }
+    return digest;
+}
+
+void CBlockHeader::SetEmberHash()
+{
+    CBlockHeader::hashFunction = &CBlockHeader::GetEmberHash;
+}
+
 uint256 CBlockHeader::GetRawVerusPOSHash(int32_t blockVersion, uint32_t solVersion, uint32_t magic, const uint256 &nonce, int32_t height, bool isVerusMainnet)
 {
     if (isVerusMainnet && !CPOSNonce::NewNonceActive(height))
@@ -380,7 +425,7 @@ uint256 CBlockHeader::GetVerusEntropyHashComponent(uint32_t magic, int32_t heigh
         // POS hash
         return GetRawVerusPOSHash(nVersion, CConstVerusSolutionVector::Version(nSolution), magic, nNonce, height, isVerusMainnet);
     }
-    return GetHash();
+    return GetHash(height);
 }
 
 // returns false if unable to fast calculate the VerusPOSHash from the header.
@@ -422,7 +467,7 @@ uint256 CBlockHeader::GetVerusEntropyHashComponent(int32_t height) const
         // POS hash
         return retVal;
     }
-    return GetHash();
+    return GetHash(height);
 }
 
 uint256 BuildMerkleTree(bool* fMutated, const std::vector<uint256> leaves,
@@ -685,11 +730,11 @@ uint256 CBlock::CheckMerkleBranch(uint256 hash, const std::vector<uint256>& vMer
     return hash;
 }
 
-std::string CBlock::ToString() const
+std::string CBlock::ToString(int32_t height) const
 {
     std::stringstream s;
     s << strprintf("CBlock(hash=%s, ver=%d, hashPrevBlock=%s, hashMerkleRoot=%s, hashFinalSaplingRoot=%s, nTime=%u, nBits=%08x, nNonce=%s, vtx=%u)\n",
-        GetHash().ToString(),
+        GetHash(height).ToString(),
         nVersion,
         hashPrevBlock.ToString(),
         hashMerkleRoot.ToString(),
@@ -740,15 +785,15 @@ uint256 CBlockHeaderAndProof::ValidateBlockMMRRoot(const uint256 &checkHash, int
     {
         bhp.headerProof.DeleteProofSequenceEntry(0);
     }
-    uint256 hash = blockHeader.MMRProofBridge().SafeCheck(checkHash);
+    uint256 hash = blockHeader.MMRProofBridge(blockHeight).SafeCheck(checkHash);
     hash = bhp.headerProof.CheckProof(hash);
     return blockHeight == GetBlockHeight() ? hash : uint256();
 }
 
-UniValue BlockHeaderToUni(const CBlockHeader &block)
+UniValue BlockHeaderToUni(const CBlockHeader &block, int32_t height)
 {
     UniValue result(UniValue::VOBJ);
-    result.push_back(Pair("hash", block.GetHash().GetHex()));
+    result.push_back(Pair("hash", block.GetHash(height).GetHex()));
 
     if (block.IsVerusPOSBlock())
     {
@@ -790,17 +835,17 @@ uint256 CBlockHeaderAndProof::ValidateBlockHash(const uint256 &checkHash, int bl
 
     if (LogAcceptCategory("notarization") && LogAcceptCategory("verbose"))
     {
-        UniValue blockHeaderJSON = BlockHeaderToUni(blockHeader);
+        UniValue blockHeaderJSON = BlockHeaderToUni(blockHeader, blockHeight);
         printf("%s: blockHeight: %u, GetBlockHeight(): %u, checkHash: %s, blockHeader: %s\n, blockHeader.GetHash(): %s, returning: %s\n",
             __func__,
             blockHeight,
             GetBlockHeight(),
             checkHash.GetHex().c_str(),
             blockHeaderJSON.write(1,2).c_str(),
-            blockHeader.GetHash().GetHex().c_str(),
-            (blockHeight == GetBlockHeight() && checkHash == blockHeader.GetHash() ? hash : uint256()).GetHex().c_str());
+            blockHeader.GetHash(blockHeight).GetHex().c_str(),
+            (blockHeight == GetBlockHeight() && checkHash == blockHeader.GetHash(blockHeight) ? hash : uint256()).GetHex().c_str());
     }
-    return blockHeight == GetBlockHeight() && checkHash == blockHeader.GetHash() ? hash : uint256();
+    return blockHeight == GetBlockHeight() && checkHash == blockHeader.GetHash(blockHeight) ? hash : uint256();
 }
 
 // used to span multiple outputs if a cross-chain proof becomes too big for just one

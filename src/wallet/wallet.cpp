@@ -2295,7 +2295,7 @@ bool CWallet::VerusSelectStakeOutput(CBlock *pBlock, arith_uint256 &hashResult, 
                         LogPrintf("%s: ERROR: could not create block proof for block %u\n", __func__, srcIndex);
                         return false;
                     }
-                    headerStream << CBlockHeaderProof(blockHeaderProof1, chainActive[proveBlockHeight]->GetBlockHeader());
+                    headerStream << CBlockHeaderProof(blockHeaderProof1, chainActive[proveBlockHeight]->GetBlockHeader(), proveBlockHeight);
                 }
 
                 if (posSourceInfo)
@@ -2317,7 +2317,7 @@ bool CWallet::VerusSelectStakeOutput(CBlock *pBlock, arith_uint256 &hashResult, 
                         chainActive.GetBlockProof(mmrView, blockHeaderProof2, secondBlockHeight); // repeat for debugging
                         return false;
                     }
-                    headerStream << CBlockHeaderProof(blockHeaderProof2, chainActive[secondBlockHeight]->GetBlockHeader());
+                    headerStream << CBlockHeaderProof(blockHeaderProof2, chainActive[secondBlockHeight]->GetBlockHeader(), secondBlockHeight);
                 }
 
                 std::vector<unsigned char> stx(headerStream.begin(), headerStream.end());
@@ -2891,7 +2891,7 @@ bool CWallet::AddToWalletIfInvolvingMe(const CTransaction& tx, const CBlock* pbl
         uint32_t nHeight = 0;
         if (pblock)
         {
-            auto blkIndexIt = mapBlockIndex.find(pblock->GetHash());
+            auto blkIndexIt = mapBlockIndex.find(pblock->GetHash(pblock->hashPrevBlock.IsNull() ? 0 : (mapBlockIndex.count(pblock->hashPrevBlock) ? mapBlockIndex[pblock->hashPrevBlock]->GetHeight() + 1 : 0)));
             if (blkIndexIt != mapBlockIndex.end())
             {
                 nHeight = blkIndexIt->second->GetHeight();
@@ -2900,9 +2900,9 @@ bool CWallet::AddToWalletIfInvolvingMe(const CTransaction& tx, const CBlock* pbl
             {
                 // this should never happen
                 UniValue txUniv(UniValue::VOBJ);
-                TxToUniv(tx, pblock->GetHash(), txUniv);
-                LogPrintf("%s: UNEXPECTED ERROR: block (%s) for transaction %s:\n%s\nnot found\n", __func__, pblock->GetHash().GetHex().c_str(), txHash.GetHex().c_str(), txUniv.write(1,2).c_str());
-                printf("%s: UNEXPECTED ERROR: block (%s) for transaction %s:\n%s\nnot found\n", __func__, pblock->GetHash().GetHex().c_str(), txHash.GetHex().c_str(), txUniv.write(1,2).c_str());
+                TxToUniv(tx, pblock->GetHash(pblock->hashPrevBlock.IsNull() ? 0 : (mapBlockIndex.count(pblock->hashPrevBlock) ? mapBlockIndex[pblock->hashPrevBlock]->GetHeight() + 1 : 0)), txUniv);
+                LogPrintf("%s: UNEXPECTED ERROR: block (%s) for transaction %s:\n%s\nnot found\n", __func__, pblock->GetHash(pblock->hashPrevBlock.IsNull() ? 0 : (mapBlockIndex.count(pblock->hashPrevBlock) ? mapBlockIndex[pblock->hashPrevBlock]->GetHeight() + 1 : 0)).GetHex().c_str(), txHash.GetHex().c_str(), txUniv.write(1,2).c_str());
+                printf("%s: UNEXPECTED ERROR: block (%s) for transaction %s:\n%s\nnot found\n", __func__, pblock->GetHash(pblock->hashPrevBlock.IsNull() ? 0 : (mapBlockIndex.count(pblock->hashPrevBlock) ? mapBlockIndex[pblock->hashPrevBlock]->GetHeight() + 1 : 0)).GetHex().c_str(), txHash.GetHex().c_str(), txUniv.write(1,2).c_str());
                 return false;
             }
         }
@@ -8031,7 +8031,7 @@ void CMerkleTx::SetMerkleBranch(const CBlock& block)
     CBlock blockTmp;
 
     // Update the tx's hashBlock
-    hashBlock = block.GetHash();
+    hashBlock = block.GetHash(block.hashPrevBlock.IsNull() ? 0 : (mapBlockIndex.count(block.hashPrevBlock) ? mapBlockIndex[block.hashPrevBlock]->GetHeight() + 1 : 0));
 
     // Locate the transaction
     for (nIndex = 0; nIndex < (int)block.vtx.size(); nIndex++)

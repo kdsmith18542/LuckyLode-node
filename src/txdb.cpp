@@ -2593,7 +2593,7 @@ bool CBlockTreeDB::LoadBlockIndexGuts(std::function<CBlockIndex*(const uint256&)
 
                 // Consistency checks
                 auto header = pindexNew->GetBlockHeader();
-                uint256 hash = header.GetHash();
+                uint256 hash = header.GetHash(diskindex.GetHeight());
                 if (diskindex.hashPrev.IsNull() && hash != Params().consensus.hashGenesisBlock)
                 {
                     return error("LoadBlockIndex(): prior block hash NULL on non-genesis block: %s\n", diskindex.ToString());

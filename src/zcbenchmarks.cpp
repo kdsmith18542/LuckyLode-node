@@ -363,7 +363,7 @@ double benchmark_increment_sprout_note_witnesses(size_t nTxs)
 
     // Second block
     CBlock block2;
-    block2.hashPrevBlock = block1.GetHash();
+    block2.hashPrevBlock = block1.GetHash(1);
     {
         auto sproutTx = CreateSproutTxWithNoteData(sproutSpendingKey);
         wallet.AddToWallet(sproutTx, true, NULL);
@@ -425,7 +425,7 @@ double benchmark_increment_sapling_note_witnesses(size_t nTxs)
 
     // Second block
     CBlock block2;
-    block2.hashPrevBlock = block1.GetHash();
+    block2.hashPrevBlock = block1.GetHash(1);
     {
         auto saplingTx = CreateSaplingTxWithNoteData(consensusParams, wallet, saplingSpendingKey);
         wallet.AddToWallet(saplingTx, true, NULL);

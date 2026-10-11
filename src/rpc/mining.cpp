@@ -298,7 +298,7 @@ endloop:
         if (!ProcessNewBlock(1, chainActive.LastTip()->GetHeight()+1, state, Params(), NULL, pblock, true, NULL))
             throw JSONRPCError(RPC_INTERNAL_ERROR, "ProcessNewBlock, block not accepted");
         ++nHeight;
-        blockHashes.push_back(pblock->GetHash().GetHex());
+        blockHashes.push_back(pblock->GetHash(pblock->hashPrevBlock.IsNull() ? 0 : (mapBlockIndex.count(pblock->hashPrevBlock) ? mapBlockIndex[pblock->hashPrevBlock]->GetHeight() + 1 : 0)).GetHex());
 
         //mark script as important because it was used at least for one coinbase output
         reservekey.KeepKey();
@@ -792,7 +792,7 @@ UniValue getblocktemplate(const UniValue& params, bool fHelp)
             if (!DecodeHexBlk(block, dataval.get_str()))
                 throw JSONRPCError(RPC_DESERIALIZATION_ERROR, "Block decode failed");
 
-            uint256 hash = block.GetHash();
+            uint256 hash = block.GetHash(block.hashPrevBlock.IsNull() ? 0 : (mapBlockIndex.count(block.hashPrevBlock) ? mapBlockIndex[block.hashPrevBlock]->GetHeight() + 1 : 0));
             BlockMap::iterator mi = mapBlockIndex.find(hash);
             if (mi != mapBlockIndex.end()) {
                 CBlockIndex *pindex = mi->second;
@@ -1084,7 +1084,7 @@ public:
 
 protected:
     virtual void BlockChecked(const CBlock& block, const CValidationState& stateIn) {
-        if (block.GetHash() != hash)
+        if (block.GetHash(block.hashPrevBlock.IsNull() ? 0 : (mapBlockIndex.count(block.hashPrevBlock) ? mapBlockIndex[block.hashPrevBlock]->GetHeight() + 1 : 0)) != hash)
             return;
         found = true;
         state = stateIn;
@@ -1131,9 +1131,9 @@ UniValue submitblock(const UniValue& params, bool fHelp)
         throw JSONRPCError(RPC_DESERIALIZATION_ERROR, "Block decode failed");
     }
 
-    printf("Received block submission for %s\nhash: %s\n", ASSETCHAINS_SYMBOL, block.GetHash().GetHex().c_str());
+    printf("Received block submission for %s\nhash: %s\n", ASSETCHAINS_SYMBOL, block.GetHash(block.hashPrevBlock.IsNull() ? 0 : (mapBlockIndex.count(block.hashPrevBlock) ? mapBlockIndex[block.hashPrevBlock]->GetHeight() + 1 : 0)).GetHex().c_str());
 
-    uint256 hash = block.GetHash();
+    uint256 hash = block.GetHash(block.hashPrevBlock.IsNull() ? 0 : (mapBlockIndex.count(block.hashPrevBlock) ? mapBlockIndex[block.hashPrevBlock]->GetHeight() + 1 : 0));
     bool fBlockPresent = false;
     {
         LOCK(cs_main);
@@ -1142,7 +1142,7 @@ UniValue submitblock(const UniValue& params, bool fHelp)
             CBlockIndex *pindex = mi->second;
             if (pindex)
             {
-                printf("Already have block %s\n", block.GetHash().GetHex().c_str());
+                printf("Already have block %s\n", block.GetHash(block.hashPrevBlock.IsNull() ? 0 : (mapBlockIndex.count(block.hashPrevBlock) ? mapBlockIndex[block.hashPrevBlock]->GetHeight() + 1 : 0)).GetHex().c_str());
 
                 if (pindex->IsValid(BLOCK_VALID_SCRIPTS))
                     return "duplicate";
@@ -1155,7 +1155,7 @@ UniValue submitblock(const UniValue& params, bool fHelp)
     }
 
     CValidationState state;
-    submitblock_StateCatcher sc(block.GetHash());
+    submitblock_StateCatcher sc(block.GetHash(block.hashPrevBlock.IsNull() ? 0 : (mapBlockIndex.count(block.hashPrevBlock) ? mapBlockIndex[block.hashPrevBlock]->GetHeight() + 1 : 0)));
     bool fAccepted;
     CCriticalSection cs_blocksubmission;
     {

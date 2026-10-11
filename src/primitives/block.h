@@ -38,7 +38,7 @@ public:
     static const int32_t CURRENT_VERSION_MASK = 0x0000ffff; // for compatibility
     static const int32_t VERUS_V2 = CPOSNonce::VERUS_V2;
 
-    static uint256 (CBlockHeader::*hashFunction)() const;
+    static uint256 (CBlockHeader::*hashFunction)(int32_t height) const;
 
     int32_t nVersion;
     uint256 hashPrevBlock;
@@ -253,13 +253,13 @@ public:
     bool CheckNonCanonicalData() const;
     bool CheckNonCanonicalData(const uint160 &cID) const;
 
-    uint256 GetHash() const
+    uint256 GetHash(int32_t height) const
     {
-        return (this->*hashFunction)();
+        return (this->*hashFunction)(height);
     }
 
     // return a node from this block header, including hash of merkle root and block hash as well as compact chain power, to put into an MMR
-    ChainMMRNode GetBlockMMRNode() const;
+    ChainMMRNode GetBlockMMRNode(int32_t height) const;
 
     // getters/setters for extra data in extended solution
     uint256 GetPrevMMRRoot() const;
@@ -269,14 +269,19 @@ public:
     uint256 GetBlockMMRRoot() const;
     void SetBlockMMRRoot(const uint256 &blockMMRRoot);
 
-    uint256 GetSHA256DHash() const;
+    uint256 GetSHA256DHash(int32_t height) const;
     static void SetSHA256DHash();
 
-    uint256 GetVerusHash() const;
+    uint256 GetVerusHash(int32_t height) const;
     static void SetVerusHash();
 
-    uint256 GetVerusV2Hash() const;
+    uint256 GetVerusV2Hash(int32_t height) const;
     static void SetVerusV2Hash();
+
+    // Lucky Lode: EmberHash v1 block-header PoW digest (doc 05 rev 1.0 +
+    // Addendum A). Height comes from validation context; see doc 10 D1.
+    uint256 GetEmberHash(int32_t height) const;
+    static void SetEmberHash();
 
     static uint256 GetRawVerusPOSHash(int32_t blockVersion, uint32_t solVersion, uint32_t magic, const uint256 &nonce, int32_t height, bool isVerusMainnet=true);
 
@@ -368,10 +373,10 @@ public:
         }
     }
 
-    CMMRNodeBranch MMRProofBridge() const
+    CMMRNodeBranch MMRProofBridge(int32_t height) const
     {
         // we need to add the block hash on the right, no change to index, as bit is zero
-        return CMMRNodeBranch(CMMRNodeBranch::BRANCH_MMRBLAKE_NODE, 2, 0, std::vector<uint256>({GetHash()}));
+        return CMMRNodeBranch(CMMRNodeBranch::BRANCH_MMRBLAKE_NODE, 2, 0, std::vector<uint256>({GetHash(height)}));
     }
 
     // this does not work on blocks prior to the Verus PBaaS hard fork
@@ -493,7 +498,7 @@ public:
 
     std::vector<uint256> GetMerkleBranch(int nIndex) const;
     static uint256 CheckMerkleBranch(uint256 hash, const std::vector<uint256>& vMerkleBranch, int nIndex);
-    std::string ToString() const;
+    std::string ToString(int32_t height) const;
 };
 
 
@@ -587,8 +592,8 @@ public:
 
     CBlockHeaderProof(uint32_t nVersion=VERSION_INVALID) : version(nVersion) {}
     CBlockHeaderProof(const CBlockHeaderProof &obj) : version(obj.version), headerProof(obj.headerProof), mmrBridge(obj.mmrBridge), preHeader(obj.preHeader) {}
-    CBlockHeaderProof(const CMMRProof &powerNodeProof, const CBlockHeader &bh, uint32_t nVersion=VERSION_CURRENT) :
-        headerProof(powerNodeProof), mmrBridge(bh.MMRProofBridge()), preHeader(bh), version(nVersion) {}
+    CBlockHeaderProof(const CMMRProof &powerNodeProof, const CBlockHeader &bh, int32_t height, uint32_t nVersion=VERSION_CURRENT) :
+        headerProof(powerNodeProof), mmrBridge(bh.MMRProofBridge(height)), preHeader(bh), version(nVersion) {}
 
     CBlockHeaderProof(const UniValue &uniObj)
     {
@@ -778,9 +783,9 @@ public:
         return -1;
     }
 
-    uint256 BlockHash()
+    uint256 BlockHash(int32_t height)
     {
-        return blockHeader.GetHash();
+        return blockHeader.GetHash(height);
     }
 
     CPBaaSPreHeader BlockPreHeader()
@@ -899,7 +904,7 @@ public:
 
     CHeaderRef() : hash() {}
     CHeaderRef(uint256 &rHash, CPBaaSPreHeader ph) : hash(rHash), preHeader(ph) {}
-    CHeaderRef(const CBlockHeader &bh) : hash(bh.GetHash()), preHeader(bh) {}
+    CHeaderRef(const CBlockHeader &bh, int32_t height) : hash(bh.GetHash(height)), preHeader(bh) {}
 
     ADD_SERIALIZE_METHODS;
 

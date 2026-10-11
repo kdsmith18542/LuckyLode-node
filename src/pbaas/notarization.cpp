@@ -3108,7 +3108,7 @@ std::vector<unsigned char> CreatePoSBlockProof(ChainMerkleMountainView &mmrView,
             LogPrintf("%s: ERROR: could not create block proof for block %u\n", __func__, sourceBlockNum);
             return emptyVec;
         }
-        headerStream << CBlockHeaderProof(blockHeaderProof1, chainActive[pastBlockHeight1]->GetBlockHeader());
+        headerStream << CBlockHeaderProof(blockHeaderProof1, chainActive[pastBlockHeight1]->GetBlockHeader(), pastBlockHeight1);
     }
 
     if (posSourceInfo)
@@ -3130,7 +3130,7 @@ std::vector<unsigned char> CreatePoSBlockProof(ChainMerkleMountainView &mmrView,
             chainActive.GetBlockProof(mmrView, blockHeaderProof2, pastBlockHeight2); // repeat for debugging
             return emptyVec;
         }
-        headerStream << CBlockHeaderProof(blockHeaderProof2, chainActive[pastBlockHeight2]->GetBlockHeader());
+        headerStream << CBlockHeaderProof(blockHeaderProof2, chainActive[pastBlockHeight2]->GetBlockHeader(), pastBlockHeight2);
     }
     return std::vector<unsigned char>(headerStream.begin(), headerStream.end());
 }
@@ -4078,7 +4078,7 @@ CPBaaSNotarization IsValidPrimaryChainEvidence(const CCurrencyDefinition &extern
                         blockHeader.nTime == oneBlockCommitment[0] &&
                         blockHeader.IsVerusPOSBlock() == (oneBlockCommitment[3] & 1) &&
                         ((oneBlockCommitment[3] & 1) ? blockHeader.GetVerusPOSTarget() == oneBlockCommitment[2] : blockHeader.nBits == oneBlockCommitment[1]) &&
-                        ((CChainObject<CBlockHeaderAndProof> *)proofComponent)->object.ValidateBlockHash(blockHeader.GetHash(), blockToProve) ==
+                        ((CChainObject<CBlockHeaderAndProof> *)proofComponent)->object.ValidateBlockHash(blockHeader.GetHash(blockToProve), blockToProve) ==
                             futureProofRoot.stateRoot)
                     {
                         if (blockHeader.IsVerusPOSBlock())

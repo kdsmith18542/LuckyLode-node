@@ -2512,7 +2512,7 @@ bool myGetTransaction(const uint256 &hash, CTransaction &txOut, uint256 &hashBlo
             } catch (const std::exception& e) {
                 return error("%s: Deserialize or I/O error - %s", __func__, e.what());
             }
-            hashBlock = header.GetHash();
+            hashBlock = header.GetHash(header.hashPrevBlock.IsNull() ? 0 : (mapBlockIndex.count(header.hashPrevBlock) ? mapBlockIndex[header.hashPrevBlock]->GetHeight() + 1 : 0));
             if (txOut.GetHash() != hash)
             {
                 if (LogAcceptCategory("notarization"))
@@ -2557,7 +2557,7 @@ bool GetTransaction(const uint256 &hash, CTransaction &txOut, const Consensus::P
             } catch (const std::exception& e) {
                 return error("%s: Deserialize or I/O error - %s", __func__, e.what());
             }
-            hashBlock = header.GetHash();
+            hashBlock = header.GetHash(header.hashPrevBlock.IsNull() ? 0 : (mapBlockIndex.count(header.hashPrevBlock) ? mapBlockIndex[header.hashPrevBlock]->GetHeight() + 1 : 0));
             if (txOut.GetHash() != hash)
                 return error("%s: txid mismatch", __func__);
             return true;
@@ -2673,9 +2673,9 @@ bool ReadBlockFromDisk(int32_t height, CBlock& block, const CDiskBlockPos& pos, 
             return error("ReadBlockFromDisk: Errors in block header at %s", pos.ToString());
         }
     }
-    else if (height == 0 && block.GetHash() !=  consensusParams.hashGenesisBlock)
+    else if (height == 0 && block.GetHash(height) !=  consensusParams.hashGenesisBlock)
     {
-        return error("ReadBlockFromDisk: Invalid block 0 genesis hash %s", block.GetHash().GetHex());
+        return error("ReadBlockFromDisk: Invalid block 0 genesis hash %s", block.GetHash(0).GetHex());
     }
     return true;
 }
@@ -2688,7 +2688,7 @@ bool ReadBlockFromDisk(CBlock& block, const CBlockIndex* pindex, const Consensus
     if (!ReadBlockFromDisk(pindex->GetHeight(), block, pindex->GetBlockPos(), consensusParams, checkPOW))
         return error("ReadBlockFromDisk: Errors reading block %s", pindex->GetBlockHash().GetHex());
 
-    if (block.GetHash() != pindex->GetBlockHash())
+    if (block.GetHash(pindex->GetHeight()) != pindex->GetBlockHash())
         return error("ReadBlockFromDisk(CBlock&, CBlockIndex*): GetHash() doesn't match index for %s at %s",
                      pindex->ToString(), pindex->GetBlockPos().ToString());
     return true;
@@ -3986,7 +3986,7 @@ bool ConnectBlock(const CBlock& block, CValidationState& state, CBlockIndex* pin
 
         // Special case for the genesis block, skipping connection of its transactions
         // (its coinbase is unspendable)
-        if (block.GetHash() == chainparams.GetConsensus().hashGenesisBlock) {
+        if (block.GetHash(pindex->GetHeight()) == chainparams.GetConsensus().hashGenesisBlock) {
             if (!fJustCheck) {
                 view.SetBestBlock(pindex->GetBlockHash());
                 // Before the genesis block, there was an empty tree
@@ -4131,7 +4131,7 @@ bool ConnectBlock(const CBlock& block, CValidationState& state, CBlockIndex* pin
                    IsVerusMainnetActive() &&
                    nHeight < 1800000)))
             {
-                LogPrintf("%s: ERROR: %s\nBlock %s rejected\n", __func__, state.GetRejectReason().c_str(), block.GetHash().GetHex().c_str());
+                LogPrintf("%s: ERROR: %s\nBlock %s rejected\n", __func__, state.GetRejectReason().c_str(), block.GetHash(nHeight).GetHex().c_str());
                 if (state.GetRejectReason() != "unable to get last confirmed notarization" &&
                     state.IsInvalid())
                 {
@@ -4409,7 +4409,7 @@ bool ConnectBlock(const CBlock& block, CValidationState& state, CBlockIndex* pin
                                     }
 
                                     // add this to the reserve transfer cache
-                                    reserveTransferCache.Put({tx.GetHash(), (uint32_t)j}, {block.GetHash(), CInputDescriptor(oneOut.scriptPubKey, oneOut.nValue, CTxIn(tx.GetHash(), (uint32_t)j)), rt});
+                                    reserveTransferCache.Put({tx.GetHash(), (uint32_t)j}, {block.GetHash(nHeight), CInputDescriptor(oneOut.scriptPubKey, oneOut.nValue, CTxIn(tx.GetHash(), (uint32_t)j)), rt});
                                 }
                                 break;
                             }
@@ -5549,7 +5549,7 @@ bool static DisconnectTip(CValidationState &state, const CChainParams& chainpara
             notarizedhash = confirmedRoot.blockHash;
         }
 
-        if ( block.GetHash() == notarizedhash )
+        if ( block.GetHash(pindexDelete->GetHeight()) == notarizedhash )
         {
             fprintf(stderr,"DisconnectTip trying to disconnect notarized block at ht.%d\n",(int32_t)pindexDelete->GetHeight());
             return(false);
@@ -6034,7 +6034,7 @@ bool ActivateBestChain(CValidationState& state, const CChainParams& chainparams,
             if (pindexMostWork == NULL || pindexMostWork == chainActive.Tip())
                 return true;
 
-            if (!ActivateBestChainStep(state, chainparams, pindexMostWork, pblock && pblock->GetHash() == pindexMostWork->GetBlockHash() ? pblock : NULL))
+            if (!ActivateBestChainStep(state, chainparams, pindexMostWork, pblock && pblock->GetHash(pindexMostWork->GetHeight()) == pindexMostWork->GetBlockHash() ? pblock : NULL))
                 return false;
             pindexNewTip = chainActive.Tip();
             fInitialDownload = IsInitialBlockDownload(chainparams);
@@ -6147,7 +6147,7 @@ bool ReconsiderBlock(CValidationState& state, CBlockIndex *pindex) {
 CBlockIndex* AddToBlockIndex(const CBlockHeader& block)
 {
     // Check for duplicate
-    uint256 hash = block.GetHash();
+    uint256 hash = block.GetHash(block.hashPrevBlock.IsNull() ? 0 : (mapBlockIndex.count(block.hashPrevBlock) ? mapBlockIndex[block.hashPrevBlock]->GetHeight() + 1 : 0));
     //printf("Hash of new index entry: %s\n\n", hash.GetHex().c_str());
 
     BlockMap::iterator it = mapBlockIndex.find(hash);
@@ -6433,7 +6433,7 @@ bool CheckBlockHeader(int32_t *futureblockp, int32_t height, CBlockIndex *pindex
     if ( 0 )
     {
         uint256 hash; int32_t i;
-        hash = blockhdr.GetHash();
+        hash = blockhdr.GetHash(height);
         for (i=31; i>=0; i--)
             fprintf(stderr,"%02x",((uint8_t *)&hash)[i]);
         fprintf(stderr," <- CheckBlockHeader\n");
@@ -6480,7 +6480,7 @@ bool CheckBlock(int32_t *futureblockp,int32_t height,CBlockIndex *pindex,const C
 {
     uint8_t pubkey33[33]; uint256 hash;
     // These are checks that are independent of context.
-    hash = block.GetHash();
+    hash = block.GetHash(height);
     // Check that the header is valid (particularly PoW).  This is mostly redundant with the call in AcceptBlockHeader.
     if (!CheckBlockHeader(futureblockp, height, pindex, block, state, chainparams, fCheckPOW))
     {
@@ -6583,7 +6583,7 @@ bool ContextualCheckBlockHeader(
     const CChainParams& chainParams, CBlockIndex * const pindexPrev)
 {
     const Consensus::Params& consensusParams = chainParams.GetConsensus();
-    uint256 hash = block.GetHash();
+    uint256 hash = block.GetHash(block.hashPrevBlock.IsNull() ? 0 : (mapBlockIndex.count(block.hashPrevBlock) ? mapBlockIndex[block.hashPrevBlock]->GetHeight() + 1 : 0));
     if (hash == consensusParams.hashGenesisBlock)
         return true;
 
@@ -6774,13 +6774,13 @@ bool ContextualCheckBlock(
             {
                 if (LogAcceptCategory("pos"))
                 {
-                    printf("%s: Invalid POS block at height %u - %s\n", __func__, nHeight, block.GetHash().GetHex().c_str());
-                    LogPrintf("%s: Invalid POS block at height %u - %s\n", __func__, nHeight, block.GetHash().GetHex().c_str());
+                    printf("%s: Invalid POS block at height %u - %s\n", __func__, nHeight, block.GetHash(nHeight).GetHex().c_str());
+                    LogPrintf("%s: Invalid POS block at height %u - %s\n", __func__, nHeight, block.GetHash(nHeight).GetHex().c_str());
                 }
             }
             else
             {
-                LogPrintf("%s: Invalid POS block at height %u - %s\n", __func__, nHeight, block.GetHash().GetHex().c_str());
+                LogPrintf("%s: Invalid POS block at height %u - %s\n", __func__, nHeight, block.GetHash(nHeight).GetHex().c_str());
                 return state.DoS(10, error("%s: invalid proof of stake block", __func__), REJECT_INVALID, "invalid-pos");
             }
         }
@@ -6883,7 +6883,7 @@ static bool AcceptBlockHeader(int32_t *futureblockp,const CBlockHeader& block, C
     AssertLockHeld(cs_main);
 
     // Check for duplicate
-    uint256 hash = block.GetHash();
+    uint256 hash = block.GetHash(block.hashPrevBlock.IsNull() ? 0 : (mapBlockIndex.count(block.hashPrevBlock) ? mapBlockIndex[block.hashPrevBlock]->GetHeight() + 1 : 0));
     BlockMap::iterator miSelf = mapBlockIndex.find(hash);
     CBlockIndex *pindex = NULL;
     if (miSelf != mapBlockIndex.end())
@@ -7154,8 +7154,8 @@ bool ProcessNewBlock(bool from_miner, int32_t height, CValidationState &state, c
     // Preliminary checks
     bool checked; uint256 hash; int32_t futureblock=0;
     auto verifier = libzcash::ProofVerifier::Disabled();
-    hash = pblock->GetHash();
-    uint32_t nHeight = height != 0 ? height : komodo_block2height(pblock);
+    hash = pblock->GetHash(height != 0 ? height : (pblock->hashPrevBlock.IsNull() ? 0 : (mapBlockIndex.count(pblock->hashPrevBlock) ? mapBlockIndex[pblock->hashPrevBlock]->GetHeight() + 1 : 0)));
+    uint32_t nHeight = height != 0 ? height : komodo_block2height(pblock, height);
 
     //fprintf(stderr,"ProcessBlock %d\n",(int32_t)chainActive.LastTip()->GetHeight());
     {
@@ -8100,7 +8100,7 @@ bool LoadExternalBlockFile(const CChainParams& chainparams, FILE* fileIn, CDiskB
                 nRewind = blkdat.GetPos();
 
                 // detect out of order blocks, and store them for later
-                uint256 hash = block.GetHash();
+                uint256 hash = block.GetHash(block.hashPrevBlock.IsNull() ? 0 : (mapBlockIndex.count(block.hashPrevBlock) ? mapBlockIndex[block.hashPrevBlock]->GetHeight() + 1 : 0));
                 if (hash != chainparams.GetConsensus().hashGenesisBlock && mapBlockIndex.find(block.hashPrevBlock) == mapBlockIndex.end()) {
                     LogPrint("reindex", "%s: Out of order block %s, parent %s not known\n", __func__, hash.ToString(),
                              block.hashPrevBlock.ToString());
@@ -8131,13 +8131,13 @@ bool LoadExternalBlockFile(const CChainParams& chainparams, FILE* fileIn, CDiskB
                         std::multimap<uint256, CDiskBlockPos>::iterator it = range.first;
                         if (ReadBlockFromDisk(mapBlockIndex.count(hash)!=0 ? mapBlockIndex[hash]->GetHeight() : 0, block, it->second, chainparams.GetConsensus(), 1))
                         {
-                            LogPrintf("%s: Processing out of order child %s of %s\n", __func__, block.GetHash().ToString(),
+                            LogPrintf("%s: Processing out of order child %s of %s\n", __func__, block.GetHash(block.hashPrevBlock.IsNull() ? 0 : (mapBlockIndex.count(block.hashPrevBlock) ? mapBlockIndex[block.hashPrevBlock]->GetHeight() + 1 : 0)).ToString(),
                                       head.ToString());
                             CValidationState dummy;
                             if (ProcessNewBlock(0, 0, dummy, chainparams, NULL, &block, true, &it->second))
                             {
                                 nLoaded++;
-                                queue.push_back(block.GetHash());
+                                queue.push_back(block.GetHash(block.hashPrevBlock.IsNull() ? 0 : (mapBlockIndex.count(block.hashPrevBlock) ? mapBlockIndex[block.hashPrevBlock]->GetHeight() + 1 : 0)));
                             }
                         }
                         range.first++;
@@ -9481,7 +9481,7 @@ bool static ProcessMessage(CNode* pfrom, string strCommand, CDataStream& vRecv, 
         // (Allow disabling optimization in case there are unexpected problems.)
         bool hasNewHeaders = true;
         if (GetBoolArg("-optimize-getheaders", false) && IsInitialBlockDownload(chainparams)) {
-            hasNewHeaders = (mapBlockIndex.count(headers.back().GetHash()) == 0);
+            hasNewHeaders = (mapBlockIndex.count(headers.back().GetHash(headers.back().hashPrevBlock.IsNull() ? 0 : (mapBlockIndex.count(headers.back().hashPrevBlock) ? mapBlockIndex[headers.back().hashPrevBlock]->GetHeight() + 1 : 0))) == 0);
         }
 
         CBlockIndex *pindexLast = NULL;
@@ -9580,7 +9580,7 @@ bool static ProcessMessage(CNode* pfrom, string strCommand, CDataStream& vRecv, 
         CBlock block;
         vRecv >> block;
 
-        CInv inv(MSG_BLOCK, block.GetHash());
+        CInv inv(MSG_BLOCK, block.GetHash(block.hashPrevBlock.IsNull() ? 0 : (mapBlockIndex.count(block.hashPrevBlock) ? mapBlockIndex[block.hashPrevBlock]->GetHeight() + 1 : 0)));
         LogPrint("net", "received block %s peer=%d\n", inv.hash.ToString(), pfrom->id);
 
         CValidationState state;

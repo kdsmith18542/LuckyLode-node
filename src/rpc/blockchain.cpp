@@ -117,7 +117,7 @@ UniValue blockheaderToJSON(const CBlockIndex* blockindex)
         return(result);
     }
     result.push_back(Pair("hash", blockindex->GetBlockHash().GetHex()));
-    result.push_back(Pair("calchash", blockindex->GetBlockHeader().GetHash().GetHex()));
+    result.push_back(Pair("calchash", blockindex->GetBlockHeader().GetHash(blockindex->GetHeight()).GetHex()));
     int confirmations = -1;
 
     CBlockHeader block = blockindex->GetBlockHeader();
@@ -174,7 +174,7 @@ UniValue blockToDeltasJSON(const CBlock& block, const CBlockIndex* blockindex)
 {
     AssertLockHeld(cs_main);
     UniValue result(UniValue::VOBJ);
-    result.push_back(Pair("hash", block.GetHash().GetHex()));
+    result.push_back(Pair("hash", block.GetHash(blockindex->GetHeight()).GetHex()));
     int confirmations = -1;
     // Only report confirmations if the block is on the main chain
     if (chainActive.Contains(blockindex)) {
@@ -304,7 +304,7 @@ UniValue blockToJSON(const CBlock& block, const CBlockIndex* blockindex, bool tx
     AssertLockHeld(cs_main);
     UniValue result(UniValue::VOBJ);
     int32_t height = blockindex->GetHeight();
-    result.push_back(Pair("hash", block.GetHash().GetHex()));
+    result.push_back(Pair("hash", block.GetHash(blockindex->GetHeight()).GetHex()));
     if (block.IsVerusPOSBlock())
     {
         result.push_back(Pair("validationtype", "stake"));

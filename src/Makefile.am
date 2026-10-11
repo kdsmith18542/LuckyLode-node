@@ -398,7 +398,36 @@ crypto_libbitcoin_crypto_a_SOURCES = \
   crypto/haraka.h \
   crypto/haraka_portable.h \
   crypto/verus_hash.h \
-  crypto/verus_hash.cpp
+  crypto/verus_hash.cpp \
+  crypto/ember_hash.h \
+  crypto/ember_hash.cpp \
+  crypto/ember_difficulty.h \
+  crypto/ember_difficulty.cpp \
+  crypto/blake3/blake3.h \
+  crypto/blake3/blake3.c \
+  crypto/blake3/blake3_dispatch.c \
+  crypto/blake3/blake3_portable.c \
+  crypto/blake3/blake3_impl.h \
+  crypto/argon2/argon2.h \
+  crypto/argon2/argon2.c \
+  crypto/argon2/core.h \
+  crypto/argon2/core.c \
+  crypto/argon2/encoding.h \
+  crypto/argon2/encoding.c \
+  crypto/argon2/thread.h \
+  crypto/argon2/thread.c \
+  crypto/argon2/ref.c \
+  crypto/argon2/blake2/blake2.h \
+  crypto/argon2/blake2/blake2-impl.h \
+  crypto/argon2/blake2/blamka-round-ref.h \
+  crypto/argon2/blake2/blake2b.c
+
+crypto_libbitcoin_crypto_a_crypto_argon2_argon2_c_CPPFLAGS = $(AM_CPPFLAGS) -Icrypto/argon2 -Icrypto/argon2/blake2
+crypto_libbitcoin_crypto_a_crypto_argon2_core_c_CPPFLAGS = $(AM_CPPFLAGS) -Icrypto/argon2 -Icrypto/argon2/blake2
+crypto_libbitcoin_crypto_a_crypto_argon2_encoding_c_CPPFLAGS = $(AM_CPPFLAGS) -Icrypto/argon2 -Icrypto/argon2/blake2
+crypto_libbitcoin_crypto_a_crypto_argon2_thread_c_CPPFLAGS = $(AM_CPPFLAGS) -Icrypto/argon2 -Icrypto/argon2/blake2
+crypto_libbitcoin_crypto_a_crypto_argon2_ref_c_CPPFLAGS = $(AM_CPPFLAGS) -Icrypto/argon2 -Icrypto/argon2/blake2
+crypto_libbitcoin_crypto_a_crypto_argon2_blake2_blake2b_c_CPPFLAGS = $(AM_CPPFLAGS) -Icrypto/argon2 -Icrypto/argon2/blake2 -Wno-unused-function
 
 if ENABLE_MINING
 EQUIHASH_TROMP_SOURCES = \
@@ -406,8 +435,12 @@ EQUIHASH_TROMP_SOURCES = \
 	pow/tromp/equi.h \
 	pow/tromp/osx_barrier.h
 
+# Lucky Lode: BLAKE3 portable path only for now (SIMD perf wiring is a
+# follow-up; portable output is bit-identical).
 crypto_libbitcoin_crypto_a_CPPFLAGS += \
-	-DEQUIHASH_TROMP_ATOMIC
+	-DEQUIHASH_TROMP_ATOMIC \
+	-Icrypto/argon2 -Icrypto/argon2/blake2 -Wno-unused-function \
+	-DBLAKE3_NO_SSE2 -DBLAKE3_NO_SSE41 -DBLAKE3_NO_AVX2 -DBLAKE3_NO_AVX512 -DBLAKE3_NO_NEON
 crypto_libbitcoin_crypto_a_SOURCES += \
 	${EQUIHASH_TROMP_SOURCES}
 endif

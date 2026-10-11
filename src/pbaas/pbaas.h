@@ -1051,7 +1051,7 @@ public:
     static void SubmissionThreadStub();
     std::vector<std::pair<std::string, UniValue>> SubmitQualifiedBlocks();
 
-    void QueueNewBlockHeader(CBlockHeader &bh);
+    void QueueNewBlockHeader(CBlockHeader &bh, int32_t height);
     void SetRevokeID(const CIdentityID &idID);
     CIdentityID NextRevokeID();
     void QueueEarnedNotarization(CBlock &blk, int32_t txIndex, int32_t height);
@@ -1067,7 +1067,7 @@ public:
     bool RemoveMergedBlock(uint160 chainID);
     bool GetChainInfo(uint160 chainID, CRPCChainData &rpcChainData);
     void PruneOldChains(uint32_t pruneBefore);
-    uint32_t CombineBlocks(CBlockHeader &bh);
+    uint32_t CombineBlocks(CBlockHeader &bh, int32_t height);
 
     // returns false if destinations are empty or first is not either pubkey or pubkeyhash
     bool SetLatestMiningOutputs(const std::vector<CTxOut> &minerOutputs);
