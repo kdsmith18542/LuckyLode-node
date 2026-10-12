@@ -5079,7 +5079,18 @@ bool ConnectBlock(const CBlock& block, CValidationState& state, CBlockIndex* pin
         bool isJackpot = UintToArith256(block.GetHash(pindex->GetHeight())) < bnTarget / bnHundred;
         jackpot::Payout jp = jackpot::ApplyBlock(parentReserve, baseReward, feeTotal, isJackpot);
         nativeBlockReward = (CAmount)jp.miner + validExtraNative;
-        pindex->nJackpotReserve = jp.reserve;
+        // The reserve is debited only by the bonus the coinbase ACTUALLY
+        // claims (drill-caught: the in-node miner builds the normal template
+        // and never claims, so assuming a full claim vaporized the bonus).
+        // The ceiling above still permits up to normal+bonus on jackpots
+        // (J1 pool template); unclaimed bonus stays in the reserve.
+        CAmount normalReward = (CAmount)(jp.miner - jp.bonus);
+        CAmount claimed = block.vtx[0].GetValueOut() - normalReward;
+        if (claimed < 0)
+            claimed = 0;
+        if ((uint64_t)claimed > jp.bonus)
+            claimed = (CAmount)jp.bonus; // ceiling check already enforces this
+        pindex->nJackpotReserve = jp.reserve + (uint64_t)(jp.bonus - (uint64_t)claimed);
     }
     // reserve reward is in totalReserveTxFees
 
