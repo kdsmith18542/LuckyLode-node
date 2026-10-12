@@ -20,6 +20,7 @@
 #include "consensus/upgrades.h"
 #include "consensus/validation.h"
 #include "consensus/jackpot.h"
+#include "consensus/lucky_pot.h"
 #include "deprecation.h"
 #include "init.h"
 #include "merkleblock.h"
@@ -5063,34 +5064,49 @@ bool ConnectBlock(const CBlock& block, CValidationState& state, CBlockIndex* pin
 
     CAmount nativeBlockReward = rewardFees + validExtraNative + GetBlockSubsidy(pindex->GetHeight(), chainparams.GetConsensus());
 
-    // Lucky Lode jackpot money rules (doc 06 §6.2): the spendable ceiling
-    // for the coinbase is (R + F - levy), plus the jackpot bonus when this
-    // block's PoW digest wins the 1/100 draw. The reserve rides on the
-    // block index (reorg-safe by construction). League overflow is
-    // accounted off-chain by pools — no consensus output exists for it.
+    // Lucky Lode jackpot + pot money rules (doc 06 §6.2, internal/16): the
+    // spendable ceiling for the coinbase is (R + F - levy), plus the
+    // jackpot bonus when this block's PoW digest wins the 1/100 draw, plus
+    // the pot splash when it wins the 1/1000 pot draw (tier = digest mod
+    // 100). Reserve and pot ride on the block index (reorg-safe by
+    // construction). League/burn overflow is accounted here; league has no
+    // consensus output, the pot excess burns (unspendable by construction).
     if (ASSETCHAINS_ALGO == ASSETCHAINS_EMBERHASH)
     {
         uint64_t baseReward = (uint64_t)GetBlockSubsidy(pindex->GetHeight(), chainparams.GetConsensus());
         uint64_t feeTotal = (uint64_t)rewardFees;
         uint64_t parentReserve = pindex->pprev ? pindex->pprev->nJackpotReserve : 0;
+        lucky_pot::PotState parentPot;
+        parentPot.pot = pindex->pprev ? pindex->pprev->nLuckyReserve : 0;
+        parentPot.drought = pindex->pprev ? pindex->pprev->nLuckyDrought : 0;
         arith_uint256 bnTarget;
         bnTarget.SetCompact(block.nBits);
         arith_uint256 bnHundred(100);
-        bool isJackpot = UintToArith256(block.GetHash(pindex->GetHeight())) < bnTarget / bnHundred;
-        jackpot::Payout jp = jackpot::ApplyBlock(parentReserve, baseReward, feeTotal, isJackpot);
-        nativeBlockReward = (CAmount)jp.miner + validExtraNative;
-        // The reserve is debited only by the bonus the coinbase ACTUALLY
-        // claims (drill-caught: the in-node miner builds the normal template
-        // and never claims, so assuming a full claim vaporized the bonus).
-        // The ceiling above still permits up to normal+bonus on jackpots
-        // (J1 pool template); unclaimed bonus stays in the reserve.
-        CAmount normalReward = (CAmount)(jp.miner - jp.bonus);
+        arith_uint256 bnThousand(1000);
+        arith_uint256 digest = UintToArith256(block.GetHash(pindex->GetHeight()));
+        arith_uint256 digestTier = digest - (digest / bnHundred) * bnHundred;
+        lucky_pot::BlockDraws draws;
+        draws.jackpot = digest < bnTarget / bnHundred;
+        draws.pot_event = digest < bnTarget / bnThousand;
+        draws.tier = digestTier.GetLow64();
+        lucky_pot::PotPayout lp = lucky_pot::ApplyPotBlock(parentReserve, parentPot, baseReward, feeTotal, draws);
+        nativeBlockReward = (CAmount)lp.miner + validExtraNative;
+        // Funds are debited only by the bonus/splash the coinbase ACTUALLY
+        // claims (drill-caught on the jackpot: assuming a full claim
+        // vaporized unclaimed bonus). The ceiling above permits up to
+        // normal+bonus+splash; unclaimed amounts stay in their funds.
+        // Attribution is canonical: jackpot first, then pot.
+        CAmount normalReward = (CAmount)(lp.miner - lp.jackpot_bonus - lp.pot_splash);
         CAmount claimed = block.vtx[0].GetValueOut() - normalReward;
         if (claimed < 0)
             claimed = 0;
-        if ((uint64_t)claimed > jp.bonus)
-            claimed = (CAmount)jp.bonus; // ceiling check already enforces this
-        pindex->nJackpotReserve = jp.reserve + (uint64_t)(jp.bonus - (uint64_t)claimed);
+        CAmount claimedJackpot = claimed < (CAmount)lp.jackpot_bonus ? claimed : (CAmount)lp.jackpot_bonus;
+        CAmount claimedPot = claimed - claimedJackpot;
+        if (claimedPot > (CAmount)lp.pot_splash)
+            claimedPot = (CAmount)lp.pot_splash; // ceiling check rejects the block anyway
+        pindex->nJackpotReserve = lp.reserve + (uint64_t)((CAmount)lp.jackpot_bonus - claimedJackpot);
+        pindex->nLuckyReserve = lp.pot + (uint64_t)((CAmount)lp.pot_splash - claimedPot);
+        pindex->nLuckyDrought = lp.drought;
     }
     // reserve reward is in totalReserveTxFees
 
@@ -8070,6 +8086,14 @@ bool InitBlockIndex(const CChainParams& chainparams)
             CBlockIndex *pindex = AddToBlockIndex(block);
             if ( pindex == 0 )
                 return error("LoadBlockIndex(): couldnt add to block index");
+            // Lucky Lode genesis game-fund seed (internal/16 §16.1): the
+            // genesis index carries the seeded balances, so every reader
+            // (ConnectBlock's parent lookup, GBT advisory, getjackpotinfo)
+            // sees one consistent state. Consensus-locked; spendable only
+            // through the jackpot/pot payout rules.
+            pindex->nJackpotReserve = lucky_pot::JACKPOT_SEED;
+            pindex->nLuckyReserve = lucky_pot::LUCKY_SEED;
+            pindex->nLuckyDrought = 0;
             if (!ReceivedBlockTransactions(block, state, chainparams, pindex, blockPos))
                 return error("LoadBlockIndex(): genesis block not accepted");
             if (!ActivateBestChain(state, chainparams, &block))

@@ -309,6 +309,15 @@ public:
     //! revert it by construction. Zero on pre-jackpot history.
     uint64_t nJackpotReserve;
 
+    //! Lucky Lode pot balance resulting from this block (internal/16):
+    //! the second stochastic sink. Consensus state, reorg-safe like the
+    //! reserve. Zero on pre-pot history.
+    uint64_t nLuckyReserve;
+
+    //! Consecutive event-less blocks ending at this block (pity timer
+    //! input, internal/16 §16.2). Consensus state, reorg-safe.
+    uint64_t nLuckyDrought;
+
     //! Branch ID corresponding to the consensus rules used to validate this block.
     //! Only cached if block validity is BLOCK_VALID_CONSENSUS.
     //! Persisted at each activation height, memory-only for intervening blocks.
@@ -367,6 +376,8 @@ public:
         nChainTx = 0;
         nStatus = 0;
         nJackpotReserve = 0;
+        nLuckyReserve = 0;
+        nLuckyDrought = 0;
         nCachedBranchId = boost::none;
         hashSproutAnchor = uint256();
         hashFinalSproutRoot = uint256();
@@ -695,6 +706,10 @@ public:
         // §6.2). Fresh chain — this is fork disk-format v1, no migration
         // path needed.
         READWRITE(VARINT(nJackpotReserve));
+
+        // Lucky Lode: pot balance + pity-timer run (internal/16).
+        READWRITE(VARINT(nLuckyReserve));
+        READWRITE(VARINT(nLuckyDrought));
 
         // If you have just added new serialized fields above, remember to add
         // them to CBlockTreeDB::LoadBlockIndexGuts() in txdb.cpp :)

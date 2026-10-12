@@ -1943,7 +1943,7 @@ UniValue getjackpotinfo(const UniValue& params, bool fHelp)
     if (fHelp || params.size() > 1)
         throw runtime_error(
             "getjackpotinfo ( height )\n"
-            "\nLucky Lode: jackpot reserve state (doc 06 section 6.2).\n"
+            "\nLucky Lode: jackpot reserve + pot state (doc 06 section 6.2, internal/16).\n"
             "\nArguments:\n"
             "1. height         (numeric, optional) block height (default: tip)\n"
             "\nResult:\n"
@@ -1951,6 +1951,8 @@ UniValue getjackpotinfo(const UniValue& params, bool fHelp)
             "  \"height\": n,        (numeric) block height\n"
             "  \"blockhash\": \"hex\", (string) block hash\n"
             "  \"reserve\": n,       (numeric) jackpot reserve after this block, base units\n"
+            "  \"pot\": n,           (numeric) pot balance after this block, base units\n"
+            "  \"drought\": n,       (numeric) event-less blocks ending at this block\n"
             "}\n"
         );
     LOCK(cs_main);
@@ -1968,6 +1970,8 @@ UniValue getjackpotinfo(const UniValue& params, bool fHelp)
     ret.push_back(Pair("height", (int64_t)pindex->GetHeight()));
     ret.push_back(Pair("blockhash", pindex->GetBlockHash().GetHex()));
     ret.push_back(Pair("reserve", (int64_t)pindex->nJackpotReserve));
+    ret.push_back(Pair("pot", (int64_t)pindex->nLuckyReserve));
+    ret.push_back(Pair("drought", (int64_t)pindex->nLuckyDrought));
     return ret;
 }
 

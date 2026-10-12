@@ -48,3 +48,7 @@ echo
 # Jackpot money KAT (header-only math, no node libraries needed).
 $CXX -O2 -std=c++11 -I"$(dirname "$DIR")" "$DIR/ember_jackpot_kat.cpp" -o "$OUT/ember_jackpot_kat"
 "$OUT/ember_jackpot_kat"
+
+# Lucky Pot money KAT (header-only math; includes jackpot.h).
+$CXX -O2 -std=c++11 -I"$(dirname "$DIR")" "$DIR/ember_pot_kat.cpp" -o "$OUT/ember_pot_kat"
+"$OUT/ember_pot_kat"

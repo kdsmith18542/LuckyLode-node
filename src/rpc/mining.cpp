@@ -7,6 +7,7 @@
 #include "chainparams.h"
 #include "consensus/consensus.h"
 #include "consensus/jackpot.h"
+#include "consensus/lucky_pot.h"
 #include "consensus/validation.h"
 #include "core_io.h"
 #ifdef ENABLE_MINING
@@ -1103,6 +1104,23 @@ UniValue getblocktemplate(const UniValue& params, bool fHelp)
         jackpot::Payout est = jackpot::ApplyBlock(tipReserve, nextR, nextF, false);
         result.push_back(Pair("jackpotreserve", (int64_t)tipReserve));
         result.push_back(Pair("jackpotbonus", (int64_t)jackpot::JackpotBonus(nextR, est.reserve)));
+        // Lucky Pot advisory (internal/16): balance at tip, the balance the
+        // next block's slice projects to (the base tier fractions apply
+        // to), and the current event-less run for the pity timer. Advisory
+        // only — ConnectBlock re-derives everything.
+        uint64_t tipPot = chainActive.Tip() ? chainActive.Tip()->nLuckyReserve : 0;
+        uint64_t tipDrought = chainActive.Tip() ? chainActive.Tip()->nLuckyDrought : 0;
+        lucky_pot::PotState potState;
+        potState.pot = tipPot;
+        potState.drought = tipDrought;
+        lucky_pot::BlockDraws noDraws;
+        noDraws.jackpot = false;
+        noDraws.pot_event = false;
+        noDraws.tier = 0;
+        lucky_pot::PotPayout potEst = lucky_pot::ApplyPotBlock(tipReserve, potState, nextR, nextF, noDraws);
+        result.push_back(Pair("potreserve", (int64_t)tipPot));
+        result.push_back(Pair("potcredited", (int64_t)potEst.pot));
+        result.push_back(Pair("potdrought", (int64_t)tipDrought));
     }
     result.push_back(Pair("longpollid", chainActive.LastTip()->GetBlockHash().GetHex() + i64tostr(nTransactionsUpdatedLast)));
     if ( ASSETCHAINS_STAKED != 0 )
