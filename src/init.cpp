@@ -419,7 +419,7 @@ std::string HelpMessage(HelpMessageMode mode)
     strUsage += HelpMessageOpt("-arbitrageaddress", _("A valid wallet address or identity controlled by this wallet that will hold the arbitrage currencies to use."));
     strUsage += HelpMessageOpt("-storagefeefactor", _("Defaults to 6.0, which is used for 6K outputs to price storage in a currency's TransactionExportFee (ie. 6.0 = 1 TransactionExportFee per K)."));
     strUsage += HelpMessageOpt("-cheatcatcher=<sapling-address>", _("same as \"-defaultzaddr\""));
-    strUsage += HelpMessageOpt("-defaultid=<i-address>", _("VerusID used for default change out and staking reward recipient"));
+    strUsage += HelpMessageOpt("-defaultid=<i-address>", _("LuckyID used for default change out and staking reward recipient"));
     strUsage += HelpMessageOpt("-defaultzaddr=<sapling-address>", _("sapling address to receive fraud proof rewards and if used with \"-privatechange=1\", z-change address for the sendcurrency command"));
     strUsage += HelpMessageOpt("-disablewallet", _("Do not load the wallet and disable wallet RPC calls"));
     strUsage += HelpMessageOpt("-fastload", _("If fastload is true, the daemon will load much faster, potentially saving an hour off of load time, and it will also require up to 4GB more RAM for the same tasks"));
@@ -508,7 +508,7 @@ std::string HelpMessage(HelpMessageMode mode)
 
 #ifdef ENABLE_MINING
     strUsage += HelpMessageGroup(_("Mining options:"));
-    strUsage += HelpMessageOpt("-defaultid=<i-address>", _("VerusID used for default change out and staking reward recipient"));
+    strUsage += HelpMessageOpt("-defaultid=<i-address>", _("LuckyID used for default change out and staking reward recipient"));
     strUsage += HelpMessageOpt("-equihashsolver=<name>", _("Specify the Equihash solver to be used if enabled (default: \"default\")"));
     strUsage += HelpMessageOpt("-gen", strprintf(_("Mine/generate coins (default: %u)"), 0));
     strUsage += HelpMessageOpt("-genproclimit=<n>", strprintf(_("Set the number of threads for coin mining if enabled (-1 = all cores, default: %d)"), 0));
@@ -532,11 +532,11 @@ std::string HelpMessage(HelpMessageMode mode)
     strUsage += HelpMessageOpt("-alwayssubmitnotarizations", strprintf(_("Submit notarizations to notary chain whenevever merge mining/staking and eligible (default = %u, only as needed)"), DEFAULT_SPENTINDEX));
     strUsage += HelpMessageOpt("-approvecontractupgrade=<ETHcontracthash(0x...)>", strprintf(_("When validating blocks, vote to agree to upgrade to the specific contract. Default is no upgrade.")));
     strUsage += HelpMessageOpt("-blocktime=<n>", strprintf(_("Set target block time (in seconds) for difficulty adjustment (default: %d)"), CCurrencyDefinition::DEFAULT_BLOCKTIME_TARGET));
-    strUsage += HelpMessageOpt("-chain=pbaaschainname", _("loads either mainnet or resolves and loads a PBaaS chain if not vrsc or vrsctest"));
-    strUsage += HelpMessageOpt("-miningdistributionpassthrough", _("uses the same miningdistribution values and addresses/IDs as Verus when merge mining"));
+    strUsage += HelpMessageOpt("-chain=pbaaschainname", _("loads either mainnet or resolves and loads a PBaaS chain if not the main chain"));
+    strUsage += HelpMessageOpt("-miningdistributionpassthrough", _("uses the same miningdistribution values and addresses/IDs as the parent chain when merge mining"));
     strUsage += HelpMessageOpt("-notarizationperiod=<n>", strprintf(_("Set minimum spacing consensus between cross-chain notarization, in blocks (default: %d, min 10 min)"), CCurrencyDefinition::BLOCK_NOTARIZATION_MODULO));
-    strUsage += HelpMessageOpt("-notaryid=<i-address>", _("VerusID used for PBaaS and Ethereum cross-chain notarization"));
-    strUsage += HelpMessageOpt("-notificationoracle=<i-address>", strprintf(_("VerusID monitored for network alerts, triggers, and signals. Current default is \"%s\" for Verus and the chain ID for PBaaS chains"), PBAAS_DEFAULT_NOTIFICATION_ORACLE.c_str()));
+    strUsage += HelpMessageOpt("-notaryid=<i-address>", _("LuckyID used for PBaaS and Ethereum cross-chain notarization"));
+    strUsage += HelpMessageOpt("-notificationoracle=<i-address>", strprintf(_("LuckyID monitored for network alerts, triggers, and signals. Current default is \"%s\" for Lucky Lode and the chain ID for PBaaS chains"), PBAAS_DEFAULT_NOTIFICATION_ORACLE.c_str()));
     strUsage += HelpMessageOpt("-powaveragingwindow=<n>", strprintf(_("Set averaging window for PoW difficulty adjustment, in blocks (default: %d)"), CCurrencyDefinition::DEFAULT_AVERAGING_WINDOW));
     strUsage += HelpMessageOpt("-testnet", _("loads PBaaS network in testmode"));
 	
@@ -744,7 +744,7 @@ static void ZC_LoadParams(
         boost::filesystem::exists(sprout_groth16)
     )) {
         uiInterface.ThreadSafeMessageBox(strprintf(
-            _("Cannot find the Zcash network parameters in the following directory:\n"
+            _("Cannot find the Sapling network parameters in the following directory:\n"
               "%s\n"
               "Please run 'fetch-params' or './zcutil/fetch-params.sh' and then restart."),
                 ZC_GetParamsDir()),
@@ -873,12 +873,18 @@ bool AppInit2(boost::thread_group& threadGroup, CScheduler& scheduler)
 
     std::set_new_handler(new_handler_terminate);
 
-    // Lucky Lode: select true regtest params for EmberHash bring-up.
-    // (Upstream never calls SelectParams in the daemon path, so without
-    // this pCurrentParams stays NULL and Params() returns mainParams.)
-    if (mapMultiArgs.count("-ac_algo") && !mapMultiArgs["-ac_algo"].empty() && mapMultiArgs["-ac_algo"][0] == "emberhash")
+    // Lucky Lode: network selection (runbook §1). -regtest/-testnet pick
+    // their params as usual; a bare -ac_name=LUCKYLODE boot selects MAIN,
+    // whose genesis is the ceremony pin in CMainParams (DRAFT until
+    // sign-off — do not mine or publish this chain).
+    if (mapMultiArgs.count("-ac_algo") && !mapMultiArgs["-ac_algo"].empty() && (mapMultiArgs["-ac_algo"][0] == "luckyhash" || mapMultiArgs["-ac_algo"][0] == "emberhash"))
     {
-        SelectParams(CBaseChainParams::REGTEST);
+        if (IsArgSet("-regtest"))
+            SelectParams(CBaseChainParams::REGTEST);
+        else if (IsArgSet("-testnet"))
+            SelectParams(CBaseChainParams::TESTNET);
+        else
+            SelectParams(CBaseChainParams::MAIN);
     }
 
     // ********************************************************* Step 2: parameter interactions
@@ -906,7 +912,7 @@ bool AppInit2(boost::thread_group& threadGroup, CScheduler& scheduler)
     fLogIPs = GetBoolArg("-logips", false);
 
     LogPrintf("\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n");
-    LogPrintf("Zcash version %s (%s)\n", FormatFullVersion(), CLIENT_DATE);
+    LogPrintf("Lucky Lode version %s (%s)\n", FormatFullVersion(), CLIENT_DATE);
 
     // when specifying an explicit binding address, you want to listen on it
     // even when -connect or -proxy is specified
@@ -1219,10 +1225,11 @@ bool AppInit2(boost::thread_group& threadGroup, CScheduler& scheduler)
 
     // set the hash algorithm to use for this chain
     extern uint32_t ASSETCHAINS_ALGO, ASSETCHAINS_VERUSHASH, ASSETCHAINS_EMBERHASH;
-    // Lucky Lode: -ac_algo=emberhash selects EmberHash v1 (doc 05). The
-    // chain-definition plumbing for a fresh rebranded chain is item 9;
+    // Lucky Lode: -ac_algo=luckyhash selects LuckyHash v1 (doc 05); the
+    // pre-rename value "emberhash" stays accepted for existing runbooks.
+    // The chain-definition plumbing for a fresh rebranded chain is item 9;
     // this arg keeps testnet bring-up operable today.
-    if (mapMultiArgs.count("-ac_algo") && !mapMultiArgs["-ac_algo"].empty() && mapMultiArgs["-ac_algo"][0] == "emberhash")
+    if (mapMultiArgs.count("-ac_algo") && !mapMultiArgs["-ac_algo"].empty() && (mapMultiArgs["-ac_algo"][0] == "luckyhash" || mapMultiArgs["-ac_algo"][0] == "emberhash"))
     {
         ASSETCHAINS_ALGO = ASSETCHAINS_EMBERHASH;
     }
@@ -1233,7 +1240,7 @@ bool AppInit2(boost::thread_group& threadGroup, CScheduler& scheduler)
     {
         // PoS/stake internals remain on VerusHash (doc 10 keep-list), and
         // IsPOSNonce hashes via CVerusHash — both must be initialized even
-        // when the PoW digest is EmberHash.
+        // when the PoW digest is LuckyHash.
         CVerusHash::init();
         CVerusHashV2::init();
         CBlockHeader::SetEmberHash();
@@ -1361,7 +1368,7 @@ bool AppInit2(boost::thread_group& threadGroup, CScheduler& scheduler)
 
     // Sanity check
     if (!InitSanityCheck())
-        return InitError(_("Initialization sanity check failed. Verus is shutting down."));
+        return InitError(_("Initialization sanity check failed. Lucky Lode is shutting down."));
 
     std::string strDataDir = GetDataDir().string();
 #ifdef ENABLE_WALLET
@@ -1377,9 +1384,9 @@ bool AppInit2(boost::thread_group& threadGroup, CScheduler& scheduler)
     try {
         static boost::interprocess::file_lock lock(pathLockFile.string().c_str());
         if (!lock.try_lock())
-            return InitError(strprintf(_("Cannot obtain a lock on data directory %s. Verus is probably already running."), strDataDir));
+            return InitError(strprintf(_("Cannot obtain a lock on data directory %s. Lucky Lode is probably already running."), strDataDir));
     } catch(const boost::interprocess::interprocess_exception& e) {
-        return InitError(strprintf(_("Cannot obtain a lock on data directory %s. Verus is probably already running.") + " %s.", strDataDir, e.what()));
+        return InitError(strprintf(_("Cannot obtain a lock on data directory %s. Lucky Lode is probably already running.") + " %s.", strDataDir, e.what()));
     }
 
 #ifndef _WIN32
@@ -1388,7 +1395,7 @@ bool AppInit2(boost::thread_group& threadGroup, CScheduler& scheduler)
     if (GetBoolArg("-shrinkdebugfile", !fDebug))
         ShrinkDebugFile();
     LogPrintf("\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n");
-    LogPrintf("Verus version %s (%s)\n", FormatFullVersion(), CLIENT_DATE);
+    LogPrintf("Lucky Lode version %s (%s)\n", FormatFullVersion(), CLIENT_DATE);
 
     if (fPrintToDebugLog)
         OpenDebugLog();
@@ -2168,10 +2175,10 @@ bool AppInit2(boost::thread_group& threadGroup, CScheduler& scheduler)
                 InitWarning(msg);
             }
             else if (nLoadWalletRet == DB_TOO_NEW)
-                strErrors << _("Error loading wallet.dat: Wallet requires newer version of Komodo") << "\n";
+                strErrors << _("Error loading wallet.dat: Wallet requires newer version of Lucky Lode") << "\n";
             else if (nLoadWalletRet == DB_NEED_REWRITE)
             {
-                strErrors << _("Wallet needed to be rewritten: restart Zcash to complete") << "\n";
+                strErrors << _("Wallet needed to be rewritten: restart Lucky Lode to complete") << "\n";
                 LogPrintf("%s", strErrors.str());
                 return InitError(strErrors.str());
             }
@@ -2296,10 +2303,10 @@ bool AppInit2(boost::thread_group& threadGroup, CScheduler& scheduler)
 #ifdef ENABLE_MINING
  #ifndef ENABLE_WALLET
     if (GetBoolArg("-minetolocalwallet", false)) {
-        return InitError(_("Verus was not built with wallet support. Set -minetolocalwallet=0 to use -mineraddress, or rebuild Verus with wallet support."));
+        return InitError(_("Lucky Lode was not built with wallet support. Set -minetolocalwallet=0 to use -mineraddress, or rebuild Lucky Lode with wallet support."));
     }
     if (GetArg("-mineraddress", "").empty() && GetBoolArg("-gen", false)) {
-        return InitError(_("Verus was not built with wallet support. Set -mineraddress, or rebuild Verus with wallet support."));
+        return InitError(_("Lucky Lode was not built with wallet support. Set -mineraddress, or rebuild Lucky Lode with wallet support."));
     }
  #endif // !ENABLE_WALLET
 
@@ -2434,6 +2441,25 @@ bool AppInit2(boost::thread_group& threadGroup, CScheduler& scheduler)
 #ifdef ENABLE_MINING
     // Generate coins in the background
  #ifdef ENABLE_WALLET
+    // Lucky Lode: regtest-only stake-maturity override for staking tests.
+    // VERUS_MIN_STAKEAGE is read as a global by the wallet (which UTXOs
+    // are stakeable) and by validation; assigning it here keeps every
+    // reader consistent. Hard-gated to regtest and logged loudly — a
+    // consensus-affecting test knob, never for shared chains.
+    if (Params().NetworkIDString() == "regtest" && IsArgSet("-verus-min-stakeage")) {
+        extern int32_t VERUS_MIN_STAKEAGE;
+        VERUS_MIN_STAKEAGE = GetArg("-verus-min-stakeage", 150);
+        if (VERUS_MIN_STAKEAGE < 1)
+            VERUS_MIN_STAKEAGE = 1;
+        LogPrintf("regtest: VERUS_MIN_STAKEAGE overridden to %d\n", VERUS_MIN_STAKEAGE);
+    }
+    if (Params().NetworkIDString() == "regtest" && IsArgSet("-verus-coinbase-maturity")) {
+        extern int COINBASE_MATURITY;
+        COINBASE_MATURITY = GetArg("-verus-coinbase-maturity", 100);
+        if (COINBASE_MATURITY < 1)
+            COINBASE_MATURITY = 1;
+        LogPrintf("regtest: COINBASE_MATURITY overridden to %d\n", COINBASE_MATURITY);
+    }
     VERUS_MINTBLOCKS = GetBoolArg("-mint", false);
     OverrideSetArg("-gen", gen || VERUS_MINTBLOCKS ? "1" : "0");
     OverrideSetArg("-genproclimit", itostr(GetArg("-genproclimit", gen ? -1 : 0)));

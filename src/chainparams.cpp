@@ -93,7 +93,7 @@ public:
     CMainParams()
     {
         strNetworkID = "main";
-        strCurrencyUnits = "VRSC";
+        strCurrencyUnits = "LKYL";
         bip44CoinType = 133; // As registered in https://github.com/satoshilabs/slips/blob/master/slip-0044.md (ZCASH, should be VRSC)
         consensus.fCoinbaseMustBeProtected = false; // true this is only true wuth Verus and enforced after block 12800 (enforcement ending at solution V3)
         consensus.nSubsidySlowStartInterval = 20000;
@@ -145,37 +145,28 @@ public:
         nMinerThreads = 0;
         nPruneAfterHeight = 100000;
 
-        const char* pszTimestamp = "The Times 03/Jan/2009 Chancellor on brink of second bailout for banks";
-        CMutableTransaction txNew;
-        txNew.vin.resize(1);
-        txNew.vout.resize(1);
-        txNew.vin[0].scriptSig = CScript() << 486604799 << CScriptNum(4) << std::vector<unsigned char>((const unsigned char*)pszTimestamp, (const unsigned char*)pszTimestamp + strlen(pszTimestamp));
-        txNew.vout[0].nValue = 50 * COIN;
-        txNew.vout[0].scriptPubKey = CScript() << ParseHex("04678afdb0fe5548271967f1a67130b7105cd6a828e03909a67962e0ea1f61deb649f6bc3f4cef38c4f35504e51ec112de5c384df7ba0b8d578a4c702b6bf11d5f") << OP_CHECKSIG;
-        genesis.vtx.push_back(txNew);
-        genesis.hashPrevBlock.SetNull();
-        genesis.hashMerkleRoot = genesis.BuildMerkleTree();
-        genesis.nVersion = 1;
-        genesis.nTime    = 1231006505;
-        genesis.nBits    = KOMODO_MINDIFF_NBITS;
-        genesis.nNonce   = uint256S("0x000000000000000000000000000000000000000000000000000000000000000b");
-        genesis.nSolution = ParseHex("000d5ba7cda5d473947263bf194285317179d2b0d307119c2e7cc4bd8ac456f0774bd52b0cd9249be9d40718b6397a4c7bbd8f2b3272fed2823cd2af4bd1632200ba4bf796727d6347b225f670f292343274cc35099466f5fb5f0cd1c105121b28213d15db2ed7bdba490b4cedc69742a57b7c25af24485e523aadbb77a0144fc76f79ef73bd8530d42b9f3b9bed1c135ad1fe152923fafe98f95f76f1615e64c4abb1137f4c31b218ba2782bc15534788dda2cc08a0ee2987c8b27ff41bd4e31cd5fb5643dfe862c9a02ca9f90c8c51a6671d681d04ad47e4b53b1518d4befafefe8cadfb912f3d03051b1efbf1dfe37b56e93a741d8dfd80d576ca250bee55fab1311fc7b3255977558cdda6f7d6f875306e43a14413facdaed2f46093e0ef1e8f8a963e1632dcbeebd8e49fd16b57d49b08f9762de89157c65233f60c8e38a1f503a48c555f8ec45dedecd574a37601323c27be597b956343107f8bd80f3a925afaf30811df83c402116bb9c1e5231c70fff899a7c82f73c902ba54da53cc459b7bf1113db65cc8f6914d3618560ea69abd13658fa7b6af92d374d6eca9529f8bd565166e4fcbf2a8dfb3c9b69539d4d2ee2e9321b85b331925df195915f2757637c2805e1d4131e1ad9ef9bc1bb1c732d8dba4738716d351ab30c996c8657bab39567ee3b29c6d054b711495c0d52e1cd5d8e55b4f0f0325b97369280755b46a02afd54be4ddd9f77c22272b8bbb17ff5118fedbae2564524e797bd28b5f74f7079d532ccc059807989f94d267f47e724b3f1ecfe00ec9e6541c961080d8891251b84b4480bc292f6a180bea089fef5bbda56e1e41390d7c0e85ba0ef530f7177413481a226465a36ef6afe1e2bca69d2078712b3912bba1a99b1fbff0d355d6ffe726d2bb6fbc103c4ac5756e5bee6e47e17424ebcbf1b63d8cb90ce2e40198b4f4198689daea254307e52a25562f4c1455340f0ffeb10f9d8e914775e37d0edca019fb1b9c6ef81255ed86bc51c5391e0591480f66e2d88c5f4fd7277697968656a9b113ab97f874fdd5f2465e5559533e01ba13ef4a8f7a21d02c30c8ded68e8c54603ab9c8084ef6d9eb4e92c75b078539e2ae786ebab6dab73a09e0aa9ac575bcefb29e930ae656e58bcb513f7e3c17e079dce4f05b5dbc18c2a872b22509740ebe6a3903e00ad1abc55076441862643f93606e3dc35e8d9f2caef3ee6be14d513b2e062b21d0061de3bd56881713a1a5c17f5ace05e1ec09da53f99442df175a49bd154aa96e4949decd52fed79ccf7ccbce32941419c314e374e4a396ac553e17b5340336a1a25c22f9e42a243ba5404450b650acfc826a6e432971ace776e15719515e1634ceb9a4a35061b668c74998d3dfb5827f6238ec015377e6f9c94f38108768cf6e5c8b132e0303fb5a200368f845ad9d46343035a6ff94031df8d8309415bb3f6cd5ede9c135fdabcc030599858d803c0f85be7661c88984d88faa3d26fb0e9aac0056a53f1b5d0baed713c853c4a2726869a0a124a8a5bbc0fc0ef80c8ae4cb53636aa02503b86a1eb9836fcc259823e2692d921d88e1ffc1e6cb2bde43939ceb3f32a611686f539f8f7c9f0bf00381f743607d40960f06d347d1cd8ac8a51969c25e37150efdf7aa4c2037a2fd0516fb444525ab157a0ed0a7412b2fa69b217fe397263153782c0f64351fbdf2678fa0dc8569912dcd8e3ccad38f34f23bbbce14c6a26ac24911b308b82c7e43062d180baeac4ba7153858365c72c63dcf5f6a5b08070b730adb017aeae925b7d0439979e2679f45ed2f25a7edcfd2fb77a8794630285ccb0a071f5cce410b46dbf9750b0354aae8b65574501cc69efb5b6a43444074fee116641bb29da56c2b4a7f456991fc92b2");
-
-
-        /*genesis = CreateGenesisBlock(
-            1477641360,
-            uint256S("0x0000000000000000000000000000000000000000000000000000000000001257"),
-            ParseHex("000a889f00854b8665cd555f4656f68179d31ccadc1b1f7fb0952726313b16941da348284d67add4686121d4e3d930160c1348d8191c25f12b267a6a9c131b5031cbf8af1f79c9d513076a216ec87ed045fa966e01214ed83ca02dc1797270a454720d3206ac7d931a0a680c5c5e099057592570ca9bdf6058343958b31901fce1a15a4f38fd347750912e14004c73dfe588b903b6c03166582eeaf30529b14072a7b3079e3a684601b9b3024054201f7440b0ee9eb1a7120ff43f713735494aa27b1f8bab60d7f398bca14f6abb2adbf29b04099121438a7974b078a11635b594e9170f1086140b4173822dd697894483e1c6b4e8b8dcd5cb12ca4903bc61e108871d4d915a9093c18ac9b02b6716ce1013ca2c1174e319c1a570215bc9ab5f7564765f7be20524dc3fdf8aa356fd94d445e05ab165ad8bb4a0db096c097618c81098f91443c719416d39837af6de85015dca0de89462b1d8386758b2cf8a99e00953b308032ae44c35e05eb71842922eb69797f68813b59caf266cb6c213569ae3280505421a7e3a0a37fdf8e2ea354fc5422816655394a9454bac542a9298f176e211020d63dee6852c40de02267e2fc9d5e1ff2ad9309506f02a1a71a0501b16d0d36f70cdfd8de78116c0c506ee0b8ddfdeb561acadf31746b5a9dd32c21930884397fb1682164cb565cc14e089d66635a32618f7eb05fe05082b8a3fae620571660a6b89886eac53dec109d7cbb6930ca698a168f301a950be152da1be2b9e07516995e20baceebecb5579d7cdbc16d09f3a50cb3c7dffe33f26686d4ff3f8946ee6475e98cf7b3cf9062b6966e838f865ff3de5fb064a37a21da7bb8dfd2501a29e184f207caaba364f36f2329a77515dcb710e29ffbf73e2bbd773fab1f9a6b005567affff605c132e4e4dd69f36bd201005458cfbd2c658701eb2a700251cefd886b1e674ae816d3f719bac64be649c172ba27a4fd55947d95d53ba4cbc73de97b8af5ed4840b659370c556e7376457f51e5ebb66018849923db82c1c9a819f173cccdb8f3324b239609a300018d0fb094adf5bd7cbb3834c69e6d0b3798065c525b20f040e965e1a161af78ff7561cd874f5f1b75aa0bc77f720589e1b810f831eac5073e6dd46d00a2793f70f7427f0f798f2f53a67e615e65d356e66fe40609a958a05edb4c175bcc383ea0530e67ddbe479a898943c6e3074c6fcc252d6014de3a3d292b03f0d88d312fe221be7be7e3c59d07fa0f2f4029e364f1f355c5d01fa53770d0cd76d82bf7e60f6903bc1beb772e6fde4a70be51d9c7e03c8d6d8dfb361a234ba47c470fe630820bbd920715621b9fbedb49fcee165ead0875e6c2b1af16f50b5d6140cc981122fcbcf7c5a4e3772b3661b628e08380abc545957e59f634705b1bbde2f0b4e055a5ec5676d859be77e20962b645e051a880fddb0180b4555789e1f9344a436a84dc5579e2553f1e5fb0a599c137be36cabbed0319831fea3fddf94ddc7971e4bcf02cdc93294a9aab3e3b13e3b058235b4f4ec06ba4ceaa49d675b4ba80716f3bc6976b1fbf9c8bf1f3e3a4dc1cd83ef9cf816667fb94f1e923ff63fef072e6a19321e4812f96cb0ffa864da50ad74deb76917a336f31dce03ed5f0303aad5e6a83634f9fcc371096f8288b8f02ddded5ff1bb9d49331e4a84dbe1543164438fde9ad71dab024779dcdde0b6602b5ae0a6265c14b94edd83b37403f4b78fcd2ed555b596402c28ee81d87a909c4e8722b30c71ecdd861b05f61f8b1231795c76adba2fdefa451b283a5d527955b9f3de1b9828e7b2e74123dd47062ddcc09b05e7fa13cb2212a6fdbc65d7e852cec463ec6fd929f5b8483cf3052113b13dac91b69f49d1b7d1aec01c4a68e41ce157"),
-            0x1f07ffff, 4, 0);*/
-
+        // Lucky Lode launch genesis — DRAFT ceremony 2026-10-13, internal/genesis_grind.py
+        // (runbook §1). Transcript: nTime=1791865812,
+        // message="the coin you mine on whatever you already own.",
+        // reward=0 to OP_RETURN "LuckyLode fair launch - no premine" (no premine),
+        // nBits=0x1f00ffff, version=4, empty solution, null sapling root.
+        // DRAFT: re-run the ceremony for final values; the asserts below are
+        // the gate (a mismatched pin fails at startup, loudly).
+        genesis = CreateGenesisBlock(
+            "the coin you mine on whatever you already own.",
+            CScript() << OP_RETURN << ParseHex("4c75636b794c6f64652066616972206c61756e6368202d206e6f207072656d696e65"),
+            1791865812,
+            uint256S("0x0000000000000000000000000000000000000000000000000000000000007b38"),
+            ParseHex(""),
+            0x1f00ffff, 4, 0);
         consensus.hashGenesisBlock = genesis.GetHash(0);
-        assert(consensus.hashGenesisBlock == uint256S("0x027e3758c3a65b12aa1046462b486d0a63bfa1beae327897f56c5cfb7daaae71"));
-        assert(genesis.hashMerkleRoot == uint256S("0x4a5e1e4baab89f3a32518a88c31bc87f618f76673e2cc77ab2127b7afdeda33b"));
+        assert(consensus.hashGenesisBlock == uint256S("0x000042ebd0408abd6080b215a7fa63758378a1f92612401818aedc5da8e60d36"));
+        assert(genesis.hashMerkleRoot == uint256S("0xe826780cb764461be27e590018df8caeeea2dbbeee5d7cd28724e039e4d216a5"));
         vFixedSeeds.clear();
         vSeeds.clear();
         // Lucky Lode: P2PKH addresses start with 'L' (48), P2SH with 'M' (50).
         // (Regtest keeps upstream {0},{5} for test compatibility; identity
-        // prefix 102 is tracked separately for the VerusID rebrand pass.)
+        // prefix 102 is tracked separately for the LuckyID rebrand pass.)
         base58Prefixes[PUBKEY_ADDRESS] = std::vector<unsigned char>(1,48);
         base58Prefixes[SCRIPT_ADDRESS] = std::vector<unsigned char>(1,50);
         base58Prefixes[IDENTITY_ADDRESS] = std::vector<unsigned char>(1,102);
@@ -230,6 +221,32 @@ void *chainparams_commandline(void *ptr)
     //fprintf(stderr,">>>>>>>> port.%u\n",ASSETCHAINS_P2PPORT);
     if ( ASSETCHAINS_SYMBOL[0] != 0 )
     {
+        // Lucky Lode network identity lock (testnet runbook §2): fixed
+        // owned p2p magic + staged ports, NEVER derived from the chain
+        // name at runtime. A name-derived magic can collide with Verus or
+        // another komodo-family chain; cross-connecting to foreign
+        // traffic is a consensus-safety issue, not cosmetics. Frozen
+        // before any public peer connects AND before the genesis
+        // ceremony (the values feed tx/block hashing paths); changing
+        // them later invalidates the whole network. Staged values —
+        // founder sign-off before launch.
+        if ( strcmp(ASSETCHAINS_SYMBOL, "LUCKYLODE") == 0 )
+        {
+            ASSETCHAINS_MAGIC = 0x4C4B594C; // "LKYL" on the wire
+            ASSETCHAINS_P2PPORT = 9270;
+            if ( ASSETCHAINS_RPCPORT == 0 )
+                ASSETCHAINS_RPCPORT = 9271;
+        }
+        else if ( strcmp(ASSETCHAINS_SYMBOL, "LUCKYLODETEST") == 0 )
+        {
+            // Same pinned consensus magic as mainnet (it feeds PoS/tx
+            // hashing); the testnet p2p wire magic is "LucT" from
+            // CTestNetParams, so the two networks cannot cross-connect.
+            ASSETCHAINS_MAGIC = 0x4C4B594C;
+            ASSETCHAINS_P2PPORT = 19270;
+            if ( ASSETCHAINS_RPCPORT == 0 )
+                ASSETCHAINS_RPCPORT = 19271;
+        }
         mainParams.SetDefaultPort(ASSETCHAINS_P2PPORT);
         if ( ASSETCHAINS_RPCPORT == 0 )
             ASSETCHAINS_RPCPORT = ASSETCHAINS_P2PPORT + 1;
@@ -358,7 +375,7 @@ class CTestNetParams : public CChainParams {
 public:
     CTestNetParams() {
         strNetworkID = "test";
-        strCurrencyUnits = "TAZ";
+        strCurrencyUnits = "tLKYL";
         bip44CoinType = 1;
         consensus.fCoinbaseMustBeProtected = true;
         consensus.nSubsidySlowStartInterval = 20000;
@@ -371,11 +388,20 @@ public:
         BOOST_STATIC_ASSERT(equihash_parameters_acceptable(N, K));
         consensus.nEquihashN = N;
         consensus.nEquihashK = K;
-        // Lucky Lode: EmberHash POW_LIMIT (doc 05 §5.3, compact 0x1f00ffff)
+        // Lucky Lode: LuckyHash POW_LIMIT (doc 05 §5.3, compact 0x1f00ffff)
         consensus.powLimit = uint256S("0000ffff00000000000000000000000000000000000000000000000000000000");
         consensus.powAlternate = uint256S("0000ffff00000000000000000000000000000000000000000000000000000000");
         consensus.nPowAveragingWindow = 17;
         assert(maxUint/UintToArith256(consensus.powLimit) >= consensus.nPowAveragingWindow);
+        // Lucky Lode: PoS parameters mirror mainnet — without them the PoS
+        // default target is zero and no PoS block can ever win on this
+        // network. (Upstream only sets these on mainParams; regtest/testnet
+        // were left at zero. Found live 2026-10-13: the staker ran with a
+        // 646-coin stake but the target was 0x00..00, unwinnable.)
+        consensus.posLimit = uint256S("000000000f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f");
+        consensus.nPOSAveragingWindow = 45;
+        consensus.nPOSTargetSpacing = VERUS_BLOCK_POSUNITS * 2;
+        consensus.nLwmaPOSAjustedWeight = 46531;
         consensus.nMaxFutureBlockTime = 7 * 60;
 
         nDefaultPort = 19270;
@@ -410,20 +436,32 @@ public:
 
         nPruneAfterHeight = 1000;
 
-        //! Modify the testnet genesis block so the timestamp is valid for a later start.
-        genesis.nTime = 1296688602;
-        genesis.nBits = KOMODO_MINDIFF_NBITS;
-        genesis.nNonce = uint256S("0x0000000000000000000000000000000000000000000000000000000000000009");
-        genesis.nSolution = ParseHex("003423da3e41f916bf3ff0ee770eb844a240361abe08a8c9d46bd30226e2ad411a4047b6ddc230d173c60537e470e24f764120f5a2778b2a1285b0727bf79a0b085ad67e6266fb38fd72ef17f827315c42f921720248c983d4100e6ebd1c4b5e8762a973bac3bec7f7153b93752ebbb465f0fc9520bcfc30f9abfe303627338fed6ede9cf1b9173a736cf270cf4d9c6999ff4c3a301a78fd50dab6ccca67a0c5c2e41f216a1f3efd049a74bbe6252f9773bc309d3f9e554d996913ce8e1cec672a1fa4ea59726b61ea9e75d5ce9aa5dbfa96179a293810e02787f26de324fe7c88376ff57e29574a55faff7c2946f3e40e451861c32bf67da7377de3136858a18f34fab1bc8da37726ca2c25fc7b312a5427554ec944da81c7e27255d6c94ade9987ff7daedc2d1cc63d7d4cf93e691d13326fb1c7ee72ccdc0b134eb665fc6a9821e6fef6a6d45e4aac6dca6b505a0100ad56ea4f6fa4cdc2f0d1b65f730104a515172e34163bdb422f99d083e6eb860cf6b3f66642c4dbaf0d0fa1dca1b6166f1d1ffaa55a9d6d6df628afbdd14f1622c1c8303259299521a253bc28fcc93676723158067270fc710a09155a1e50c533e9b79ed5edba4ab70a08a9a2fc0eef0ddae050d75776a9804f8d6ad7e30ccb66c6a98d86710ca7a4dfb4feb159484796b9a015c5764aa3509051c87f729b9877ea41f8b470898c01388ed9098b1e006d3c30fc6e7c781072fa3f75d918505ee8ca75840fc62f67c57060666aa42578a2dd022eda62e3f1e447d7364074d34fd60ad9b138f60422afa6cfcb913fd6c213b496144dbfda7bfc7c24540cfe40ad0c0fd5a8c0902127f53d3178ba1b2a87bf1224d53d3a15e49ccdf121ae872a011c996d1b9793153cdcd4c0a7e99f8a35669788551cca2b62769eda24b6b55e2f4e0ac0d30aa50ecf33c6cdb24adfc922006a7bf434ced800fefe814c94c6fc8caa37b372d5088bb31d2f6b11a7a67ad3f70abbac0d5c256b637828de6cc525978cf151a2e50798e0c591787639a030291272c9ced3ab7d682e03f8c7db51f60163baa85315789666ea8c5cd6f789a7f4a5de4f8a9dfefce20f353cec606492fde8eab3e3b487b3a3a57434f8cf252a4b643fc125c8a5948b06744f5dc306aa587bdc85364c7488235c6edddd78763675e50a9637181519be06dd30c4ba0d845f9ba320d01706fd6dd64d1aa3cd4211a4a7d1d3f2c1ef2766d27d5d2cdf8e7f5e3ea309d4f149bb737305df1373a7f5313abe5986f4aa620bec4b0065d48aafac3631de3771f5c4d2f6eec67b09d9c70a3c1969fecdb014cb3c69832b63cc9d6efa378bff0ef95ffacdeb1675bb326e698f022c1a3a2e1c2b0f05e1492a6d2b7552388eca7ee8a2467ef5d4207f65d4e2ae7e33f13eb473954f249d7c20158ae703e1accddd4ea899f026618695ed2949715678a32a153df32c08922fafad68b1895e3b10e143e712940104b3b352369f4fe79bd1f1dbe03ea9909dbcf5862d1f15b3d1557a6191f54c891513cdb3c729bb9ab08c0d4c35a3ed67d517ffe1e2b7a798521aed15ff9822169c0ec860d7b897340bc2ef4c37f7eb73bd7dafef12c4fd4e6f5dd3690305257ae14ed03df5e3327b68467775a90993e613173fa6650ffa2a26e84b3ce79606bf234eda9f4053307f344099e3b10308d3785b8726fd02d8e94c2759bebd05748c3fe7d5fe087dc63608fb77f29708ab167a13f32da251e249a544124ed50c270cfc6986d9d1814273d2f0510d0d2ea335817207db6a4a23ae9b079967b63b25cb3ceea7001b65b879263f5009ac84ab89738a5b8b71fd032beb9f297326f1f5afa630a5198d684514e242f315a4d95fa6802e82799a525bb653b80b4518ec610a5996403b1391");
+        // Lucky Lode TESTNET genesis — FINAL ceremony 2026-10-13, internal/genesis_grind.py
+        // Same identity message + no-premine burn as mainnet, but its own nTime
+        // and nonce so testnet has a distinct genesis (founder decision 2026-10-13;
+        // nTime finalized 2026-10-13: kept the ground value so the tested hash
+        // stands). Transcript: nTime=1791869035, nBits=0x1f00ffff, version=4,
+        // empty solution, null sapling root.
+        genesis = CreateGenesisBlock(
+            "the coin you mine on whatever you already own.",
+            CScript() << OP_RETURN << ParseHex("4c75636b794c6f64652066616972206c61756e6368202d206e6f207072656d696e65"),
+            1791869035,
+            uint256S("0x0000000000000000000000000000000000000000000000000000000000016b67"),
+            ParseHex(""),
+            0x1f00ffff, 4, 0);
         consensus.hashGenesisBlock = genesis.GetHash(0);
-        //assert(consensus.hashGenesisBlock == uint256S("0x05a60a92d99d85997cce3b87616c089f6124d7342af37106edc76126334a2c38"));
+        assert(consensus.hashGenesisBlock == uint256S("0x000024a132b37b93939504f73f8b3d6477f256c072254bc9379dde44321f3cfa"));
+        assert(genesis.hashMerkleRoot == uint256S("0xe826780cb764461be27e590018df8caeeea2dbbeee5d7cd28724e039e4d216a5"));
 
         vFixedSeeds.clear();
         vSeeds.clear();
         //vSeeds.push_back(CDNSSeedData("z.cash", "dns.testnet.z.cash")); // Komodo
 
-        base58Prefixes[PUBKEY_ADDRESS] = std::vector<unsigned char>(1,0);
-        base58Prefixes[SCRIPT_ADDRESS] = std::vector<unsigned char>(1,5);
+        // Lucky Lode TESTNET: distinct from both upstream Verus testnet
+        // ({0},{5}) and Lucky Lode mainnet ({48},{50}). Bitcoin-testnet
+        // convention so test coins are unmistakable (m/n... and 2...).
+        base58Prefixes[PUBKEY_ADDRESS] = std::vector<unsigned char>(1,111);
+        base58Prefixes[SCRIPT_ADDRESS] = std::vector<unsigned char>(1,196);
         base58Prefixes[IDENTITY_ADDRESS] = std::vector<unsigned char>(1,102);
         base58Prefixes[INDEX_ADDRESS] = std::vector<unsigned char>(1,137);
         base58Prefixes[QUANTUM_ADDRESS] = std::vector<unsigned char>(1,58);
@@ -441,7 +479,26 @@ public:
         bech32HRPs[SAPLING_EXTENDED_SPEND_KEY]   = "secret-extended-key-test";
         bech32HRPs[SAPLING_EXTENDED_FVK]         = "zxviewtestsapling";
 
-        vFixedSeeds = std::vector<SeedSpec6>(pnSeed6_test, pnSeed6_test + ARRAYLEN(pnSeed6_test));
+        vFixedSeeds.clear(); // Lucky Lode testnet: fresh chain, no upstream seeds
+
+        // Lucky Lode testnet bootstrap seed (2026-10-14): the staging VPS
+        // (40.160.149.124:9270) as a hardcoded fixed seed, so a fresh
+        // testnet node finds the network without -addnode. Fixed seeds are
+        // loaded into addrman at startup (net.cpp) and only bootstrap the
+        // address book — replace with seed.luckylode.cc DNS records
+        // (vSeeds) once the dedicated seed boxes and DNS are final.
+        {
+            SeedSpec6 seed;
+            memset(seed.addr, 0, sizeof(seed.addr));
+            seed.addr[10] = 0xff; // IPv4-mapped IPv6: ::ffff:40.160.149.124
+            seed.addr[11] = 0xff;
+            seed.addr[12] = 40;
+            seed.addr[13] = 160;
+            seed.addr[14] = 149;
+            seed.addr[15] = 124;
+            seed.port = 9270;
+            vFixedSeeds.push_back(seed);
+        }
 
         //fRequireRPCPassword = true;
         fMiningRequiresPeers = false;//true;
@@ -451,14 +508,14 @@ public:
         fTestnetToBeDeprecatedFieldRPC = true;
 
 
+        // Lucky Lode testnet: genesis-only checkpoint (fresh chain, no
+        // upstream checkpoints — those belong to the Zcash/Verus testnet).
         checkpointData = (CChainParams::CCheckpointData) {
             boost::assign::map_list_of
-            (0, consensus.hashGenesisBlock)
-            (38000, uint256S("0x001e9a2d2e2892b88e9998cf7b079b41d59dd085423a921fe8386cecc42287b8")),
-            1486897419,  // * UNIX timestamp of last checkpoint block
-            47163,       // * total number of transactions between genesis and last checkpoint
-                         //   (the tx=... number in the SetBestChain debug.log lines)
-            715          //   total number of tx / (checkpoint block height / (24 * 24))
+            (0, consensus.hashGenesisBlock),
+            0,  // * UNIX timestamp of last checkpoint block
+            0,  // * total number of transactions between genesis and last checkpoint
+            0   // * estimated number of transactions per day after checkpoint
         };
 
         /*
@@ -498,7 +555,7 @@ class CRegTestParams : public CChainParams {
 public:
     CRegTestParams() {
         strNetworkID = "regtest";
-        strCurrencyUnits = "REG";
+        strCurrencyUnits = "rLKYL";
         bip44CoinType = 1;
         consensus.fCoinbaseMustBeProtected = false;
         consensus.nSubsidySlowStartInterval = 0;
@@ -511,9 +568,18 @@ public:
         BOOST_STATIC_ASSERT(equihash_parameters_acceptable(N, K));
         consensus.nEquihashN = N;
         consensus.nEquihashK = K;
-        // Lucky Lode: EmberHash POW_LIMIT (doc 05 §5.3, compact 0x1f00ffff)
+        // Lucky Lode: LuckyHash POW_LIMIT (doc 05 §5.3, compact 0x1f00ffff)
         consensus.powLimit = uint256S("0000ffff00000000000000000000000000000000000000000000000000000000");
         consensus.powAlternate = uint256S("0000ffff00000000000000000000000000000000000000000000000000000000");
+        // Lucky Lode: PoS parameters mirror mainnet — without them the PoS
+        // default target is zero and no PoS block can ever win on this
+        // network. (Upstream only sets these on mainParams; regtest/testnet
+        // were left at zero. Found live 2026-10-13: the staker ran with a
+        // 646-coin stake but the target was 0x00..00, unwinnable.)
+        consensus.posLimit = uint256S("000000000f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f");
+        consensus.nPOSAveragingWindow = 45;
+        consensus.nPOSTargetSpacing = VERUS_BLOCK_POSUNITS * 2;
+        consensus.nLwmaPOSAjustedWeight = 46531;
         consensus.nMaxFutureBlockTime = 7 * 60; // 7 mins
         assert(maxUint/UintToArith256(consensus.powLimit) >= consensus.nPowAveragingWindow);
         consensus.nPowMaxAdjustDown = 0; // Turn off adjustment down
@@ -582,7 +648,7 @@ public:
         // These prefixes are the same as the testnet prefixes
         // Lucky Lode: P2PKH addresses start with 'L' (48), P2SH with 'M' (50).
         // (Regtest keeps upstream {0},{5} for test compatibility; identity
-        // prefix 102 is tracked separately for the VerusID rebrand pass.)
+        // prefix 102 is tracked separately for the LuckyID rebrand pass.)
         base58Prefixes[PUBKEY_ADDRESS] = std::vector<unsigned char>(1,48);
         base58Prefixes[SCRIPT_ADDRESS] = std::vector<unsigned char>(1,50);
         base58Prefixes[IDENTITY_ADDRESS] = std::vector<unsigned char>(1,102);

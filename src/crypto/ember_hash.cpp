@@ -1,6 +1,6 @@
-// (C) 2026 Lowmine developers — MIT, see COPYING.
+// (C) 2026 Lucky Lode developers — MIT, see COPYING.
 //
-// EmberHash v1 for the Lowmine fork: see ember_hash.h. Vendored deps:
+// LuckyHash v1 for the Lucky Lode fork: see ember_hash.h. Vendored deps:
 // BLAKE3 (CC0, crypto/blake3/) and Argon2 reference (CC0/Apache-2.0,
 // crypto/argon2/).
 

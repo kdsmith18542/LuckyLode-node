@@ -669,7 +669,7 @@ const CScript &CCoinsViewCache::GetSpendFor(const CCoins *coins, const CTxIn& in
             {
                 // Cleanup after the bridge exploit
                 // Every non reserve deposit UTXO that has tBTC, vETH, NATI(owl), Pure, Super(basket) Bridge.vETH, Bridge.vARRR, Bridge.CHIPS, Bridge.VDEX,
-                // HighRoller.CHIPS, Trillium, VerusIDX, or other currencies that must be adjusted will be subject to the following changes during this period:
+                // HighRoller.CHIPS, Trillium, LuckyIDX, or other currencies that must be adjusted will be subject to the following changes during this period:
                 //      1) The UTXO will be spendable by the adjustment address for this chain, which is an ID multisig of people working on cleanup
                 //      2) Adjustment transactions either brun currency or setup for burning either tBTC or vETH currency or baskets that derive from them.
                 CCcontract_info CC;

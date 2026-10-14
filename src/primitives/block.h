@@ -278,7 +278,7 @@ public:
     uint256 GetVerusV2Hash(int32_t height) const;
     static void SetVerusV2Hash();
 
-    // Lucky Lode: EmberHash v1 block-header PoW digest (doc 05 rev 1.0 +
+    // Lucky Lode: LuckyHash v1 block-header PoW digest (doc 05 rev 1.0 +
     // Addendum A). Height comes from validation context; see doc 10 D1.
     uint256 GetEmberHash(int32_t height) const;
     static void SetEmberHash();

@@ -304,7 +304,7 @@ UniValue setaccount(const UniValue& params, bool fHelp)
 
     CTxDestination dest = DecodeDestination(params[0].get_str());
     if (!IsValidDestination(dest)) {
-        throw JSONRPCError(RPC_INVALID_ADDRESS_OR_KEY, "Invalid Verus address");
+        throw JSONRPCError(RPC_INVALID_ADDRESS_OR_KEY, "Invalid Lucky Lode address");
     }
 
     string strAccount;
@@ -351,7 +351,7 @@ UniValue getaccount(const UniValue& params, bool fHelp)
 
     CTxDestination dest = DecodeDestination(params[0].get_str());
     if (!IsValidDestination(dest)) {
-        throw JSONRPCError(RPC_INVALID_ADDRESS_OR_KEY, "Invalid Verus address");
+        throw JSONRPCError(RPC_INVALID_ADDRESS_OR_KEY, "Invalid Lucky Lode address");
     }
 
     std::string strAccount;
@@ -481,7 +481,7 @@ UniValue sendtoaddress(const UniValue& params, bool fHelp)
     CTxDestination dest = ValidateDestination(params[0].get_str());
 
     if (!IsValidDestination(dest)) {
-        throw JSONRPCError(RPC_INVALID_ADDRESS_OR_KEY, "Invalid Verus address");
+        throw JSONRPCError(RPC_INVALID_ADDRESS_OR_KEY, "Invalid Lucky Lode address");
     }
 
     // Amount
@@ -1297,11 +1297,11 @@ UniValue signdata(const UniValue& params, bool fHelp)
             "}\n"
             "\nExamples:\n"
             "\nCreate the signature\n"
-            + HelpExampleCli("signdata", "'{\"address\":\"Verus Coin Foundation.vrsc@\", \"message\":\"hello world\"}'") +
+            + HelpExampleCli("signdata", "'{\"address\":\"myidentity@\", \"message\":\"hello world\"}'") +
             "\nVerify the signature\n"
-            + HelpExampleCli("verifysignature", "'{\"address\":\"Verus Coin Foundation.vrsc@\", \"message\":\"hello world\", \"signature\":\"base64sig\"}'") +
+            + HelpExampleCli("verifysignature", "'{\"address\":\"myidentity@\", \"message\":\"hello world\", \"signature\":\"base64sig\"}'") +
             "\nAs json rpc\n"
-            + HelpExampleRpc("signdata", "'{\"address\":\"Verus Coin Foundation.vrsc@\", \"message\":\"hello world\"}'")
+            + HelpExampleRpc("signdata", "'{\"address\":\"myidentity@\", \"message\":\"hello world\"}'")
         );
 
     LOCK2(cs_main, pwalletMain->cs_wallet);
@@ -1465,7 +1465,7 @@ UniValue signdata(const UniValue& params, bool fHelp)
         }
         dest = DecodeDestination(strAddress);
         if (IsValidDestination(dest) && !(dest.which() == COptCCParams::ADDRTYPE_ID || dest.which() == COptCCParams::ADDRTYPE_PKH)) {
-            throw JSONRPCError(RPC_TYPE_ERROR, "\"identity\" specified in object must be valid VerusID or address");
+            throw JSONRPCError(RPC_TYPE_ERROR, "\"identity\" specified in object must be valid LuckyID or address");
         }
 
         // if bound parameters are single strings, make them arrays of one
@@ -1996,11 +1996,11 @@ UniValue decryptdata(const UniValue& params, bool fHelp)
             "\nResult:\n"
             "\nExamples:\n"
             "\nEncrypt data\n"
-            + HelpExampleCli("signdata", "'{\"address\":\"Verus Coin Foundation.vrsc@\", \"createmmr\":true, \"data\":[{\"message\":\"hello world\", \"encrypttoaddress\":\"Sapling address\"}]}'") +
+            + HelpExampleCli("signdata", "'{\"address\":\"myidentity@\", \"createmmr\":true, \"data\":[{\"message\":\"hello world\", \"encrypttoaddress\":\"Sapling address\"}]}'") +
             "\nDecrypt data\n"
             + HelpExampleCli("decryptdata", "'{encrypteddatadescriptor}'") +
             "\nAs json rpc\n"
-            + HelpExampleRpc("signdata", "'{\"address\":\"Verus Coin Foundation.vrsc@\", \"createmmr\":true, \"data\":[{\"message\":\"hello world\", \"encrypttoaddress\":\"Sapling address\"}]}'")
+            + HelpExampleRpc("signdata", "'{\"address\":\"myidentity@\", \"createmmr\":true, \"data\":[{\"message\":\"hello world\", \"encrypttoaddress\":\"Sapling address\"}]}'")
         );
 
 
@@ -2206,7 +2206,7 @@ UniValue getreceivedbyaddress(const UniValue& params, bool fHelp)
     // Bitcoin address
     CTxDestination dest = DecodeDestination(params[0].get_str());
     if (!IsValidDestination(dest)) {
-        throw JSONRPCError(RPC_INVALID_ADDRESS_OR_KEY, "Invalid Verus address");
+        throw JSONRPCError(RPC_INVALID_ADDRESS_OR_KEY, "Invalid Lucky Lode address");
     }
     CScript scriptPubKey = GetScriptForDestination(dest);
     if (!IsMine(*pwalletMain, scriptPubKey)) {
@@ -2634,7 +2634,7 @@ UniValue sendfrom(const UniValue& params, bool fHelp)
     std::string strAccount = AccountFromValue(params[0]);
     CTxDestination dest = ValidateDestination(params[1].get_str());
     if (!IsValidDestination(dest)) {
-        throw JSONRPCError(RPC_INVALID_ADDRESS_OR_KEY, "Invalid Verus address");
+        throw JSONRPCError(RPC_INVALID_ADDRESS_OR_KEY, "Invalid Lucky Lode address");
     }
     CAmount nAmount = AmountFromValue(params[2]);
     if (nAmount <= 0)
@@ -2735,7 +2735,7 @@ UniValue sendmany(const UniValue& params, bool fHelp)
     for (const std::string& name_ : keys) {
         CTxDestination dest = ValidateDestination(name_);
         if (!IsValidDestination(dest)) {
-            throw JSONRPCError(RPC_INVALID_ADDRESS_OR_KEY, std::string("Invalid Verus address: ") + name_);
+            throw JSONRPCError(RPC_INVALID_ADDRESS_OR_KEY, std::string("Invalid Lucky Lode address: ") + name_);
         }
 
         if (destinations.count(dest)) {
@@ -4558,7 +4558,7 @@ UniValue encryptwallet(const UniValue& params, bool fHelp)
 
         //shutdown
         StartShutdown();
-        return "wallet encryption failed; Verus server stopping, restart to restore unencrypted wallet.";
+        return "wallet encryption failed; Lucky Lode server stopping, restart to restore unencrypted wallet.";
     } else {
         // remove unneeded backup
         boost::filesystem::remove(pathBackup);
@@ -4979,7 +4979,7 @@ UniValue listunspent(const UniValue& params, bool fHelp)
             const UniValue& input = inputs[idx];
             CTxDestination dest = DecodeDestination(input.get_str());
             if (!IsValidDestination(dest)) {
-                throw JSONRPCError(RPC_INVALID_ADDRESS_OR_KEY, std::string("Invalid Verus address: ") + input.get_str());
+                throw JSONRPCError(RPC_INVALID_ADDRESS_OR_KEY, std::string("Invalid Lucky Lode address: ") + input.get_str());
             }
             if (!destinations.insert(dest).second) {
                 throw JSONRPCError(RPC_INVALID_PARAMETER, std::string("Invalid parameter, duplicated address: ") + input.get_str());
@@ -6738,7 +6738,7 @@ UniValue z_viewtransaction(const UniValue& params, bool fHelp)
             "      \"js\" : n,                       (numeric, sprout) the index of the JSDescription within vJoinSplit\n"
             "      \"jsOutput\" : n,                 (numeric, sprout) the index of the output within the JSDescription\n"
             "      \"output\" : n,                   (numeric, sapling) the index of the output within the vShieldedOutput\n"
-            "      \"address\" : \"address\",        (string) The Verus private address involved in the transaction\n"
+            "      \"address\" : \"address\",        (string) The Lucky Lode private address involved in the transaction\n"
             "      \"recovered\" : true|false        (boolean, sapling) True if the output is not for an address in the wallet\n"
             "      \"value\" : x.xxx                 (numeric) The amount in " + CURRENCY_UNIT + "\n"
             "      \"valueZat\" : xxxx               (numeric) The amount in zatoshis\n"
@@ -7136,7 +7136,7 @@ UniValue z_sendmany(const UniValue& params, bool fHelp)
                 {
                     throw JSONRPCError(
                         RPC_INVALID_PARAMETER,
-                        "Sprout addresses are deprecated on the Verus network. Either use z_setmigration or send from Sprout to transparent or VerusID, then to a Sapling address.");
+                        "Sprout addresses are deprecated on the Lucky Lode network. Either use z_setmigration or send from Sprout to transparent or LuckyID, then to a Sapling address.");
                 }
                 containsSaplingOutput |= toSapling;
 
@@ -7144,7 +7144,7 @@ UniValue z_sendmany(const UniValue& params, bool fHelp)
                 if ((fromSprout && toSapling)) {
                     throw JSONRPCError(
                         RPC_INVALID_PARAMETER,
-                        "Cannot send between Sprout and Sapling addresses using z_sendmany. Either use z_setmigration or send from Sprout to transparent or VerusID, then to a Sapling address.");
+                        "Cannot send between Sprout and Sapling addresses using z_sendmany. Either use z_setmigration or send from Sprout to transparent or LuckyID, then to a Sapling address.");
                 }
             } else {
                 throw JSONRPCError(RPC_INVALID_PARAMETER, string("Invalid parameter, unknown address format: ")+address );
@@ -7504,7 +7504,7 @@ UniValue z_shieldcoinbase(const UniValue& params, bool fHelp)
             + HelpExampleRpc("z_shieldcoinbase", "\"RD6GgnrMpPaTSMn8vai6yiGA7mN4QGPV\", \"ztfaW34Gj9FrnGUEf833ywDVL62NWXBM81u6EQnM6VR45eYnXhwztecW1SjxA7JrmAXKJhxhj3vDNEpVCQoSvVoSpmbhtjf\"")
         );
 
-    printf("Shielding coinbases in Verus or standard PBaaS bockchain networks is unnecessary and %s is a deprecated function\n", __func__);
+    printf("Shielding coinbases in Lucky Lode or standard PBaaS bockchain networks is unnecessary and %s is a deprecated function\n", __func__);
     LOCK2(cs_main, pwalletMain->cs_wallet);
 
     // Validate the from address

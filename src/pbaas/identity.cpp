@@ -1092,7 +1092,7 @@ bool ValidateSpendingIdentityReservation(const CTransaction &tx, int32_t outNum,
 
     if (!isPBaaS && !issuingCurrency.IsPBaaSChain())
     {
-        return state.Error("Advanced VerusID registrations invalid until PBaaS upgrade");
+        return state.Error("Advanced LuckyID registrations invalid until PBaaS upgrade");
     }
 
     // if issuing IDs from this currency requires permission of the identity/DAO of the

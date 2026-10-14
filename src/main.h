@@ -511,6 +511,14 @@ bool DisconnectBlock(CBlock& block, CValidationState& state, CBlockIndex* pindex
 bool ConnectBlock(const CBlock& block, CValidationState& state, CBlockIndex* pindex, CCoinsViewCache& coins,
                   const CChainParams& chainparams, bool fJustCheck = false,bool fCheckPOW = false, bool updateCumulativeIndex = true);
 
+/** Lucky Lode: effective pot draw divisor / pity limit (regtest may
+ *  override via -lucky-pot-divisor / -lucky-pot-drought; every other
+ *  network always returns the frozen spec values). Exposed so RPC can
+ *  report them and pools can check their claim gate matches. */
+uint64_t LuckyPotDrawDivisor();
+uint64_t LuckyPotDroughtLimit();
+uint64_t LuckyJackpotDrawDivisor();
+
 /** Context-independent validity checks */
 bool CheckBlockHeader(int32_t *futureblockp,int32_t height,CBlockIndex *pindex,const CBlockHeader& block, CValidationState& state, const CChainParams& chainparams, bool fCheckPOW = true);
 bool CheckBlock(int32_t *futureblockp,int32_t height,CBlockIndex *pindex,const CBlock& block, CValidationState& state, const CChainParams& chainparams,

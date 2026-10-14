@@ -41,25 +41,25 @@
  * defined unless necessary, but adherence to such recommendation is not enforced at
  * the consensus protocol layer.
  *
- * Namespace for Type Definitions - VerusID
- * Namespaces for type definitions are equivalent to VerusIDs, a protocol first
+ * Namespace for Type Definitions - LuckyID
+ * Namespaces for type definitions are equivalent to LuckyIDs, a protocol first
  * implemented on the Verus Blockchain, and also one that can support IDs registered
  * on any blockchain or uniquely named system that becomes recognized via a consensus-
  * based bridge on the Verus network. Currently, to be recognized as a unique
- * namespace, the easiest way is to base it on a VerusID, registered on the Verus
+ * namespace, the easiest way is to base it on a LuckyID, registered on the Verus
  * blockchain network. Since Verus names are easily resolvable at any scale worldwide,
  * one may think of these namespaces as an alternate form of fast, unlimited scale,
  * decentralized DNS, though Unicode enabled and much richer in nature of data records.
  *
- * First, it is important to understand the requirements of registered VerusID
- * identity names, which will also inform how externally generated VerusIDs are
+ * First, it is important to understand the requirements of registered LuckyID
+ * identity names, which will also inform how externally generated LuckyIDs are
  * recognized as well. For the purposes of the VDXF, we do not require
  * compatibility of the internal structure of IDs across different systems, and
  * only define compatibility requirements of the naming systems and how those
  * names translate into recognizeable IDs on the Verus network.
  *
- * VerusID names all have some components in common. These components are:
- * 1. "name": This is the friendly name associated with the specific VerusID.
+ * LuckyID names all have some components in common. These components are:
+ * 1. "name": This is the friendly name associated with the specific LuckyID.
  *    As of this writing, name may consist of any unicode characters, with the
  *    exception of the following, disallowed characters:
  *      \ / : * ? " < > |
@@ -76,14 +76,14 @@
  *      Tab characters
  *      Blank unicode characters
  *
- *    Although both upper and lower case names are allowed in VerusIDs, when
- *    using VerusIDs for lookup, duplication prevention, or namespace usage,
+ *    Although both upper and lower case names are allowed in LuckyIDs, when
+ *    using LuckyIDs for lookup, duplication prevention, or namespace usage,
  *    only the global character set latin lowercase characters are used for
  *    all upper and lowercase characters.
  *
  * 2. "name" can be combined in various ways to provide different elements that
  *    may be used in the VDXF. In each case, a name follows the same pattern
- *    as the name of a VerusID, but is combined with specific separators for
+ *    as the name of a LuckyID, but is combined with specific separators for
  *    unambiguous URL references, with defaults for simplicity. Here are some
  *    examples of the names that may be used as URLs:
  *
@@ -91,7 +91,7 @@
  *
  *          This is a way to refer to values that may be substituted for
  *          information located through idname.vrsc@exportedchain.vrsc.
- *          According to the VerusID specification, the suffix ".vrsc" is
+ *          According to the LuckyID specification, the suffix ".vrsc" is
  *          default, if not specified, and can be circumvented by terminating
  *          with a ".", when referring to non-vrsc systems that are supported
  *          in the vrsc network.

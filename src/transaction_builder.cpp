@@ -177,7 +177,7 @@ void TransactionBuilder::AddSproutOutput(
     CAmount value,
     std::array<unsigned char, ZC_MEMO_SIZE> memo)
 {
-    throw std::runtime_error("Sprout outputs are deprecated on the Verus network. Use a Sapling or later destination type for shielded outputs.");
+    throw std::runtime_error("Sprout outputs are deprecated on the Lucky Lode network. Use a Sapling or later destination type for shielded outputs.");
     if (sproutParams == nullptr) {
         throw std::runtime_error("Cannot add Sprout outputs to a TransactionBuilder without Sprout params");
     }
@@ -261,7 +261,7 @@ void TransactionBuilder::SendChangeTo(libzcash::SaplingPaymentAddress changeAddr
 
 void TransactionBuilder::SendChangeTo(libzcash::SproutPaymentAddress changeAddr)
 {
-    throw std::runtime_error("Sprout outputs are deprecated on the Verus network for any purpose. Use a Sapling or later destination type for change.");
+    throw std::runtime_error("Sprout outputs are deprecated on the Lucky Lode network for any purpose. Use a Sapling or later destination type for change.");
     sproutChangeAddr = changeAddr;
     saplingChangeAddr = boost::none;
     tChangeAddr = boost::none;
@@ -380,11 +380,11 @@ TransactionBuilderResult TransactionBuilder::Build(bool throwTxWithPartialSig)
             LogPrintf("%s: nativeChange: %ld, reserveChange: %s\n", __func__, change, reserveChange.ToUniValue().write(1,2).c_str());
             if (hasReserveChange)
             {
-                return TransactionBuilderResult("Reserve change must be sent to a transparent change address or VerusID");
+                return TransactionBuilderResult("Reserve change must be sent to a transparent change address or LuckyID");
             }
             else
             {
-                return TransactionBuilderResult("Change must be sent to a private or transparent change address or VerusID");
+                return TransactionBuilderResult("Change must be sent to a private or transparent change address or LuckyID");
             }
         }
 

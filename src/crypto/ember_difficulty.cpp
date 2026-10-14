@@ -1,5 +1,5 @@
-// (C) 2026 Lowmine developers — MIT, see COPYING.
-// EmberHash difficulty: see ember_difficulty.h.
+// (C) 2026 Lucky Lode developers — MIT, see COPYING.
+// LuckyHash difficulty: see ember_difficulty.h.
 
 #include "crypto/ember_difficulty.h"
 #include "uint256.h" // base_blob definition (arith_uint256.h only forward-declares)

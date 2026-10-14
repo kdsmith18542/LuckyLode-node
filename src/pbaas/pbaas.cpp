@@ -12809,7 +12809,7 @@ void CConnectedChains::SubmissionThread()
     }
     catch (const boost::thread_interrupted&)
     {
-        LogPrintf("Verus merge mining thread terminated\n");
+        LogPrintf("Merge mining thread terminated\n");
     }
 }
 

@@ -1439,8 +1439,8 @@ UniValue gettxout(const UniValue& params, bool fHelp)
             "     \"hex\" : \"hex\",        (string) \n"
             "     \"reqSigs\" : n,          (numeric) Number of required signatures\n"
             "     \"type\" : \"pubkeyhash\", (string) The type, eg pubkeyhash\n"
-            "     \"addresses\" : [          (array of string) array of Verus addresses\n"
-            "        \"verusaddress\"        (string) Verus address\n"
+            "     \"addresses\" : [          (array of string) array of Lucky Lode addresses\n"
+            "        \"address\"             (string) Lucky Lode address\n"
             "        ,...\n"
             "     ]\n"
             "  },\n"
@@ -1602,7 +1602,7 @@ UniValue getblockchaininfo(const UniValue& params, bool fHelp)
             "\nResult:\n"
             "{\n"
             "  \"chain\": \"xxxx\",        (string) current network type of blockchain (main, test, regtest)\n"
-            "  \"name\": \"xxxx\",         (string) current network name of blockchain ID (VRSC, VRSCTEST, PBAASNAME)\n"
+            "  \"name\": \"xxxx\",         (string) current network name of blockchain ID (LKYL, tLKYL, PBAASNAME)\n"
             "  \"chainid\": \"xxxx\",      (string) blockchain ID (i-address of the native blockchain currency)\n"
             "  \"blocks\": xxxxxx,         (numeric) the current number of blocks processed in the server\n"
             "  \"headers\": xxxxxx,        (numeric) the current number of headers we have validated\n"
@@ -1953,6 +1953,11 @@ UniValue getjackpotinfo(const UniValue& params, bool fHelp)
             "  \"reserve\": n,       (numeric) jackpot reserve after this block, base units\n"
             "  \"pot\": n,           (numeric) pot balance after this block, base units\n"
             "  \"drought\": n,       (numeric) event-less blocks ending at this block\n"
+            "  \"potdivisor\": n,    (numeric) effective pot draw divisor (1000 = spec;\n"
+            "                        regtest-only override via -lucky-pot-divisor)\n"
+            "  \"potdrought\": n,    (numeric) effective pity-timer limit (4320 = spec)\n"
+            "  \"jackpotdivisor\": n,(numeric) effective jackpot draw divisor (100 = spec;\n"
+            "                        regtest-only override via -lucky-jackpot-divisor)\n"
             "}\n"
         );
     LOCK(cs_main);
@@ -1972,6 +1977,11 @@ UniValue getjackpotinfo(const UniValue& params, bool fHelp)
     ret.push_back(Pair("reserve", (int64_t)pindex->nJackpotReserve));
     ret.push_back(Pair("pot", (int64_t)pindex->nLuckyReserve));
     ret.push_back(Pair("drought", (int64_t)pindex->nLuckyDrought));
+    // Effective draw parameters (advisory): pools must set their claim
+    // gate to the same divisor or claims silently disagree.
+    ret.push_back(Pair("potdivisor", (int64_t)LuckyPotDrawDivisor()));
+    ret.push_back(Pair("potdrought", (int64_t)LuckyPotDroughtLimit()));
+    ret.push_back(Pair("jackpotdivisor", (int64_t)LuckyJackpotDrawDivisor()));
     return ret;
 }
 

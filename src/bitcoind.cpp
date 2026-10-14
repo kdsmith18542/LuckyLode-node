@@ -106,7 +106,7 @@ bool AppInit(int argc, char* argv[])
     // Process help and version before taking care about datadir
     if (IsArgSet("-?") || IsArgSet("-h") ||  IsArgSet("-help") || IsArgSet("-version"))
     {
-        std::string strUsage = _("Verus Daemon") + " " + _("version") + " " + _(VERUS_VERSION) + "\n" + PrivacyInfo();
+        std::string strUsage = _("Lucky Lode Daemon") + " " + _("version") + " " + _(VERUS_VERSION) + "\n" + PrivacyInfo();
         if (IsArgSet("-version"))
         {
             strUsage += LicenseInfo();
@@ -114,7 +114,7 @@ bool AppInit(int argc, char* argv[])
         else
         {
             strUsage += "\n" + _("Usage:") + "\n" +
-                  "  verusd [options]                     " + _("Start Verus Daemon") + "\n";
+                  "  verusd [options]                     " + _("Start Lucky Lode Daemon") + "\n";
 
             strUsage += "\n" + HelpMessage(HMM_BITCOIND);
         }
@@ -160,7 +160,7 @@ bool AppInit(int argc, char* argv[])
                    "\n"
                    "You can look at the example configuration file for suggestions of default\n"
                    "options that you may want to change. It should be in one of these locations,\n"
-                   "depending on how you installed Verus:\n") +
+                   "depending on how you installed Lucky Lode:\n") +
                  _("- Source code:  %s\n"
                    "- .deb package: %s\n")).c_str(),
                 GetConfigFile().string().c_str(),

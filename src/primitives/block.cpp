@@ -346,7 +346,7 @@ void CBlockHeader::SetVerusV2Hash()
     CBlockHeader::hashFunction = &CBlockHeader::GetVerusV2Hash;
 }
 
-// Lucky Lode: EmberHash v1 block-header PoW digest.
+// Lucky Lode: LuckyHash v1 block-header PoW digest.
 //   header_bytes = nVersion || hashPrevBlock || hashMerkleRoot ||
 //                  hashFinalSaplingRoot || nTime || nBits ||
 //                  CompactSize(len(nSolution)) || nSolution
@@ -374,7 +374,7 @@ uint256 CBlockHeader::GetEmberHash(int32_t height) const
     {
         return uint256();
     }
-    // EmberHash output is big-endian bytes; uint256 stores little-endian,
+    // LuckyHash output is big-endian bytes; uint256 stores little-endian,
     // so reverse on copy (GetHex then matches the frozen vectors).
     uint256 digest;
     for (int i = 0; i < 32; i++)

@@ -1210,15 +1210,10 @@ int32_t komodo_checkPOW(int32_t slowflag,CBlock *pblock,int32_t height)
         fprintf(stderr,"komodo_checkPOW slowflag.%d ht.%d CheckEquihashSolution failed\n",slowflag,height);
         return -1;
     }
-    hash = pblock->GetHash(height);
-    bnTarget.SetCompact(pblock->nBits,&fNegative,&fOverflow);
-    bhash = UintToArith256(hash);
-    possible = komodo_block2pubkey33(pubkey33,pblock);
     if ( height == 0 )
     {
         if ( slowflag != 0 )
         {
-            fprintf(stderr,"height.%d slowflag.%d possible.%d cmp.%d\n",height,slowflag,possible,bhash > bnTarget);
             return 0;
         }
         BlockMap::const_iterator it = mapBlockIndex.find(pblock->hashPrevBlock);
@@ -1227,6 +1222,9 @@ int32_t komodo_checkPOW(int32_t slowflag,CBlock *pblock,int32_t height)
         if ( height == 0 )
             return 0;
     }
+    hash = pblock->GetHash(height);
+    bnTarget.SetCompact(pblock->nBits,&fNegative,&fOverflow);
+    bhash = UintToArith256(hash);
 
     if (ASSETCHAINS_LWMAPOS != 0 && pblock->IsVerusPOSBlock())
     {

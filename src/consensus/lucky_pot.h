@@ -43,8 +43,13 @@ static const uint64_t POT_DROUGHT_LIMIT = 4320; // ~3 days at 60s blocks
 // max-payouts, not % of (infinite) supply: ≈100 max jackpots + pot
 // equilibrium at the launch reward (founder decision §16.6 #2; frozen at
 // the genesis ceremony). 1 coin = 1e8 base units.
-static const uint64_t JACKPOT_SEED = 40000000000ULL; // ≈ 400 coins
-static const uint64_t LUCKY_SEED = 5000000000ULL;    // ≈ 50 coins
+// Genesis game-fund seed — LOCKED 2026-10-13 for the locked emission curve
+// (peak 16 LKYL/block): jackpot seed = 100 max-payouts (100 × 5R = 8,000
+// LKYL); pot seed = the pot equilibrium at R=16 (≈ 1,000 LKYL). Consensus
+// state at height 0, spendable only through the jackpot/pot payout rules.
+// Total ≈ 9,000 LKYL ≈ 0.1% of year-one issuance (docs/04 §4.1 guideline).
+static const uint64_t JACKPOT_SEED = 800000000000ULL; // 8,000 LKYL
+static const uint64_t LUCKY_SEED = 100000000000ULL;   // 1,000 LKYL
 
 /// Pot state carried in the block index (reorg-friendly).
 struct PotState
@@ -107,9 +112,11 @@ inline void PotFraction(uint64_t tier, uint64_t &num, uint64_t &den)
 
 /// Apply one block's money rules with the Lucky Pot. The node decides
 /// `draws`; this function applies the pity timer, the 4/1 split, both
-/// caps, the tiers, and exact conservation.
+/// caps, the tiers, and exact conservation. `drought_limit` defaults to
+/// the frozen spec (4320); regtest may override it to prove the pity
+/// path live — testnet/mainnet must not.
 inline PotPayout ApplyPotBlock(uint64_t reserve, PotState state, uint64_t base, uint64_t fees,
-                               BlockDraws draws)
+                               BlockDraws draws, uint64_t drought_limit = POT_DROUGHT_LIMIT)
 {
     uint64_t levy = jackpot::Levy(base, fees);
     uint64_t inflow = jackpot::sat_add(base, fees);
@@ -134,7 +141,7 @@ inline PotPayout ApplyPotBlock(uint64_t reserve, PotState state, uint64_t base, 
     uint64_t credited_pot = state.pot + to_pot;
     // Pity: force a tier-A splash after a full drought; a digest event at
     // any tier resets the run and never forces.
-    bool pity = !draws.pot_event && state.drought >= POT_DROUGHT_LIMIT;
+    bool pity = !draws.pot_event && state.drought >= drought_limit;
     bool pot_event = draws.pot_event || pity;
     uint64_t splash = 0;
     if (pot_event)

@@ -21,6 +21,7 @@
 #include "consensus/validation.h"
 #include "consensus/jackpot.h"
 #include "consensus/lucky_pot.h"
+#include "consensus/lucky_draw.h"
 #include "deprecation.h"
 #include "init.h"
 #include "merkleblock.h"
@@ -2870,6 +2871,28 @@ void CheckForkWarningConditionsOnNewFork(CBlockIndex* pindexNewForkTip, const CC
     CheckForkWarningConditions(chainParams);
 }
 
+// Lucky Lode: hardcoded seed nodes (chainparams vFixedSeeds) are never
+// counted as misbehaving. On a small network one spurious reject (e.g.
+// nodes disagreeing mid-rollout) would otherwise ban the only peer we
+// have — freezing sync with no recovery path. Matched by ip:port.
+static bool IsHardcodedSeedPeer(const std::string& addrName)
+{
+    if (addrName.empty())
+        return false;
+    CService peerAddr;
+    if (!LookupNumeric(addrName.c_str(), peerAddr))
+        return false;
+    BOOST_FOREACH(const SeedSpec6& seed, Params().FixedSeeds()) {
+        if (seed.port != peerAddr.GetPort())
+            continue;
+        struct in6_addr in6;
+        memcpy(&in6, seed.addr, sizeof(in6));
+        if (CNetAddr(in6) == static_cast<const CNetAddr&>(peerAddr))
+            return true;
+    }
+    return false;
+}
+
 // Requires cs_main.
 void Misbehaving(NodeId pnode, int howmuch)
 {
@@ -2879,6 +2902,13 @@ void Misbehaving(NodeId pnode, int howmuch)
     CNodeState *state = State(pnode);
     if (state == NULL)
         return;
+
+    // Lucky Lode: a hardcoded seed peer is never banned (see above).
+    if (IsHardcodedSeedPeer(state->name)) {
+        LogPrintf("%s: %s misbehaved (%d) but is a hardcoded seed — not counted\n",
+                  __func__, state->name, howmuch);
+        return;
+    }
 
     state->nMisbehavior += howmuch;
     int banscore = GetArg("-banscore", 100);
@@ -3826,6 +3856,52 @@ static int64_t nTimeConnect = 0;
 static int64_t nTimeIndex = 0;
 static int64_t nTimeCallbacks = 0;
 static int64_t nTimeTotal = 0;
+
+// Regtest-only draw overrides (internal/16 test affordances): make pot
+// events and the pity timer frequent so the full claim → PPLNS split →
+// balance → payout path is provable in minutes instead of days.
+// Defaults are the frozen spec; every non-regtest network always gets
+// the defaults, and the KAT pins the default math.
+uint64_t LuckyPotDrawDivisor()
+{
+    static uint64_t cached = 0;
+    if (cached == 0)
+    {
+        int64_t v = GetArg("-lucky-pot-divisor", 1000);
+        if (v < 1)
+            v = 1;
+        cached = Params().NetworkIDString() == "regtest" ? (uint64_t)v : 1000;
+        if (cached != 1000)
+            LogPrintf("regtest: lucky pot draw divisor overridden to %llu\n", (unsigned long long)cached);
+    }
+    return cached;
+}
+
+uint64_t LuckyPotDroughtLimit()
+{
+    static uint64_t cached = 0;
+    if (cached == 0)
+    {
+        int64_t v = GetArg("-lucky-pot-drought", (int64_t)lucky_pot::POT_DROUGHT_LIMIT);
+        if (v < 1)
+            v = 1;
+        cached = Params().NetworkIDString() == "regtest" ? (uint64_t)v : lucky_pot::POT_DROUGHT_LIMIT;
+    }
+    return cached;
+}
+
+uint64_t LuckyJackpotDrawDivisor()
+{
+    static uint64_t cached = 0;
+    if (cached == 0)
+    {
+        int64_t v = GetArg("-lucky-jackpot-divisor", 100);
+        if (v < 1)
+            v = 1;
+        cached = Params().NetworkIDString() == "regtest" ? (uint64_t)v : 100;
+    }
+    return cached;
+}
 
 bool ConnectBlock(const CBlock& block, CValidationState& state, CBlockIndex* pindex, CCoinsViewCache& view, const CChainParams& chainparams, bool fJustCheck, bool fCheckPOW, bool updateCumulativeIndex)
 {
@@ -5079,17 +5155,19 @@ bool ConnectBlock(const CBlock& block, CValidationState& state, CBlockIndex* pin
         lucky_pot::PotState parentPot;
         parentPot.pot = pindex->pprev ? pindex->pprev->nLuckyReserve : 0;
         parentPot.drought = pindex->pprev ? pindex->pprev->nLuckyDrought : 0;
-        arith_uint256 bnTarget;
-        bnTarget.SetCompact(block.nBits);
-        arith_uint256 bnHundred(100);
-        arith_uint256 bnThousand(1000);
-        arith_uint256 digest = UintToArith256(block.GetHash(pindex->GetHeight()));
-        arith_uint256 digestTier = digest - (digest / bnHundred) * bnHundred;
+        // Pre-committable draws (doc 06 rev 1.2, internal/16 §16.9): the
+        // ticket is SHA256D(parent hash || height) — fixed before grinding,
+        // so claim coinbases are built per template and every find lands.
+        // Fixed fractions of the full 256-bit space (exactly 1/odds of all
+        // heights, independent of difficulty). PoW-only: PoS blocks never
+        // claim (locked 2026-10-13) — the reserve keeps the bonus.
+        uint256 drawDigest = lucky_draw::Digest(block.hashPrevBlock, (int32_t)pindex->GetHeight());
         lucky_pot::BlockDraws draws;
-        draws.jackpot = digest < bnTarget / bnHundred;
-        draws.pot_event = digest < bnTarget / bnThousand;
-        draws.tier = digestTier.GetLow64();
-        lucky_pot::PotPayout lp = lucky_pot::ApplyPotBlock(parentReserve, parentPot, baseReward, feeTotal, draws);
+        bool isPoW = !block.IsVerusPOSBlock();
+        draws.jackpot = isPoW && lucky_draw::Jackpot(drawDigest, LuckyJackpotDrawDivisor());
+        draws.pot_event = isPoW && lucky_draw::PotEvent(drawDigest, LuckyPotDrawDivisor());
+        draws.tier = lucky_draw::Tier(drawDigest);
+        lucky_pot::PotPayout lp = lucky_pot::ApplyPotBlock(parentReserve, parentPot, baseReward, feeTotal, draws, LuckyPotDroughtLimit());
         nativeBlockReward = (CAmount)lp.miner + validExtraNative;
         // Funds are debited only by the bonus/splash the coinbase ACTUALLY
         // claims (drill-caught on the jackpot: assuming a full claim
@@ -5175,7 +5253,7 @@ bool ConnectBlock(const CBlock& block, CValidationState& state, CBlockIndex* pin
          reserveRewardTaken.valueMap[VERUS_CHAINID] > verusFees))
     {
         return state.DoS(100,
-                            error("ConnectBlock(): coinbase pays too much Verus reserve currency (actual=%ld vs limit=%ld)",
+                            error("ConnectBlock(): coinbase pays too much reserve currency (actual=%ld vs limit=%ld)",
                                 reserveRewardTaken.valueMap[VERUS_CHAINID], verusFees),
                             REJECT_INVALID, "bad-cb-amount");
     }
@@ -7210,7 +7288,7 @@ bool ProcessNewBlock(bool from_miner, int32_t height, CValidationState &state, c
         checked = CheckBlock(&futureblock, nHeight, 0, *pblock, state, chainparams, verifier, 0, true, false);
         bool fRequested = MarkBlockAsReceived(hash);
         fRequested |= fForceProcessing;
-        if ( checked != 0 && komodo_checkPOW(0, pblock, height) < 0 ) //from_miner && ASSETCHAINS_STAKED == 0
+        if ( checked != 0 && komodo_checkPOW(0, pblock, nHeight) < 0 ) //from_miner && ASSETCHAINS_STAKED == 0
         {
             checked = 0;
             //fprintf(stderr,"passed checkblock but failed checkPOW.%d\n",from_miner && ASSETCHAINS_STAKED == 0);

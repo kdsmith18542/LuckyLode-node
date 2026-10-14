@@ -1339,8 +1339,9 @@ CCurrencyDefinition::CCurrencyDefinition(const std::string &currencyName, bool t
         uniCurrency.pushKV("powaveragingwindow", (int64_t)DEFAULT_AVERAGING_WINDOW);
         uniCurrency.pushKV("notarizationperiod", (int)BLOCK_NOTARIZATION_MODULO);
 
-        if ((name == "VRSC" || name == "LUCKYLODE") && !testMode)
+        if (name == "VRSC" && !testMode)
         {
+            // Upstream Verus mainnet schedule (unchanged).
             UniValue uniEras(UniValue::VARR);
             UniValue uniEra1(UniValue::VOBJ);
             uniEra1.pushKV("reward", 0);
@@ -1367,7 +1368,40 @@ CCurrencyDefinition::CCurrencyDefinition(const std::string &currencyName, bool t
 
             *this = CCurrencyDefinition(uniCurrency);
         }
-        else if (name == "VRSCTEST" || name == "LUCKYLODETEST" || (testMode && (name == "VRSC" || name == "LUCKYLODE")))
+        else if (name == "LUCKYLODE" && !testMode)
+        {
+            // Lucky Lode mainnet emission — LOCKED 2026-10-13 (docs/04 §4.1):
+            // week-1 linear ramp 0 -> 16 LKYL, then halving every 2 years
+            // (16 -> 8 -> 4 -> 2 over 8 years), then a FIXED 1 LKYL/block
+            // tail forever (Monero-style anti-fade: miners never face a
+            // fees-only future). ~31.6M over 8 years + 525.6k/year tail.
+            UniValue uniEras(UniValue::VARR);
+            UniValue uniEra1(UniValue::VOBJ);
+            uniEra1.pushKV("reward", 0);            // ramp start; era 2's 16
+            uniEra1.pushKV("decay", 100000000);     // is the ramp target
+            uniEra1.pushKV("halving", 1);
+            uniEra1.pushKV("eraend", 10080);        // week 1 at 60s blocks
+            uniEras.push_back(uniEra1);
+
+            UniValue uniEra2(UniValue::VOBJ);
+            uniEra2.pushKV("reward", (int64_t)1600000000); // 16 LKYL
+            uniEra2.pushKV("decay", 0);
+            uniEra2.pushKV("halving", 1051920);     // 2 years
+            uniEra2.pushKV("eraend", 4217760);      // 4 halvings (16,8,4,2)
+            uniEras.push_back(uniEra2);
+
+            UniValue uniEra3(UniValue::VOBJ);
+            uniEra3.pushKV("reward", (int64_t)100000000); // 1 LKYL
+            uniEra3.pushKV("decay", 0);
+            uniEra3.pushKV("halving", 0);           // 0 = never halve again
+            uniEra3.pushKV("eraend", 0);            // forever
+            uniEras.push_back(uniEra3);
+
+            uniCurrency.pushKV("eras", uniEras);
+
+            *this = CCurrencyDefinition(uniCurrency);
+        }
+        else if (name == "VRSCTEST" || (testMode && name == "VRSC"))
         {
             name = "vrsctest";
 
@@ -1384,6 +1418,40 @@ CCurrencyDefinition::CCurrencyDefinition(const std::string &currencyName, bool t
             uniEra1.pushKV("halving", 1051924);
             uniEra1.pushKV("eraend", 0);
             uniEras.push_back(uniEra1);
+
+            uniCurrency.pushKV("eras", uniEras);
+
+            *this = CCurrencyDefinition(uniCurrency);
+        }
+        else if (name == "LUCKYLODETEST" || (testMode && name == "LUCKYLODE"))
+        {
+            // Lucky Lode testnet: NO preallocation — the upstream Verus
+            // testnet's 5,000,000-coin block-one preallocation would flow
+            // into ASSETCHAINS_SUPPLY and be added to the block-1 subsidy
+            // (komodo_utils.h nHeight==1), i.e. a premine. No premine.
+            // Era schedule: MIRRORS mainnet (locked 2026-10-13) so the
+            // ramp/halvings are exercised on testnet.
+            UniValue uniEras(UniValue::VARR);
+            UniValue uniEra1(UniValue::VOBJ);
+            uniEra1.pushKV("reward", 0);
+            uniEra1.pushKV("decay", 100000000);
+            uniEra1.pushKV("halving", 1);
+            uniEra1.pushKV("eraend", 10080);
+            uniEras.push_back(uniEra1);
+
+            UniValue uniEra2(UniValue::VOBJ);
+            uniEra2.pushKV("reward", (int64_t)1600000000);
+            uniEra2.pushKV("decay", 0);
+            uniEra2.pushKV("halving", 1051920);
+            uniEra2.pushKV("eraend", 4217760);
+            uniEras.push_back(uniEra2);
+
+            UniValue uniEra3(UniValue::VOBJ);
+            uniEra3.pushKV("reward", (int64_t)100000000);
+            uniEra3.pushKV("decay", 0);
+            uniEra3.pushKV("halving", 0);
+            uniEra3.pushKV("eraend", 0);
+            uniEras.push_back(uniEra3);
 
             uniCurrency.pushKV("eras", uniEras);
 

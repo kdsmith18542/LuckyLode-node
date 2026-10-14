@@ -1597,6 +1597,33 @@ int64_t komodo_max_money()
 
 uint64_t komodo_ac_block_subsidy(int nHeight)
 {
+    // Lucky Lode: regtest-only era compression for emission-curve tests.
+    // Applied HERE (not at arg-parse time) because the era globals are
+    // re-derived after komodo_args; scaling the values this function reads
+    // is the only placement that survives. Hard-gated to -regtest.
+    static bool luckyEraScaled = false;
+    if (!luckyEraScaled)
+    {
+        luckyEraScaled = true;
+        if (GetBoolArg("-regtest", false) && IsArgSet("-lucky-era-scale"))
+        {
+            int64_t sc = GetArg("-lucky-era-scale", 1);
+            if (sc > 1)
+            {
+                for (int j = 0; j < ASSETCHAINS_MAX_ERAS; j++)
+                {
+                    if (ASSETCHAINS_HALVING[j] > 0)
+                        ASSETCHAINS_HALVING[j] = std::max<int64_t>(1, ASSETCHAINS_HALVING[j] / sc);
+                    if (ASSETCHAINS_ENDSUBSIDY[j] > 0)
+                        ASSETCHAINS_ENDSUBSIDY[j] = std::max<int64_t>(1, ASSETCHAINS_ENDSUBSIDY[j] / sc);
+                }
+                LogPrintf("regtest: subsidy-time era scale applied (%lld) -> end=[%lld,%lld,%lld] halving=[%lld,%lld,%lld]\n",
+                    (long long)sc,
+                    (long long)ASSETCHAINS_ENDSUBSIDY[0], (long long)ASSETCHAINS_ENDSUBSIDY[1], (long long)ASSETCHAINS_ENDSUBSIDY[2],
+                    (long long)ASSETCHAINS_HALVING[0], (long long)ASSETCHAINS_HALVING[1], (long long)ASSETCHAINS_HALVING[2]);
+            }
+        }
+    }
     // we have to find our era, start from beginning reward, and determine current subsidy
     int64_t numerator, denominator, subsidy = 0;
     int64_t subsidyDifference;
@@ -1768,6 +1795,13 @@ void komodo_args(char *argv0)
         name = "VRSCTEST";
         PBAAS_TESTMODE = true;
     }
+    else if ((PBAAS_TESTMODE && lowerName == "luckylode") || lowerName == "luckylodetest")
+    {
+        // Lucky Lode testnet gets its own chain identity (distinct root
+        // currency ID + datadir), mirroring VRSC -> VRSCTEST.
+        name = "LUCKYLODETEST";
+        PBAAS_TESTMODE = true;
+    }
     else if (lowerName == "vrsc")
     {
         name = "VRSC";
@@ -1820,6 +1854,19 @@ void komodo_args(char *argv0)
             uint32_t defaultHalving = mainVerusCurrency.halving[0];
             std::string halving = GetArg("-ac_halving", std::to_string(defaultHalving)); // this assignment is required for an ARM compiler workaround
             mainVerusCurrency.halving[0] = atoi(halving);
+        }
+
+        // Lucky Lode: regtest-only era compression for emission-curve tests.
+        // Scales every era's halving interval and end height so the ramp,
+        // the halvings, and the fixed tail can be walked in minutes instead
+        // of years. Hard-gated to -regtest; never applies to testnet/mainnet.
+        int64_t luckyEraScale = 1;
+        if (GetBoolArg("-regtest", false) && IsArgSet("-lucky-era-scale"))
+        {
+            luckyEraScale = GetArg("-lucky-era-scale", 1);
+            if (luckyEraScale < 1)
+                luckyEraScale = 1;
+            LogPrintf("regtest: lucky era scale overridden to %lld\n", (long long)luckyEraScale);
         }
 
         for (int j = 0; j < ASSETCHAINS_MAX_ERAS; j++)

@@ -8,6 +8,7 @@
 #include "consensus/consensus.h"
 #include "consensus/jackpot.h"
 #include "consensus/lucky_pot.h"
+#include "consensus/lucky_draw.h"
 #include "consensus/validation.h"
 #include "core_io.h"
 #ifdef ENABLE_MINING
@@ -255,13 +256,13 @@ UniValue generate(const UniValue& params, bool fHelp)
             throw JSONRPCError(RPC_INTERNAL_ERROR, "Couldn't create new block");
         CBlock *pblock = &pblocktemplate->block;
 
-        // Lucky Lode: EmberHash regtest path — grind the u64 nonce directly.
+        // Lucky Lode: LuckyHash regtest path — grind the u64 nonce directly.
         // (The equihash solver below is a legacy loop for equihash-era
         // chains; using it here would only add an equihash solve between
-        // EmberHash checks.)
+        // LuckyHash checks.)
         if (ASSETCHAINS_ALGO == ASSETCHAINS_EMBERHASH)
         {
-            // Lucky Lode: EmberHash regtest path — grind the u64 nonce directly.
+            // Lucky Lode: LuckyHash regtest path — grind the u64 nonce directly.
             arith_uint256 bnTarget;
             bnTarget.SetCompact(pblock->nBits);
             uint256 emberTarget = ArithToUint256(bnTarget);
@@ -320,7 +321,7 @@ UniValue generate(const UniValue& params, bool fHelp)
                 }
                 pblock->nSolution = soln;
                 solutionTargetChecks.increment();
-                // Lucky Lode: the block under construction is tip+1; EmberHash binds height
+                // Lucky Lode: the block under construction is tip+1; LuckyHash binds height
                 // into its salt, so the checked height must be the block's own (the
                 // unconditional tip height was harmless only for height-blind hashes).
                 return CheckProofOfWork(*pblock, chainActive.Height() + 1, Params().GetConsensus());
@@ -1089,11 +1090,12 @@ UniValue getblocktemplate(const UniValue& params, bool fHelp)
     }
     if (ASSETCHAINS_ALGO == ASSETCHAINS_EMBERHASH)
     {
-        // Lucky Lode: jackpot template info for pools (doc 06 §6.2, J1).
-        // Advisory only — the node re-derives everything authoritatively
-        // at ConnectBlock; pools must still handle normal templates.
-        // (Placed outside the coinbasetxn/coinbaseaux branches: pools need
-        // these fields in both modes.)
+        // Lucky Lode: EXACT jackpot/pot claims for the next height (doc 06
+        // rev 1.2, internal/16 §16.9). Draws are pre-committable: the
+        // ticket is SHA256D(tip hash || next height), so this template's
+        // claim class is final before grinding — pools build the claim
+        // coinbase for the height and submit every find (no withholding).
+        // The node re-derives everything authoritatively at ConnectBlock.
         uint64_t tipReserve = chainActive.Tip() ? chainActive.Tip()->nJackpotReserve : 0;
         uint64_t nextR = (uint64_t)GetBlockSubsidy(pindexPrev->GetHeight() + 1, Params().GetConsensus());
         // Exact fees: vTxFees[0] is set to -nFees when the template is built
@@ -1101,26 +1103,37 @@ UniValue getblocktemplate(const UniValue& params, bool fHelp)
         uint64_t nextF = (!pblocktemplate->vTxFees.empty() && pblocktemplate->vTxFees[0] < 0)
                              ? (uint64_t)(-pblocktemplate->vTxFees[0])
                              : 0;
-        jackpot::Payout est = jackpot::ApplyBlock(tipReserve, nextR, nextF, false);
+        uint256 nextDraw = lucky_draw::Digest(pindexPrev->GetBlockHash(), (int32_t)(pindexPrev->GetHeight() + 1));
+        bool nextJackpot = lucky_draw::Jackpot(nextDraw, LuckyJackpotDrawDivisor());
+        bool nextPot = lucky_draw::PotEvent(nextDraw, LuckyPotDrawDivisor());
+        uint64_t nextTier = lucky_draw::Tier(nextDraw);
+        jackpot::Payout est = jackpot::ApplyBlock(tipReserve, nextR, nextF, nextJackpot);
         result.push_back(Pair("jackpotreserve", (int64_t)tipReserve));
-        result.push_back(Pair("jackpotbonus", (int64_t)jackpot::JackpotBonus(nextR, est.reserve)));
-        // Lucky Pot advisory (internal/16): balance at tip, the balance the
-        // next block's slice projects to (the base tier fractions apply
-        // to), and the current event-less run for the pity timer. Advisory
-        // only — ConnectBlock re-derives everything.
+        // Exact bonus this height can claim (0 when not a jackpot height).
+        result.push_back(Pair("jackpotbonus", (int64_t)est.bonus));
+        // Lucky Pot advisory: EXACT splash this height can claim (pot event
+        // tier or the pity-timer floor; 0 otherwise) — the pool splices it
+        // verbatim. potreserve/potdrought stay for dashboards.
         uint64_t tipPot = chainActive.Tip() ? chainActive.Tip()->nLuckyReserve : 0;
         uint64_t tipDrought = chainActive.Tip() ? chainActive.Tip()->nLuckyDrought : 0;
         lucky_pot::PotState potState;
         potState.pot = tipPot;
         potState.drought = tipDrought;
-        lucky_pot::BlockDraws noDraws;
-        noDraws.jackpot = false;
-        noDraws.pot_event = false;
-        noDraws.tier = 0;
-        lucky_pot::PotPayout potEst = lucky_pot::ApplyPotBlock(tipReserve, potState, nextR, nextF, noDraws);
+        lucky_pot::BlockDraws nextDraws;
+        nextDraws.jackpot = nextJackpot;
+        nextDraws.pot_event = nextPot;
+        nextDraws.tier = nextTier;
+        lucky_pot::PotPayout potEst = lucky_pot::ApplyPotBlock(tipReserve, potState, nextR, nextF, nextDraws);
         result.push_back(Pair("potreserve", (int64_t)tipPot));
-        result.push_back(Pair("potcredited", (int64_t)potEst.pot));
+        result.push_back(Pair("potcredited", (int64_t)potEst.pot_splash));
         result.push_back(Pair("potdrought", (int64_t)tipDrought));
+        // Pity-aware pools need the effective limit to decide whether the
+        // NEXT block is a forced (claimable) pot event.
+        result.push_back(Pair("potdroughtlimit", (int64_t)LuckyPotDroughtLimit()));
+        // Draw class of the next height (spectacle + pool sanity checks).
+        result.push_back(Pair("drawjackpot", nextJackpot));
+        result.push_back(Pair("drawpot", nextPot));
+        result.push_back(Pair("drawtier", (int64_t)nextTier));
     }
     result.push_back(Pair("longpollid", chainActive.LastTip()->GetBlockHash().GetHex() + i64tostr(nTransactionsUpdatedLast)));
     if ( ASSETCHAINS_STAKED != 0 )

@@ -1,8 +1,8 @@
-// Copyright (c) 2026 Lowmine developers
+// Copyright (c) 2026 Lucky Lode developers
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 //
-// EmberHash difficulty: exact integer LWMA retarget (doc 05 §5.3 rev 1.1).
+// LuckyHash difficulty: exact integer LWMA retarget (doc 05 §5.3 rev 1.1).
 // Normative reference: Rust `lm-pow::difficulty::lwma_next_target`; the KAT
 // runner (`ember_diff_kat.cpp`) must agree on every vector.
 //
@@ -17,8 +17,8 @@
 // floor(avg*acc/D) = q*acc + floor(r*acc/D) with q = avg/D, r = avg%D
 // (r < D < 2^17, acc < 2^20 ⇒ the remainder product fits in u64).
 
-#ifndef LOWMINE_EMBER_DIFFICULTY_H
-#define LOWMINE_EMBER_DIFFICULTY_H
+#ifndef LUCKYLODE_EMBER_DIFFICULTY_H
+#define LUCKYLODE_EMBER_DIFFICULTY_H
 
 #include "arith_uint256.h"
 #include <stdint.h>
@@ -45,4 +45,4 @@ namespace ember
                         const int64_t *times, size_t nTimes);
 }
 
-#endif // LOWMINE_EMBER_DIFFICULTY_H
+#endif // LUCKYLODE_EMBER_DIFFICULTY_H

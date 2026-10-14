@@ -90,7 +90,7 @@ void ThreadSendAlert()
     //  4000 or higher will put the RPC into safe mode
     alert.nPriority     = 4000;
     alert.strComment    = "";
-    alert.strStatusBar  = "Your client version has degraded networking behavior. Please update to the most recent version of Verus (0.5.9 or later).";
+    alert.strStatusBar  = "Your client version has degraded networking behavior. Please update to the most recent version of Lucky Lode (0.5.9 or later).";
     alert.strRPCError   = alert.strStatusBar;
 
     // Set specific client version/versions here. If setSubVer is empty, no filtering on subver is done:

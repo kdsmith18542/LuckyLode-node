@@ -537,7 +537,7 @@ static std::string FormatException(const std::exception* pex, const char* pszThr
     char pszModule[MAX_PATH] = "";
     GetModuleFileNameA(NULL, pszModule, sizeof(pszModule));
 #else
-    const char* pszModule = "Verus";
+    const char* pszModule = "LuckyLode";
 #endif
     if (pex)
         return strprintf(
@@ -560,6 +560,11 @@ void PrintExceptionContinue(const std::exception* pex, const char* pszThread)
 
 std::string CanonicalChainFileName(std::string chainName)
 {
+    // Lucky Lode root chains keep their own name for config files and
+    // datadirs (like VRSC), instead of the hex ID used for PBaaS chains.
+    std::string upper = boost::to_upper_copy(chainName);
+    if (upper == "LUCKYLODE" || upper == "LUCKYLODETEST")
+        return upper;
     if (chainName != "VRSC")
     {
         // except for VRSC and vrsctest, all chains config files are named the hex value of the
@@ -617,6 +622,11 @@ boost::filesystem::path GetDefaultDataDir()
     {
         if (_IsVerusActive())
         {
+            std::string sym(symbol);
+            if (sym == "LUCKYLODE")
+                return pathRet / "LuckyLode";
+            if (sym == "LUCKYLODETEST")
+                return pathRet / "LuckyLodeTest";
             pathRet /= "Komodo";
             TryCreateDirectory(pathRet);
         }
@@ -637,6 +647,11 @@ boost::filesystem::path GetDefaultDataDir()
     {
         if (_IsVerusActive())
         {
+            std::string sym(symbol);
+            if (sym == "LUCKYLODE")
+                return pathRet / ".luckylode";
+            if (sym == "LUCKYLODETEST")
+                return pathRet / ".luckylodetest";
             return pathRet / ".komodo" / symbol;
         }
         else
@@ -1224,8 +1239,8 @@ void SetThreadPriority(int nPriority)
 std::string PrivacyInfo()
 {
     return "\n" +
-           FormatParagraph(strprintf(_("In order to ensure you are adequately protecting your privacy when using Zcash, please see <%s>."),
-                                     "https://z.cash/support/security/")) + "\n";
+           FormatParagraph(strprintf(_("In order to ensure you are adequately protecting your privacy when using Lucky Lode, please see <%s>."),
+                                     "https://luckylode.cc")) + "\n";
 }
 
 std::string LicenseInfo()
@@ -1235,6 +1250,7 @@ std::string LicenseInfo()
            FormatParagraph(strprintf(_("Copyright (C) 2015-%i The Zcash Developers"), COPYRIGHT_YEAR)) + "\n" +
            FormatParagraph(strprintf(_("Copyright (C) 2015-%i jl777 and SuperNET developers"), COPYRIGHT_YEAR)) + "\n" +
            FormatParagraph(strprintf(_("Copyright (C) 2018-%i The Verus developers"), COPYRIGHT_YEAR)) + "\n" +
+           FormatParagraph(strprintf(_("Copyright (C) 2026-%i The Lucky Lode developers"), COPYRIGHT_YEAR)) + "\n" +
            "\n" +
            FormatParagraph(_("This is experimental software.")) + "\n" +
            "\n" +

@@ -1,8 +1,8 @@
-// Copyright (c) 2026 Lowmine developers
+// Copyright (c) 2026 Lucky Lode developers
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 //
-// CEmberHash — the fork's block-header PoW digest (EmberHash v1, doc 05
+// CEmberHash — the fork's block-header PoW digest (LuckyHash v1, doc 05
 // rev 1.0 + Addendum A). Normative reference: Rust `lm-pow` crate; the KAT
 // runner (`ember_kat.cpp`) must agree with it byte-for-byte.
 //
@@ -11,8 +11,8 @@
 //   mem  = Argon2id(seed, salt, AD="lowmine-pow/v1", m=1024, t=3, p=1, out=32)
 //   out  = BLAKE3(mem || seed)                    // compared big-endian
 
-#ifndef LOWMINE_EMBER_HASH_H
-#define LOWMINE_EMBER_HASH_H
+#ifndef LUCKYLODE_EMBER_HASH_H
+#define LUCKYLODE_EMBER_HASH_H
 
 #include <stdint.h>
 #include <stddef.h>
@@ -36,4 +36,4 @@ namespace ember
               uint64_t nonce, uint64_t height);
 }
 
-#endif // LOWMINE_EMBER_HASH_H
+#endif // LUCKYLODE_EMBER_HASH_H

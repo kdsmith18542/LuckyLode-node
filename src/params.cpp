@@ -229,15 +229,18 @@ void initalizeMapParamBootstrap() {
     ParamFile bootSigFile;
     bootSigFile.name = "bootstrap-signature";
     bootSigFile.verified = false;
+    // Lucky Lode: never point -bootstrap at upstream Verus files — a foreign
+    // chain's blocks would be imported. No Lucky Lode bootstrap is published
+    // yet; these URLs 404 until one is (download failure is non-fatal).
     if (_IsVerusMainnetActive())
     {
-        bootSigFile.URL = "https://bootstrap.verus.io/VRSC-bootstrap.tar.gz.verusid";
-        bootSigFile.path = GetDataDir() / "VRSC-bootstrap.tar.gz.verusid";
+        bootSigFile.URL = "https://luckylode.cc/bootstrap/luckylode-mainnet-bootstrap.tar.gz.verusid";
+        bootSigFile.path = GetDataDir() / "luckylode-mainnet-bootstrap.tar.gz.verusid";
     }
     else if (_IsVerusActive())
     {
-        bootSigFile.URL = "https://bootstrap.verustest.net/vrsctest-bootstrap.tar.gz.verusid";
-        bootSigFile.path = GetDataDir() / "verustest-bootstrap.tar.gz.verusid";
+        bootSigFile.URL = "https://luckylode.cc/bootstrap/luckylode-testnet-bootstrap.tar.gz.verusid";
+        bootSigFile.path = GetDataDir() / "luckylode-testnet-bootstrap.tar.gz.verusid";
     }
     else if (_IsCurrentChainID(vARRRChainID()))
     {
@@ -264,13 +267,13 @@ void initalizeMapParamBootstrap() {
     bootFile.verified = false;
     if (_IsVerusMainnetActive())
     {
-        bootFile.URL = "https://bootstrap.verus.io/VRSC-bootstrap.tar.gz";
-        bootFile.path = GetDataDir() / "VRSC-bootstrap.tar.gz";
+        bootFile.URL = "https://luckylode.cc/bootstrap/luckylode-mainnet-bootstrap.tar.gz";
+        bootFile.path = GetDataDir() / "luckylode-mainnet-bootstrap.tar.gz";
     }
     else if (_IsVerusActive())
     {
-        bootFile.URL = "https://bootstrap.verustest.net/vrsctest-bootstrap.tar.gz";
-        bootFile.path = GetDataDir() / "verustest-bootstrap.tar.gz";
+        bootFile.URL = "https://luckylode.cc/bootstrap/luckylode-testnet-bootstrap.tar.gz";
+        bootFile.path = GetDataDir() / "luckylode-testnet-bootstrap.tar.gz";
     }
     else if (_IsCurrentChainID(vARRRChainID()))
     {

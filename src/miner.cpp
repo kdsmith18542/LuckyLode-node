@@ -2039,7 +2039,7 @@ CBlockTemplate* CreateNewBlock(const CChainParams& chainparams, const std::vecto
     // mining reward based on its weight relative to the total
     if (!(minerOutputs.size() && ConnectedChains.SetLatestMiningOutputs(minerOutputs) || isStake))
     {
-        fprintf(stderr,"%s: Must have valid miner outputs, including script with valid PK, PKH, or Verus ID destination.\n", __func__);
+        fprintf(stderr,"%s: Must have valid miner outputs, including script with valid PK, PKH, or LuckyID destination.\n", __func__);
         return NULL;
     }
 
@@ -4229,7 +4229,7 @@ static int ReadPackageTempC() { return -1; }
 
 void static VerusStaker(CWallet *pwallet)
 {
-    LogPrintf("Verus staker thread started\n");
+    LogPrintf("Lucky Lode staker thread started\n");
     RenameThread("verus-staker");
 
     const CChainParams& chainparams = Params();
@@ -4464,13 +4464,13 @@ typedef bool (*minefunction)(CBlockHeader &bh, CVerusHashV2bWriter &vhw, uint256
 bool mine_verus_v2(CBlockHeader &bh, CVerusHashV2bWriter &vhw, uint256 &finalHash, uint256 &target, uint64_t start, uint64_t *count, int32_t height);
 bool mine_verus_v2_port(CBlockHeader &bh, CVerusHashV2bWriter &vhw, uint256 &finalHash, uint256 &target, uint64_t start, uint64_t *count, int32_t height);
 
-// Lucky Lode: EmberHash v1 mining loop (doc 05). Header fields are fixed
+// Lucky Lode: LuckyHash v1 mining loop (doc 05). Header fields are fixed
 // during the grind; only nNonce varies (u64 domain, D3). Digest comparison
 // matches CheckProofOfWork: valid iff digest <= target (arith compare).
 
 bool mine_ember(CBlockHeader &bh, CVerusHashV2bWriter &vhw, uint256 &finalHash, uint256 &target, uint64_t start, uint64_t *count, int32_t height)
 {
-    (void)vhw; // writer unused: EmberHash hashes the canonical Addendum A bytes
+    (void)vhw; // writer unused: LuckyHash hashes the canonical Addendum A bytes
     CDataStream ss(SER_NETWORK, PROTOCOL_VERSION);
     ss << bh.nVersion << bh.hashPrevBlock << bh.hashMerkleRoot << bh.hashFinalSaplingRoot
        << bh.nTime << bh.nBits << bh.nSolution;
@@ -4716,7 +4716,7 @@ void static BitcoinMiner_noeq()
                 // GetVersionByHeight(height) — V1 when no VerusHash-era
                 // solution vector can be sourced (validation and the miner
                 // agree via that same helper). The V2 gate is VerusHash-era
-                // plumbing: skip it for EmberHash so the production miner
+                // plumbing: skip it for LuckyHash so the production miner
                 // runs on fresh chains instead of spinning on this gate.
                 if ( ASSETCHAINS_ALGO != ASSETCHAINS_EMBERHASH )
                 {

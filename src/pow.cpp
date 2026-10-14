@@ -125,7 +125,7 @@ unsigned int lwmaGetNextWorkRequired(const CBlockIndex* pindexLast, const CBlock
 unsigned int lwmaCalculateNextWorkRequired(const CBlockIndex* pindexLast, const Consensus::Params& params)
 {
     // Lucky Lode: exact integer LWMA (doc 05 §5.3 rev 1.1, N=60, K=1830,
-    // ±1/3 clamp, POW_LIMIT) for the EmberHash fresh chain. Early heights
+    // ±1/3 clamp, POW_LIMIT) for the LuckyHash fresh chain. Early heights
     // (fewer than N blocks) use the starting difficulty clamped to limit.
     if (ASSETCHAINS_ALGO == ASSETCHAINS_EMBERHASH)
     {
@@ -518,7 +518,7 @@ bool CheckProofOfWork(const CBlockHeader &blkHeader, int32_t height, const Conse
     arith_uint256 bnLimit;
     if (ASSETCHAINS_ALGO == ASSETCHAINS_EMBERHASH)
     {
-        // EmberHash v1: POW_LIMIT is the bound from block 1; genesis
+        // LuckyHash v1: POW_LIMIT is the bound from block 1; genesis
         // (height 0) is pinned by its hardcoded hash, not by target.
         bnLimit = (height == 0) ? ~arith_uint256(0) : ember::PowLimit();
     }

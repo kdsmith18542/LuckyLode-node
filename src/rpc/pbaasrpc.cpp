@@ -2014,7 +2014,7 @@ void CheckVerusVaultAPIsValid()
     if (!chainActive.LastTip() ||
         CConstVerusSolutionVector::activationHeight.ActiveVersion(chainActive.LastTip()->GetHeight()) < CConstVerusSolutionVector::activationHeight.ACTIVATE_VERUSVAULT)
     {
-        throw JSONRPCError(RPC_INVALID_REQUEST, "Verus Vault and VerusID Marketplace not activated on blockchain.");
+        throw JSONRPCError(RPC_INVALID_REQUEST, "Verus Vault and LuckyID Marketplace not activated on blockchain.");
     }
 }
 
@@ -2966,7 +2966,7 @@ UniValue getcurrency(const UniValue& params, bool fHelp)
             "    \"currencynames\" : \"{\"i-address\":\"fullname\",...}\", (obj) i-addresses mapped to fully qualified names of all sub-currencies\n"
             "    \"initialsupply\" : n,                     (number) initial currency supply for fractional currencies before preallocation or issuance\n"
             "    \"prelaunchcarveout\" : n,                 (number) pre-launch percentage of proceeds for fractional currency sent to launching ID\n"
-            "    \"preallocations\" : \"[{\"i-address\":n}, ...]\", (objarray) VerusIDs and amounts for pre-allocation at launch\n"
+            "    \"preallocations\" : \"[{\"i-address\":n}, ...]\", (objarray) LuckyIDs and amounts for pre-allocation at launch\n"
             "    \"initialcontributions\" : \"[n, ...]\",   (numberarray) amounts of pre-conversions reserved for launching ID\n"
             "    \"idregistrationfees\" : n,                (number) base cost of IDs for this currency namespace in this currency\n"
             "    \"idreferrallevels\" : n,                  (int) levels of ID referrals (only for native PBaaS chains and IDs)\n"
@@ -3864,7 +3864,7 @@ UniValue listcurrencies(const UniValue& params, bool fHelp)
             "    \"currencynames\" : \"{\"i-address\":\"fullname\",...}\", (obj) i-addresses mapped to fully qualified names of all sub-currencies\n"
             "    \"initialsupply\" : n,                     (number) initial currency supply for fractional currencies before preallocation or issuance\n"
             "    \"prelaunchcarveout\" : n,                 (number) pre-launch percentage of proceeds for fractional currency sent to launching ID\n"
-            "    \"preallocations\" : \"[{\"i-address\":n}, ...]\", (objarray) VerusIDs and amounts for pre-allocation at launch\n"
+            "    \"preallocations\" : \"[{\"i-address\":n}, ...]\", (objarray) LuckyIDs and amounts for pre-allocation at launch\n"
             "    \"initialcontributions\" : \"[n, ...]\",   (numberarray) amounts of pre-conversions reserved for launching ID\n"
             "    \"idregistrationfees\" : n,                (number) base cost of IDs for this currency namespace in this currency\n"
             "    \"idreferrallevels\" : n,                  (int) levels of ID referrals (only for native PBaaS chains and IDs)\n"
@@ -7911,7 +7911,7 @@ UniValue makeoffer(const UniValue& params, bool fHelp)
             "the specific asset.\n"
 
             "\nArguments\n"
-            "1. \"fromaddress\"             (string, required) The VerusID, or wildcard address to send funds from. \"*\", \"R*\", or \"i*\" are valid wildcards\n"
+            "1. \"fromaddress\"             (string, required) The LuckyID, or wildcard address to send funds from. \"*\", \"R*\", or \"i*\" are valid wildcards\n"
             "2. {\n"
             "     \"changeaddress\"         (string, required) Change destination when constructing transactions\n"
             "     \"expiryheight\"          (number, optional) Block height at which this offer expires. Defaults to 20 blocks (avg 1/minute)\n"
@@ -8880,7 +8880,7 @@ UniValue takeoffer(const UniValue& params, bool fHelp)
             "to execute it, and posts the transaction to the blockchain.\n"
 
             "\nArguments\n"
-            "\"fromaddress\"            (string, required) The Sapling, VerusID, or wildcard address to send funds from, including fees for ID swaps.\n"
+            "\"fromaddress\"            (string, required) The Sapling, LuckyID, or wildcard address to send funds from, including fees for ID swaps.\n"
             "                                              \"*\", \"R*\", or \"i*\" are valid wildcards\n"
             "{\n"
                 "\"txid\"               (string, required) The transaction ID for the offer to accept\n"
@@ -9181,13 +9181,13 @@ UniValue takeoffer(const UniValue& params, bool fHelp)
             CTxDestination identityDest = DecodeDestination(uni_get_str(deliver));
             if (identityDest.which() != COptCCParams::ADDRTYPE_ID)
             {
-                throw JSONRPCError(RPC_INVALID_PARAMETER, "If a VerusID is specified to deliver when taking the offer, it must be a valid ID name or i-address on this chain");
+                throw JSONRPCError(RPC_INVALID_PARAMETER, "If a LuckyID is specified to deliver when taking the offer, it must be a valid ID name or i-address on this chain");
             }
             bool idInWallet = pwalletMain->GetIdentity(GetDestinationID(identityDest), keyAndIdentity);
 
             if (!idInWallet || !(*(CIdentity *)(&keyAndIdentity.second) = CIdentity::LookupIdentity(GetDestinationID(identityDest), 0, nullptr, &idInput)).IsValid())
             {
-                throw JSONRPCError(RPC_INVALID_PARAMETER, "No authority over VerusID or ID not found");
+                throw JSONRPCError(RPC_INVALID_PARAMETER, "No authority over LuckyID or ID not found");
             }
 
             uint256 blkHash;
@@ -9203,7 +9203,7 @@ UniValue takeoffer(const UniValue& params, bool fHelp)
                 // we need either signing authority, revocation, recovery, or any combination to be able to create a delivery transaction
                 if (keyAndIdentity.second.revocationAuthority == idIDToDeliver && keyAndIdentity.second.recoveryAuthority == idIDToDeliver)
                 {
-                    throw JSONRPCError(RPC_INVALID_PARAMETER, "No authority over VerusID specified for delivery");
+                    throw JSONRPCError(RPC_INVALID_PARAMETER, "No authority over LuckyID specified for delivery");
                 }
                 // if recovery is different, get it and see if we have signing authority on that
                 if (keyAndIdentity.second.revocationAuthority != idIDToDeliver)
@@ -10817,13 +10817,13 @@ UniValue sendcurrency(const UniValue& params, bool fHelp)
     {
         throw runtime_error(
             "sendcurrency \"fromaddress\" '[{\"address\":... ,\"amount\":...},...]' (minconfs) (feeamount) (returntxtemplate)\n"
-            "\nThis sends one or many Verus outputs to one or many addresses on the same or another chain.\n"
+            "\nThis sends one or many Lucky Lode outputs to one or many addresses on the same or another chain.\n"
             "Funds are sourced automatically from the current wallet, which must be present, as in sendtoaddress.\n"
             "If \"fromaddress\" is specified, all funds will be taken from that address, otherwise funds may come\n"
             "from any source set of UTXOs controlled by the wallet.\n"
 
             "\nArguments\n"
-            "1. \"fromaddress\"             (string, required) The Sapling, VerusID, or wildcard address to send funds from. \"*\", \"R*\", or \"i*\" are valid wildcards\n"
+            "1. \"fromaddress\"             (string, required) The Sapling, LuckyID, or wildcard address to send funds from. \"*\", \"R*\", or \"i*\" are valid wildcards\n"
             "2. \"outputs\"                 (array, required) An array of json objects representing currencies, amounts, and destinations to send.\n"
             "    [{\n"
             "      \"currency\": \"name\"   (string, required) Name of the source currency to send in this output, defaults to native of chain\n"
@@ -16540,11 +16540,11 @@ UniValue setidentitytimelock(const UniValue& params, bool fHelp)
     {
         throw runtime_error(
             "setidentitytimelock \"id@\" '{\"unlockatblock\":absoluteblockheight || \"setunlockdelay\":numberofblocksdelayafterunlock}' (returntx) (feeoffer) (sourceoffunds)\n"
-            "\nEnables timelocking and unlocking of funds access for an on-chain VerusID. This does not affect the lock status of VerusIDs on other chains,\n"
-            "including VerusIDs with the same identity as this one, which has been exported to another chain.\n"
+            "\nEnables timelocking and unlocking of funds access for an on-chain LuckyID. This does not affect the lock status of LuckyIDs on other chains,\n"
+            "including LuckyIDs with the same identity as this one, which has been exported to another chain.\n"
             "\nUse \"setunlockdelay\" to set a time unlock delay on an identity, which means that once the identity has been unlocked,\n"
             "numberofblocksdelayafterunlock must then pass before the identity will be able to spend funds on this blockchain. Services\n"
-            "which support VerusID authentication and recognize this setting may also choose to prevent funds transfers when an ID is locked.\n"
+            "which support LuckyID authentication and recognize this setting may also choose to prevent funds transfers when an ID is locked.\n"
             "\nUse \"unlockatblock\" to either unlock, by passing the current block, which will still require waiting for the specified unlock\n"
             "delay, or to set a future unlock height that immediately begins counting down. Unlike an unlock delay, which only starts counting\n"
             "down when the ID is unlocked, an \"unlockatblock\" time lock is absolute and will automatically unlock when the specified\n"

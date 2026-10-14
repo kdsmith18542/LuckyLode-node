@@ -2458,8 +2458,38 @@ int32_t CWallet::VerusStakeTransaction(CBlock *pBlock, CMutableTransaction &txNe
         return 0;
     }
 
-    txOut1.scriptPubKey << OP_RETURN
-        << CStakeParams(pSrcIndex->GetHeight(), tipindex->GetHeight() + 1, tipindex->GetBlockHash(), rewardDest).AsVector();
+    // Lucky Lode: the stake OP_RETURN form must match what the validator
+    // expects at this height. Extended (v2) stakes are only accepted once
+    // the chain's solution version reaches ACTIVATE_EXTENDEDSTAKE; before
+    // that (and on our fresh LuckyHash fork, where the solution-version
+    // activation heights are not set at all) the legacy v1 form with a
+    // reward pubkey is required — the v2 form is rejected by
+    // ValidateStakeTransaction (found live 2026-10-13: the staker minted v2
+    // blocks that the node's own validator refused).
+    bool stakeExtended = CConstVerusSolutionVector::GetVersionByHeight(tipindex->GetHeight() + 1) >= CActivationHeight::ACTIVATE_EXTENDEDSTAKE;
+    CPubKey rewardPk;
+    if (!stakeExtended)
+    {
+        if (rewardDest.which() == COptCCParams::ADDRTYPE_PK)
+        {
+            rewardPk = boost::get<CPubKey>(rewardDest);
+        }
+        else if (rewardDest.which() == COptCCParams::ADDRTYPE_PKH)
+        {
+            CKeyID keyid = boost::get<CKeyID>(rewardDest);
+            keystore.GetPubKey(keyid, rewardPk);
+        }
+    }
+    if (!stakeExtended && rewardPk.IsFullyValid())
+    {
+        txOut1.scriptPubKey << OP_RETURN
+            << CStakeParams(pSrcIndex->GetHeight(), tipindex->GetHeight() + 1, tipindex->GetBlockHash(), rewardPk).AsVector();
+    }
+    else
+    {
+        txOut1.scriptPubKey << OP_RETURN
+            << CStakeParams(pSrcIndex->GetHeight(), tipindex->GetHeight() + 1, tipindex->GetBlockHash(), rewardDest).AsVector();
+    }
 
     // !! DISABLE THIS FOR RELEASE: REMOVE THIS TOO
     //nValue = cheat.vout[0].nValue = stakeSource.vout[voutNum].nValue - txfee;
