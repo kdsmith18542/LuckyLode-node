@@ -1397,7 +1397,11 @@ void komodo_configfile(char *symbol, uint16_t rpcport)
                         return argValue.empty() ? defaultValue : argValue;
                     };
                     // basic coin parameters. the rest will come from block 1
-                    fprintf(fp,"ac_algo=verushash\nac_veruspos=50\nac_cc=1\n");
+                    // Lucky Lode: our chains mine LuckyHash — the fresh
+                    // config default must not contradict consensus (the
+                    // init.cpp per-chain pin fails closed on mismatch).
+                    fprintf(fp,"ac_algo=%s\nac_veruspos=50\nac_cc=1\n",
+                        (strcmp(symbol, "LUCKYLODE") == 0 || strcmp(symbol, "LUCKYLODETEST") == 0) ? "luckyhash" : "verushash");
                     fprintf(fp,"launchsystemid=%s\n", EncodeDestination(CIdentityID(ConnectedChains.thisChain.launchSystemID)).c_str());
                     fprintf(fp,"parentid=%s\n", EncodeDestination(CIdentityID(ConnectedChains.thisChain.parent)).c_str());
                     fprintf(fp,"systemid=%s\n", EncodeDestination(CIdentityID(ConnectedChains.thisChain.systemID)).c_str());
@@ -1819,7 +1823,7 @@ void komodo_args(char *argv0)
 
     CCurrencyDefinition mainVerusCurrency;
 
-    OverrideSetArg("-ac_algo", "verushash");
+    OverrideSetArg("-ac_algo", (name == "LUCKYLODE" || name == "LUCKYLODETEST") ? "luckyhash" : "verushash");
     OverrideSetArg("-ac_cc", "1");
     OverrideSetArg("-ac_veruspos", "50");
 
