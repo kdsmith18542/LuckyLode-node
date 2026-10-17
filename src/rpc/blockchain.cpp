@@ -280,6 +280,10 @@ UniValue blockToDeltasJSON(const CBlock& block, const CBlockIndex* blockindex)
     result.push_back(Pair("mediantime", (int64_t)blockindex->GetMedianTimePast()));
     result.push_back(Pair("nonce", block.nNonce.GetHex()));
     result.push_back(Pair("bits", strprintf("%08x", block.nBits)));
+    // Lucky Lode: exact PoS marker for the explorer/wallet "minted blocks"
+    // view (review follow-up 2026-10-18). Read-only: the same
+    // IsVerusPOSBlock() the validator uses — no new rule, just exposed.
+    result.push_back(Pair("pos", block.IsVerusPOSBlock()));
     result.push_back(Pair("difficulty", GetDifficulty(blockindex)));
     result.push_back(Pair("chainwork", blockindex->chainPower.chainWork.GetHex()));
     result.push_back(Pair("chainstake", blockindex->chainPower.chainStake.GetHex()));
@@ -375,6 +379,8 @@ UniValue blockToJSON(const CBlock& block, const CBlockIndex* blockindex, bool tx
     result.push_back(Pair("nonce", block.nNonce.GetHex()));
     result.push_back(Pair("solution", HexStr(block.nSolution)));
     result.push_back(Pair("bits", strprintf("%08x", block.nBits)));
+    // Lucky Lode: exact PoS marker (see above) — same rule, full-tx variant.
+    result.push_back(Pair("pos", block.IsVerusPOSBlock()));
     result.push_back(Pair("difficulty", GetDifficulty(blockindex)));
     result.push_back(Pair("chainwork", blockindex->chainPower.chainWork.GetHex()));
     result.push_back(Pair("chainstake", blockindex->chainPower.chainStake.GetHex()));
