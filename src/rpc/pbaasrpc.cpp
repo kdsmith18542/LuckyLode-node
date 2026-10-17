@@ -2014,7 +2014,7 @@ void CheckVerusVaultAPIsValid()
     if (!chainActive.LastTip() ||
         CConstVerusSolutionVector::activationHeight.ActiveVersion(chainActive.LastTip()->GetHeight()) < CConstVerusSolutionVector::activationHeight.ACTIVATE_VERUSVAULT)
     {
-        throw JSONRPCError(RPC_INVALID_REQUEST, "Verus Vault and LuckyID Marketplace not activated on blockchain.");
+        throw JSONRPCError(RPC_INVALID_REQUEST, "Lucky Vault and LuckyID Marketplace not activated on blockchain.");
     }
 }
 

@@ -1868,7 +1868,7 @@ bool PrecheckIdentityReservation(const CTransaction &tx, int32_t outNum, CValida
     bool valid = true;
 
     uint32_t networkVersion = CConstVerusSolutionVector::GetVersionByHeight(height);
-    bool isPBaaS = networkVersion >= CActivationHeight::ACTIVATE_PBAAS; // this is only PBaaS differences, not Verus Vault
+    bool isPBaaS = networkVersion >= CActivationHeight::ACTIVATE_PBAAS; // this is only Lucky Chains differences, not Lucky Vault
     bool advancedIdentity = networkVersion >= CActivationHeight::ACTIVATE_VERUSVAULT;
 
     static const std::set<uint160> burnSet = {GetDestinationID(DecodeDestination("i5oFhZ8Bby47KHbnvomVDtrfd71HQFL7vN")),
@@ -2285,7 +2285,7 @@ bool PrecheckIdentityCommitment(const CTransaction &tx, int32_t outNum, CValidat
     AssertLockHeld(cs_main);
 
     uint32_t networkVersion = CConstVerusSolutionVector::GetVersionByHeight(height);
-    bool isPBaaS = networkVersion >= CActivationHeight::ACTIVATE_PBAAS; // this is only PBaaS differences, not Verus Vault
+    bool isPBaaS = networkVersion >= CActivationHeight::ACTIVATE_PBAAS; // this is only Lucky Chains differences, not Lucky Vault
     bool advancedIdentity = networkVersion >= CActivationHeight::ACTIVATE_VERUSVAULT;
 
     COptCCParams p;
@@ -2470,7 +2470,7 @@ bool PrecheckIdentityPrimary(const CTransaction &tx, int32_t outNum, CValidation
     COptCCParams p, identityP;
 
     uint32_t networkVersion = CConstVerusSolutionVector::GetVersionByHeight(height);
-    bool isPBaaS = networkVersion >= CActivationHeight::ACTIVATE_PBAAS; // this is only PBaaS differences, not Verus Vault
+    bool isPBaaS = networkVersion >= CActivationHeight::ACTIVATE_PBAAS; // this is only Lucky Chains differences, not Lucky Vault
     bool advancedIdentity = networkVersion >= CActivationHeight::ACTIVATE_VERUSVAULT;
     bool isCoinbase = tx.IsCoinBase();
     bool isInSync = chainActive.Height() >= (height - 1);
@@ -2632,7 +2632,7 @@ bool PrecheckIdentityPrimary(const CTransaction &tx, int32_t outNum, CValidation
         COptCCParams master;
         if (identity.nVersion < identity.VERSION_VAULT)
         {
-            return state.Error("Inadequate identity version for post-Verus Vault activation");
+            return state.Error("Inadequate identity version for post-Lucky Vault activation");
         }
 
         if (isPBaaS && identity.nVersion < identity.VERSION_PBAAS)

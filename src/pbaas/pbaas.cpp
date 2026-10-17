@@ -5874,7 +5874,7 @@ bool PrecheckReserveTransfer(const CTransaction &tx, int32_t outNum, CValidation
                     dest = GetCompatibleAuxDestination(rt.destination, (CCurrencyDefinition::EProofProtocol)systemDest.proofProtocol);
                     if (dest.which() != COptCCParams::ADDRTYPE_ID && dest.which() != COptCCParams::ADDRTYPE_PKH && dest.which() != COptCCParams::ADDRTYPE_SH)
                     {
-                        return state.Error("Transfer destination requires fallback destination compatible with Verus or Ethereum address formats");
+                        return state.Error("Transfer destination requires fallback destination compatible with Lucky Lode or Ethereum address formats");
                     }
                 }
                 else if (GetDestinationID(dest).IsNull())

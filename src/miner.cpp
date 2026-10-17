@@ -4040,7 +4040,7 @@ static bool ProcessBlockFound(CBlock* pblock)
                 fprintf(stderr,"%02x",((uint8_t *)&hash)[i]);
             fprintf(stderr," <- chainTip (stale)\n");
 
-            return error("VerusMiner: generated block is stale");
+            return error("LuckyMiner: generated block is stale");
         }
     }
 
@@ -4066,7 +4066,7 @@ static bool ProcessBlockFound(CBlock* pblock)
     // Process this block (almost) the same as if we had received it from another node
     CValidationState state;
     if (!ProcessNewBlock(1, chainActive.LastTip()->GetHeight()+1, state, Params(), NULL, pblock, true, NULL))
-        return error("VerusMiner: ProcessNewBlock, block not accepted");
+        return error("LuckyMiner: ProcessNewBlock, block not accepted");
 
     TrackMinedBlock(pblock->GetHash(chainActive.LastTip()->GetHeight()+1));
     komodo_broadcast(pblock,16);
@@ -4450,12 +4450,12 @@ void static VerusStaker(CWallet *pwallet)
     }
     catch (const boost::thread_interrupted&)
     {
-        LogPrintf("VerusStaker terminated\n");
+        LogPrintf("LuckyStaker terminated\n");
         throw;
     }
     catch (const std::runtime_error &e)
     {
-        LogPrintf("VerusStaker runtime error: %s\n", e.what());
+        LogPrintf("LuckyStaker runtime error: %s\n", e.what());
         return;
     }
 }

@@ -828,7 +828,7 @@ CCurrencyDefinition::CCurrencyDefinition(const UniValue &obj) :
              proofProtocol == PROOF_CHAINID &&
              IsPBaaSChain())
         {
-            LogPrintf("%s: proofprotocol %d as a PBaaS chain is not yet implemented in this version of Verus PBaaS\n", __func__, (int)PROOF_CHAINID);
+            LogPrintf("%s: proofprotocol %d as a Lucky Chains chain is not yet implemented in this version of Lucky Chains\n", __func__, (int)PROOF_CHAINID);
             nVersion = PBAAS_VERSION_INVALID;
             return;
         }

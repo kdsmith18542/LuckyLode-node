@@ -1054,7 +1054,7 @@ UniValue CBlockTreeDB::GenerateAdjustmentTransactions(const CCurrencyValueMap &c
 
     if (startingHeight > chainActive.Height())
     {
-        throw JSONRPCError(RPC_INVALID_PARAMETER, "PBaaS not yet active or not in sync");
+        throw JSONRPCError(RPC_INVALID_PARAMETER, "Lucky Chains not yet active or not in sync");
     }
 
     CDataStream ss(SER_DISK, PROTOCOL_VERSION);
@@ -2568,7 +2568,7 @@ bool CBlockTreeDB::LoadBlockIndexGuts(std::function<CBlockIndex*(const uint256&)
 #ifdef VERUSHASHDEBUG
                 if (diskindex.nVersion == CBlockHeader::VERUS_V2)
                 {
-                    printf("VerusHash 2.0 block header: %s\n", diskindex.ToString().c_str());
+                    printf("legacy PoW block header: %s\n", diskindex.ToString().c_str());
                 }
 #endif
                 CBlockIndex* pindexNew    = insertBlockIndex(diskindex.GetBlockHash());
