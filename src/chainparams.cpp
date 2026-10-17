@@ -309,7 +309,14 @@ void *chainparams_commandline(void *ptr)
         // this includes VRSCTEST, unlike the checkpoints and changes below
         if (isVerusActive)
         {
-            mainParams.consensus.fCoinbaseMustBeProtected = true;
+            // Lucky Lode: transparent-first payouts (owner decision
+            // 2026-10-17). Upstream Verus set this true; inherited here it
+            // makes EVERY transparent coinbase spend consensus-invalid
+            // (pool payouts, PoS rewards, luckynode draws, wallet sends) —
+            // "Coinbase funds earned while shielding protection is active
+            // can only be sent to a zaddr". Our chains pay R/L addresses by
+            // design; protection stays off on mainnet like test/regtest.
+            mainParams.consensus.fCoinbaseMustBeProtected = false;
         }
 
         if (_IsVerusMainnetActive())
@@ -377,7 +384,12 @@ public:
         strNetworkID = "test";
         strCurrencyUnits = "tLKYL";
         bip44CoinType = 1;
-        consensus.fCoinbaseMustBeProtected = true;
+        // Lucky Lode: transparent-first mining payouts (doc 11, runbook).
+        // Upstream Zcash set this true on testnet; inherited here, it made
+        // every pool/luckynode payout consensus-invalid ("Coinbase funds
+        // earned while shielding protection is active can only be sent to
+        // a zaddr"). Regtest and the base params are false too.
+        consensus.fCoinbaseMustBeProtected = false;
         consensus.nSubsidySlowStartInterval = 20000;
         consensus.nPreBlossomSubsidyHalvingInterval = Consensus::PRE_BLOSSOM_HALVING_INTERVAL;
         consensus.nPostBlossomSubsidyHalvingInterval = Consensus::POST_BLOSSOM_HALVING_INTERVAL;

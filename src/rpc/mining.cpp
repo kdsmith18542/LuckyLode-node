@@ -1107,13 +1107,8 @@ UniValue getblocktemplate(const UniValue& params, bool fHelp)
         bool nextJackpot = lucky_draw::Jackpot(nextDraw, LuckyJackpotDrawDivisor());
         bool nextPot = lucky_draw::PotEvent(nextDraw, LuckyPotDrawDivisor());
         uint64_t nextTier = lucky_draw::Tier(nextDraw);
-        jackpot::Payout est = jackpot::ApplyBlock(tipReserve, nextR, nextF, nextJackpot);
         result.push_back(Pair("jackpotreserve", (int64_t)tipReserve));
-        // Exact bonus this height can claim (0 when not a jackpot height).
-        result.push_back(Pair("jackpotbonus", (int64_t)est.bonus));
-        // Lucky Pot advisory: EXACT splash this height can claim (pot event
-        // tier or the pity-timer floor; 0 otherwise) — the pool splices it
-        // verbatim. potreserve/potdrought stay for dashboards.
+        // Lucky Pot state for the advisory estimates below.
         uint64_t tipPot = chainActive.Tip() ? chainActive.Tip()->nLuckyReserve : 0;
         uint64_t tipDrought = chainActive.Tip() ? chainActive.Tip()->nLuckyDrought : 0;
         lucky_pot::PotState potState;
@@ -1124,6 +1119,15 @@ UniValue getblocktemplate(const UniValue& params, bool fHelp)
         nextDraws.pot_event = nextPot;
         nextDraws.tier = nextTier;
         lucky_pot::PotPayout potEst = lucky_pot::ApplyPotBlock(tipReserve, potState, nextR, nextF, nextDraws);
+        // Exact bonus this height can claim (0 when not a jackpot height).
+        // MUST come from ApplyPotBlock (the consensus 4/1 levy split) — the
+        // old jackpot::ApplyBlock estimator credited the full 5% levy to the
+        // reserve and overstated a reserve-bound bonus, so pools splicing it
+        // verbatim over-claimed and lost the jackpot find to bad-cb-amount.
+        result.push_back(Pair("jackpotbonus", (int64_t)potEst.jackpot_bonus));
+        // Lucky Pot advisory: EXACT splash this height can claim (pot event
+        // tier or the pity-timer floor; 0 otherwise) — the pool splices it
+        // verbatim. potreserve/potdrought stay for dashboards.
         result.push_back(Pair("potreserve", (int64_t)tipPot));
         result.push_back(Pair("potcredited", (int64_t)potEst.pot_splash));
         // League pool inflow for this height: the jackpot-levy slice that

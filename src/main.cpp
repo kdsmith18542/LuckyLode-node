@@ -6328,6 +6328,18 @@ CBlockIndex* AddToBlockIndex(const CBlockHeader& block)
     }
     pindexNew->chainPower = (pindexNew->pprev ? CChainPower(pindexNew) + pindexNew->pprev->chainPower : CChainPower(pindexNew)) + GetBlockProof(*pindexNew);
     pindexNew->RaiseValidity(BLOCK_VALID_TREE);
+    // Lucky Lode genesis game-fund seed (internal/16 §16.1): applied at
+    // index construction so EVERY path (fresh DB, -reindex, re-import)
+    // gets it. ConnectBlock early-returns for genesis before the money
+    // rules, so these fields are never re-derived — and a -reindex used to
+    // build the genesis index with zeroed reserves, which split the chain
+    // at the first reserve-bound claim (bad-cb-amount divergence).
+    if (hash == Params().consensus.hashGenesisBlock)
+    {
+        pindexNew->nJackpotReserve = lucky_pot::JACKPOT_SEED;
+        pindexNew->nLuckyReserve = lucky_pot::LUCKY_SEED;
+        pindexNew->nLuckyDrought = 0;
+    }
     if (pindexBestHeader == NULL || pindexBestHeader->chainPower < pindexNew->chainPower)
         pindexBestHeader = pindexNew;
 
@@ -8164,11 +8176,9 @@ bool InitBlockIndex(const CChainParams& chainparams)
             CBlockIndex *pindex = AddToBlockIndex(block);
             if ( pindex == 0 )
                 return error("LoadBlockIndex(): couldnt add to block index");
-            // Lucky Lode genesis game-fund seed (internal/16 §16.1): the
-            // genesis index carries the seeded balances, so every reader
-            // (ConnectBlock's parent lookup, GBT advisory, getjackpotinfo)
-            // sees one consistent state. Consensus-locked; spendable only
-            // through the jackpot/pot payout rules.
+            // Lucky Lode genesis game-fund seed: set in AddToBlockIndex (the
+            // single index-construction path) so -reindex gets it too. Left
+            // here as an idempotent re-assert with the same constants.
             pindex->nJackpotReserve = lucky_pot::JACKPOT_SEED;
             pindex->nLuckyReserve = lucky_pot::LUCKY_SEED;
             pindex->nLuckyDrought = 0;

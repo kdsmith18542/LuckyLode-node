@@ -1455,6 +1455,15 @@ CCurrencyDefinition::CCurrencyDefinition(const std::string &currencyName, bool t
 
             uniCurrency.pushKV("eras", uniEras);
 
+            // Lucky Lode testnet: easier starting target for the fast
+            // testing loop (~60 s blocks on one GPU; the LWMA retarget
+            // takes over at height 61 and steers from there). nBits
+            // 1e0df2d2 (diff ~18.4, ~1.2M hashes/block). Mainnet keeps
+            // the standard default; its starting difficulty is set at
+            // the genesis ceremony.
+            uniCurrency.pushKV("initialtarget",
+                "00000df2d2000000000000000000000000000000000000000000000000000000");
+
             *this = CCurrencyDefinition(uniCurrency);
         }
         else
