@@ -119,6 +119,22 @@ uint256 CChain::GetVerusEntropyHash(int forHeight, int *pPOSheight, int *pPOWhei
         {
             powh = height;
         }
+        // Lucky Lode: complete the legacy contract — the proof source is the
+        // entropy block itself. Upstream left pProveHeight/pSecondHeight
+        // unset in this branch (its chains always activate extended stake,
+        // or stake well past height 111), so CreateCoinStake's
+        // `proveBlockHeight == -1` check read UNINITIALIZED stack: whether
+        // staking worked depended on codegen luck. Live-found on regtest
+        // 2026-10-18 (the block-117 mint was that luck; the next build read
+        // -1 and "No block suitable for proof" blocked every attempt).
+        if (pProveHeight)
+        {
+            *pProveHeight = height;
+        }
+        if (pSecondHeight)
+        {
+            *pSecondHeight = -1;
+        }
         return vChain[height]->GetVerusEntropyHashComponent();
     }
 

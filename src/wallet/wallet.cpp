@@ -2073,7 +2073,7 @@ bool CWallet::VerusSelectStakeOutput(CBlock *pBlock, arith_uint256 &hashResult, 
     }
 
     // we get these sources of entropy to prove all sources in the header
-    int posHeight = -1, powHeight = -1, altHeight = -1, proveBlockHeight, secondBlockHeight;
+    int posHeight = -1, powHeight = -1, altHeight = -1, proveBlockHeight = -1, secondBlockHeight = -1;
     uint256 pastHash;
     {
         LOCK(cs_main);
