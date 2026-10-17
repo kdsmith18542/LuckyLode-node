@@ -1402,6 +1402,13 @@ void komodo_configfile(char *symbol, uint16_t rpcport)
                     // init.cpp per-chain pin fails closed on mismatch).
                     fprintf(fp,"ac_algo=%s\nac_veruspos=50\nac_cc=1\n",
                         (strcmp(symbol, "LUCKYLODE") == 0 || strcmp(symbol, "LUCKYLODETEST") == 0) ? "luckyhash" : "verushash");
+                    // Lucky Lode bootstrap (2026-10-18): fresh nodes must find
+                    // the network with zero flags. The hardcoded fixed seed
+                    // opens but the P2P TLS handshake intermittently drops
+                    // before version exchange (P2 item); -addnode uses the
+                    // proven direct path, so every fresh datadir gets it.
+                    if (strcmp(symbol, "LUCKYLODETEST") == 0)
+                        fprintf(fp,"addnode=40.160.149.124:9270\n");
                     fprintf(fp,"launchsystemid=%s\n", EncodeDestination(CIdentityID(ConnectedChains.thisChain.launchSystemID)).c_str());
                     fprintf(fp,"parentid=%s\n", EncodeDestination(CIdentityID(ConnectedChains.thisChain.parent)).c_str());
                     fprintf(fp,"systemid=%s\n", EncodeDestination(CIdentityID(ConnectedChains.thisChain.systemID)).c_str());
