@@ -7291,8 +7291,29 @@ bool ProcessNewBlock(bool from_miner, int32_t height, CValidationState &state, c
     // Preliminary checks
     bool checked; uint256 hash; int32_t futureblock=0;
     auto verifier = libzcash::ProofVerifier::Disabled();
-    hash = pblock->GetHash(height != 0 ? height : (pblock->hashPrevBlock.IsNull() ? 0 : (mapBlockIndex.count(pblock->hashPrevBlock) ? mapBlockIndex[pblock->hashPrevBlock]->GetHeight() + 1 : 0)));
-    uint32_t nHeight = height != 0 ? height : komodo_block2height(pblock, height);
+    // Lucky Lode: the LuckyHash salt is height-dependent, so the height used
+    // for hashing MUST come from the parent — never from the caller. A mining
+    // race (tip advanced between template build and submit) used to make
+    // submitblock hash a valid fork block at tip+1 and reject it on the RPC
+    // path while P2P (parent-derived) accepted the same block. Caller height
+    // survives only as a fallback hint when the parent is unknown;
+    // AcceptBlockHeader re-derives authoritatively either way.
+    uint32_t nHeight;
+    {
+        LOCK(cs_main); // mapBlockIndex read (was unlocked — data race)
+        if (!pblock->hashPrevBlock.IsNull())
+        {
+            BlockMap::iterator mi = mapBlockIndex.find(pblock->hashPrevBlock);
+            nHeight = (mi != mapBlockIndex.end() && mi->second)
+                          ? (uint32_t)(mi->second->GetHeight() + 1)
+                          : (height != 0 ? (uint32_t)height : 0u);
+        }
+        else
+        {
+            nHeight = 0; // genesis: SHA256D-pinned, height-salt 0
+        }
+    }
+    hash = pblock->GetHash(pblock->hashPrevBlock.IsNull() ? 0 : nHeight);
 
     //fprintf(stderr,"ProcessBlock %d\n",(int32_t)chainActive.LastTip()->GetHeight());
     {

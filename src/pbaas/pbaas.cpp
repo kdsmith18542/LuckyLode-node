@@ -2401,6 +2401,10 @@ bool PreCheckFinalizeExport(const CTransaction &tx, int32_t outNum, CValidationS
 // slowFlag == false early outs for performance
 bool verusCheckPOSBlock(int32_t slowflag, const CBlock *pblock, int32_t height)
 {
+    // Lucky Lode: full PoS checks must apply from block 1 on LuckyHash
+    // chains — the SAPLING height gate below is Zcash history and left
+    // early blocks with only log-only fallbacks (reward-redirectable).
+    extern uint32_t ASSETCHAINS_ALGO, ASSETCHAINS_EMBERHASH;
     CBlockIndex *pastBlockIndex;
     uint256 txid, blkHash;
     int32_t txn_count;
@@ -2429,7 +2433,12 @@ bool verusCheckPOSBlock(int32_t slowflag, const CBlock *pblock, int32_t height)
         {
             bool validHash = (value != 0);
             bool enablePOSNonce = CPOSNonce::NewPOSActive(height);
-            bool newPOSEnforcement = enablePOSNonce && (Params().GetConsensus().vUpgrades[Consensus::UPGRADE_SAPLING].nActivationHeight <= height);
+            // Lucky Lode: LuckyHash chains get the full quick-path checks
+            // from block 1 (ASSETCHAINS_ALGO == EMBERHASH); the SAPLING gate
+            // is upstream Zcash history and must not disarm early blocks.
+            bool newPOSEnforcement = enablePOSNonce &&
+                (ASSETCHAINS_ALGO == ASSETCHAINS_EMBERHASH ||
+                 Params().GetConsensus().vUpgrades[Consensus::UPGRADE_SAPLING].nActivationHeight <= height);
             bool isPBaaS = CConstVerusSolutionVector::activationHeight.ActiveVersion(height) >= CActivationHeight::ACTIVATE_PBAAS;
             bool extendedStake = CConstVerusSolutionVector::activationHeight.ActiveVersion(height) >= CActivationHeight::ACTIVATE_EXTENDEDSTAKE;
             uint256 rawHash;
@@ -2598,6 +2607,14 @@ bool verusCheckPOSBlock(int32_t slowflag, const CBlock *pblock, int32_t height)
                                     ExtractDestinations(stakeTx.vout[0].scriptPubKey, outType, destinations, nRequired) &&
                                     destinations.size() &&
                                     ValidateStakeTransaction(stakeTx, sp, true) &&
+                                    // Lucky Lode: bind the stake params to THIS
+                                    // block on the slow path too. Without this the
+                                    // stake-age test trusts the self-reported
+                                    // blkHeight (an attacker could lie past the
+                                    // 150-conf rule) and a rebuilt block could
+                                    // carry stale binding.
+                                    sp.prevHash == pblock->hashPrevBlock &&
+                                    (int32_t)sp.blkHeight == height &&
                                     ExtractDestination(tx.vout[voutNum].scriptPubKey, destaddress))
                                 {
                                     isPOS = true;
@@ -2802,7 +2819,13 @@ bool verusCheckPOSBlock(int32_t slowflag, const CBlock *pblock, int32_t height)
                                         }
                                         else
                                         {
+                                            // Lucky Lode: fail closed. This used
+                                            // to log and leave isPOS = true,
+                                            // which let a rebuilt PoS block
+                                            // redirect the coinbase and still
+                                            // validate.
                                             fprintf(stderr,"ERROR: invalid PoS block %s - invalid stake or coinbase destination\n", blkHash.ToString().c_str());
+                                            isPOS = false;
                                         }
                                     }
                                 }

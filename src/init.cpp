@@ -1225,13 +1225,29 @@ bool AppInit2(boost::thread_group& threadGroup, CScheduler& scheduler)
 
     // set the hash algorithm to use for this chain
     extern uint32_t ASSETCHAINS_ALGO, ASSETCHAINS_VERUSHASH, ASSETCHAINS_EMBERHASH;
+    extern char ASSETCHAINS_SYMBOL[65];
     // Lucky Lode: -ac_algo=luckyhash selects LuckyHash v1 (doc 05); the
     // pre-rename value "emberhash" stays accepted for existing runbooks.
-    // The chain-definition plumbing for a fresh rebranded chain is item 9;
-    // this arg keeps testnet bring-up operable today.
-    if (mapMultiArgs.count("-ac_algo") && !mapMultiArgs["-ac_algo"].empty() && (mapMultiArgs["-ac_algo"][0] == "luckyhash" || mapMultiArgs["-ac_algo"][0] == "emberhash"))
+    // Consensus is never operator-selectable (review fix 2026-10-17): the
+    // built-in root chains ALWAYS run LuckyHash + the jackpot/pot rules, and
+    // a contradicting -ac_algo is a fatal misconfiguration, not a mode.
     {
-        ASSETCHAINS_ALGO = ASSETCHAINS_EMBERHASH;
+        std::string chainSym = std::string(ASSETCHAINS_SYMBOL);
+        bool luckyRootChain = (chainSym == "LUCKYLODE" || chainSym == "LUCKYLODETEST");
+        std::string algoArg = (mapMultiArgs.count("-ac_algo") && !mapMultiArgs["-ac_algo"].empty())
+                                  ? mapMultiArgs["-ac_algo"][0] : "";
+        if (luckyRootChain)
+        {
+            if (!algoArg.empty() && algoArg != "luckyhash" && algoArg != "emberhash")
+            {
+                return InitError(strprintf(_("This is the %s chain: -ac_algo=%s contradicts its consensus (luckyhash). Drop the flag or fix the value."), chainSym, algoArg));
+            }
+            ASSETCHAINS_ALGO = ASSETCHAINS_EMBERHASH;
+        }
+        else if (algoArg == "luckyhash" || algoArg == "emberhash")
+        {
+            ASSETCHAINS_ALGO = ASSETCHAINS_EMBERHASH;
+        }
     }
     LogPrintf("LuckyLode bring-up: -ac_algo seen='%s', ASSETCHAINS_ALGO=%u\n",
         (mapMultiArgs.count("-ac_algo") && !mapMultiArgs["-ac_algo"].empty() ? mapMultiArgs["-ac_algo"][0].c_str() : "(none)"),
