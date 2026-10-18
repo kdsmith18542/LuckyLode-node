@@ -2,7 +2,7 @@
 #
 # kat-gate (every push/PR): standalone compile + run of all five KAT
 # binaries (LuckyHash, difficulty, jackpot money, Lucky Pot money, draw
-# trigger) via src/crypto/ember_kat.sh — no autotools, ~4 s. The frozen
+# trigger) via src/crypto/lucky_kat.sh — no autotools, ~4 s. The frozen
 # vectors are the consensus contract (doc 05 §5.7); the x86_64/aarch64
 # matrix IS the cross-arch determinism gate (byte-identical vectors or
 # the job fails).
@@ -38,7 +38,7 @@ jobs:
           sudo apt-get update -y
           sudo apt-get install -y g++ gcc libsodium-dev pkg-config
       - name: run all five KAT gates
-        run: sh src/crypto/ember_kat.sh
+        run: sh src/crypto/lucky_kat.sh
 
   build:
     name: clean full-node build (x86_64)

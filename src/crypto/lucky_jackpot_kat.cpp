@@ -1,6 +1,6 @@
 // KAT gate for the jackpot money rules (doc 06 §6.2): frozen vectors from
 // the Rust reference (`lm-rewards::reserve` tests). Build & run standalone:
-//   g++ -O2 -std=c++11 -I<repo>/src <repo>/src/crypto/ember_jackpot_kat.cpp -o /tmp/jk && /tmp/jk
+//   g++ -O2 -std=c++11 -I<repo>/src <repo>/src/crypto/lucky_jackpot_kat.cpp -o /tmp/jk && /tmp/jk
 // Any mismatch exits non-zero.
 #include "consensus/jackpot.h"
 

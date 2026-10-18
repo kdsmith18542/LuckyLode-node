@@ -2,9 +2,9 @@
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 //
-// CEmberHash — the fork's block-header PoW digest (LuckyHash v1, doc 05
+// CLuckyHash — the fork's block-header PoW digest (LuckyHash v1, doc 05
 // rev 1.0 + Addendum A). Normative reference: Rust `lm-pow` crate; the KAT
-// runner (`ember_kat.cpp`) must agree with it byte-for-byte.
+// runner (`lucky_kat.cpp`) must agree with it byte-for-byte.
 //
 //   seed = BLAKE3(header_bytes || nonce_le64)
 //   salt = "LMv1" || height_le64

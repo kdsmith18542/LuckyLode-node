@@ -2,7 +2,7 @@
 // internal/16 §16.9): digest = SHA256D(parent hash || height LE32),
 // jackpot < floor(2^256/odds), tier = digest mod 100.
 // Vectors frozen 2026-10-14 (generated independently with Python hashlib).
-// Build & run: verus/src/crypto/ember_kat.sh (runs all gates).
+// Build & run: verus/src/crypto/lucky_kat.sh (runs all gates).
 
 #include "consensus/lucky_draw.h"
 #include "uint256.h"

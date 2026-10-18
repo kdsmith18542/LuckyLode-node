@@ -399,10 +399,10 @@ crypto_libbitcoin_crypto_a_SOURCES = \
   crypto/haraka_portable.h \
   crypto/verus_hash.h \
   crypto/verus_hash.cpp \
-  crypto/ember_hash.h \
-  crypto/ember_hash.cpp \
-  crypto/ember_difficulty.h \
-  crypto/ember_difficulty.cpp \
+  crypto/lucky_hash.h \
+  crypto/lucky_hash.cpp \
+  crypto/lucky_difficulty.h \
+  crypto/lucky_difficulty.cpp \
   crypto/blake3/blake3.h \
   crypto/blake3/blake3.c \
   crypto/blake3/blake3_dispatch.c \

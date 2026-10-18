@@ -188,7 +188,7 @@ extern uint8_t NOTARY_PUBKEY33[33];
 //Value generate(const Array& params, bool fHelp)
 bool mine_ember(CBlockHeader &bh, CVerusHashV2bWriter &vhw, uint256 &finalHash, uint256 &target, uint64_t start, uint64_t *count, int32_t height);
 extern uint32_t ASSETCHAINS_ALGO;
-extern uint32_t ASSETCHAINS_EMBERHASH;
+extern uint32_t ASSETCHAINS_LUCKYHASH;
 
 UniValue generate(const UniValue& params, bool fHelp)
 {
@@ -260,7 +260,7 @@ UniValue generate(const UniValue& params, bool fHelp)
         // (The equihash solver below is a legacy loop for equihash-era
         // chains; using it here would only add an equihash solve between
         // LuckyHash checks.)
-        if (ASSETCHAINS_ALGO == ASSETCHAINS_EMBERHASH)
+        if (ASSETCHAINS_ALGO == ASSETCHAINS_LUCKYHASH)
         {
             // Lucky Lode: LuckyHash regtest path — grind the u64 nonce directly.
             arith_uint256 bnTarget;
@@ -1088,7 +1088,7 @@ UniValue getblocktemplate(const UniValue& params, bool fHelp)
         result.push_back(Pair("coinbaseaux", aux));
         result.push_back(Pair("coinbasevalue", (int64_t)pblock->vtx[0].vout[0].nValue));
     }
-    if (ASSETCHAINS_ALGO == ASSETCHAINS_EMBERHASH)
+    if (ASSETCHAINS_ALGO == ASSETCHAINS_LUCKYHASH)
     {
         // Lucky Lode: EXACT jackpot/pot claims for the next height (doc 06
         // rev 1.2, internal/16 §16.9). Draws are pre-committable: the

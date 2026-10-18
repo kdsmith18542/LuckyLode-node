@@ -1,6 +1,6 @@
 #!/bin/sh
-# Standalone build+run of the EmberHash KAT gate (no autotools needed).
-# Usage: verus/src/crypto/ember_kat.sh   (from anywhere)
+# Standalone build+run of the LuckyHash KAT gate (no autotools needed).
+# Usage: verus/src/crypto/lucky_kat.sh   (from anywhere)
 set -e
 DIR=$(dirname "$0")
 OUT=$(mktemp -d)
@@ -38,28 +38,28 @@ for f in "$DIR"/argon2/argon2.c "$DIR"/argon2/core.c "$DIR"/argon2/encoding.c \
 done
 
 $CXX -O2 -I"$(dirname "$DIR")" \
-    "$DIR/ember_hash.cpp" "$DIR/ember_kat.cpp" "$OUT"/*.o -o "$OUT/ember_kat" \
+    "$DIR/lucky_hash.cpp" "$DIR/lucky_kat.cpp" "$OUT"/*.o -o "$OUT/lucky_kat" \
     -lpthread
 $CXX -O2 -I"$(dirname "$DIR")" $SODIUM_INC $SYS_DEFS \
-    "$DIR/ember_difficulty.cpp" "$DIR/ember_diff_kat.cpp" \
+    "$DIR/lucky_difficulty.cpp" "$DIR/lucky_diff_kat.cpp" \
     "$(dirname "$DIR")/arith_uint256.cpp" "$(dirname "$DIR")/uint256.cpp" \
-    -o "$OUT/ember_diff_kat"
-"$OUT/ember_kat"
+    -o "$OUT/lucky_diff_kat"
+"$OUT/lucky_kat"
 echo
-"$OUT/ember_diff_kat"
+"$OUT/lucky_diff_kat"
 
 # Jackpot money KAT (header-only math, no node libraries needed).
-$CXX -O2 -std=c++11 -I"$(dirname "$DIR")" "$DIR/ember_jackpot_kat.cpp" -o "$OUT/ember_jackpot_kat"
-"$OUT/ember_jackpot_kat"
+$CXX -O2 -std=c++11 -I"$(dirname "$DIR")" "$DIR/lucky_jackpot_kat.cpp" -o "$OUT/lucky_jackpot_kat"
+"$OUT/lucky_jackpot_kat"
 
 # Lucky Pot money KAT (header-only math; includes jackpot.h).
-$CXX -O2 -std=c++11 -I"$(dirname "$DIR")" "$DIR/ember_pot_kat.cpp" -o "$OUT/ember_pot_kat"
-"$OUT/ember_pot_kat"
+$CXX -O2 -std=c++11 -I"$(dirname "$DIR")" "$DIR/lucky_pot_kat.cpp" -o "$OUT/lucky_pot_kat"
+"$OUT/lucky_pot_kat"
 
 # Pre-committable draw trigger KAT (doc 06 rev 1.2): uint256 + sha256.
 $CXX -O2 -I"$(dirname "$DIR")" $SODIUM_INC $SYS_DEFS \
-    "$DIR/ember_draw_kat.cpp" \
+    "$DIR/lucky_draw_kat.cpp" \
     "$(dirname "$DIR")/arith_uint256.cpp" "$(dirname "$DIR")/uint256.cpp" \
     "$DIR/sha256.cpp" \
-    -o "$OUT/ember_draw_kat"
-"$OUT/ember_draw_kat"
+    -o "$OUT/lucky_draw_kat"
+"$OUT/lucky_draw_kat"

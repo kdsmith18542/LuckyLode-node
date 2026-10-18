@@ -2404,7 +2404,7 @@ bool verusCheckPOSBlock(int32_t slowflag, const CBlock *pblock, int32_t height)
     // Lucky Lode: full PoS checks must apply from block 1 on LuckyHash
     // chains — the SAPLING height gate below is Zcash history and left
     // early blocks with only log-only fallbacks (reward-redirectable).
-    extern uint32_t ASSETCHAINS_ALGO, ASSETCHAINS_EMBERHASH;
+    extern uint32_t ASSETCHAINS_ALGO, ASSETCHAINS_LUCKYHASH;
     CBlockIndex *pastBlockIndex;
     uint256 txid, blkHash;
     int32_t txn_count;
@@ -2434,10 +2434,10 @@ bool verusCheckPOSBlock(int32_t slowflag, const CBlock *pblock, int32_t height)
             bool validHash = (value != 0);
             bool enablePOSNonce = CPOSNonce::NewPOSActive(height);
             // Lucky Lode: LuckyHash chains get the full quick-path checks
-            // from block 1 (ASSETCHAINS_ALGO == EMBERHASH); the SAPLING gate
+            // from block 1 (ASSETCHAINS_ALGO == LUCKYHASH); the SAPLING gate
             // is upstream Zcash history and must not disarm early blocks.
             bool newPOSEnforcement = enablePOSNonce &&
-                (ASSETCHAINS_ALGO == ASSETCHAINS_EMBERHASH ||
+                (ASSETCHAINS_ALGO == ASSETCHAINS_LUCKYHASH ||
                  Params().GetConsensus().vUpgrades[Consensus::UPGRADE_SAPLING].nActivationHeight <= height);
             bool isPBaaS = CConstVerusSolutionVector::activationHeight.ActiveVersion(height) >= CActivationHeight::ACTIVATE_PBAAS;
             bool extendedStake = CConstVerusSolutionVector::activationHeight.ActiveVersion(height) >= CActivationHeight::ACTIVATE_EXTENDEDSTAKE;

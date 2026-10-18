@@ -1,10 +1,10 @@
 // (C) 2026 Lucky Lode developers — MIT, see COPYING.
 //
-// LuckyHash v1 for the Lucky Lode fork: see ember_hash.h. Vendored deps:
+// LuckyHash v1 for the Lucky Lode fork: see lucky_hash.h. Vendored deps:
 // BLAKE3 (CC0, crypto/blake3/) and Argon2 reference (CC0/Apache-2.0,
 // crypto/argon2/).
 
-#include "crypto/ember_hash.h"
+#include "crypto/lucky_hash.h"
 
 #include "crypto/blake3/blake3.h"
 #include "crypto/argon2/argon2.h"

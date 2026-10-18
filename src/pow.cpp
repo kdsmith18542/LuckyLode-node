@@ -20,11 +20,11 @@
 #ifdef ENABLE_RUST
 #include "librustzcash.h"
 #endif // ENABLE_RUST
-#include "crypto/ember_difficulty.h"
+#include "crypto/lucky_difficulty.h"
 uint32_t komodo_chainactive_timestamp();
 int64_t komodo_current_supply(uint32_t nHeight);
 
-extern uint32_t ASSETCHAINS_ALGO, ASSETCHAINS_EQUIHASH, ASSETCHAINS_VERUSHASH, ASSETCHAINS_EMBERHASH, ASSETCHAINS_STAKED, ASSETCHAINS_LWMAPOS, ASSETCHAINS_STARTING_DIFF;
+extern uint32_t ASSETCHAINS_ALGO, ASSETCHAINS_EQUIHASH, ASSETCHAINS_VERUSHASH, ASSETCHAINS_LUCKYHASH, ASSETCHAINS_STAKED, ASSETCHAINS_LWMAPOS, ASSETCHAINS_STARTING_DIFF;
 extern char ASSETCHAINS_SYMBOL[65];
 extern int32_t VERUS_BLOCK_POSUNITS, VERUS_CONSECUTIVE_POS_THRESHOLD, VERUS_PBAAS_CONSECUTIVE_POS_THRESHOLD, VERUS_NOPOS_THRESHHOLD, VERUS_PBAAS_NOPOS_THRESHHOLD;
 unsigned int lwmaGetNextWorkRequired(const CBlockIndex* pindexLast, const CBlockHeader *pblock, const Consensus::Params& params);
@@ -127,7 +127,7 @@ unsigned int lwmaCalculateNextWorkRequired(const CBlockIndex* pindexLast, const 
     // Lucky Lode: exact integer LWMA (doc 05 §5.3 rev 1.1, N=60, K=1830,
     // ±1/3 clamp, POW_LIMIT) for the LuckyHash fresh chain. Early heights
     // (fewer than N blocks) use the starting difficulty clamped to limit.
-    if (ASSETCHAINS_ALGO == ASSETCHAINS_EMBERHASH)
+    if (ASSETCHAINS_ALGO == ASSETCHAINS_LUCKYHASH)
     {
         arith_uint256 emberLimit = ember::PowLimit();
         if (pindexLast != NULL && pindexLast->GetHeight() + 1 > (int32_t)ember::LWMA_N)
@@ -516,7 +516,7 @@ bool CheckProofOfWork(const CBlockHeader &blkHeader, int32_t height, const Conse
     tiptime = komodo_chainactive_timestamp();
     bnTarget.SetCompact(blkHeader.nBits, &fNegative, &fOverflow);
     arith_uint256 bnLimit;
-    if (ASSETCHAINS_ALGO == ASSETCHAINS_EMBERHASH)
+    if (ASSETCHAINS_ALGO == ASSETCHAINS_LUCKYHASH)
     {
         // LuckyHash v1: POW_LIMIT is the bound from block 1; genesis
         // (height 0) is pinned by its hardcoded hash, not by target.

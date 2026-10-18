@@ -81,7 +81,7 @@ uint32_t ASSETCHAINS_EQUIHASH = _ASSETCHAINS_EQUIHASH;
 uint32_t ASSETCHAINS_VERUSHASH = 1;
 // Lucky Lode: LuckyHash v1 PoW (formerly the LuckyHash working name; doc 05
 // rev 1.0, renamed 2026-10-14 — docs/13). Fresh-chain algorithm id.
-uint32_t ASSETCHAINS_EMBERHASH = 2;
+uint32_t ASSETCHAINS_LUCKYHASH = 2;
 const char *ASSETCHAINS_ALGORITHMS[] = {"equihash", "verushash", "luckyhash"};
 uint64_t ASSETCHAINS_NONCEMASK[] = {0xffff,0xfffffff,0xffffffffffffffff}; // [equihash, verushash, emberhash: full u64 nonce domain]
 uint32_t ASSETCHAINS_NONCESHIFT[] = {32,16,16}; // [equihash, verushash, emberhash]

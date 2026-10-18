@@ -1,7 +1,7 @@
 // (C) 2026 Lucky Lode developers — MIT, see COPYING.
-// LuckyHash difficulty: see ember_difficulty.h.
+// LuckyHash difficulty: see lucky_difficulty.h.
 
-#include "crypto/ember_difficulty.h"
+#include "crypto/lucky_difficulty.h"
 #include "uint256.h" // base_blob definition (arith_uint256.h only forward-declares)
 
 namespace ember

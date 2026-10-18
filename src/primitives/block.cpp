@@ -10,7 +10,7 @@
 #include "tinyformat.h"
 #include "utilstrencodings.h"
 #include "crypto/common.h"
-#include "crypto/ember_hash.h"
+#include "crypto/lucky_hash.h"
 #include "mmr.h"
 
 extern uint32_t ASSETCHAINS_ALGO, ASSETCHAINS_VERUSHASH;
@@ -357,7 +357,7 @@ void CBlockHeader::SetVerusV2Hash()
 // Consensus note (doc 05 Addendum A + doc 10 D2/D3): the strings "LMv1"
 // and "lowmine-pow/v1" are frozen construction identifiers, not branding.
 // Returns null on Argon2 failure (fail closed).
-uint256 CBlockHeader::GetEmberHash(int32_t height) const
+uint256 CBlockHeader::GetLuckyHash(int32_t height) const
 {
     if (hashPrevBlock.IsNull())
     {
@@ -384,9 +384,9 @@ uint256 CBlockHeader::GetEmberHash(int32_t height) const
     return digest;
 }
 
-void CBlockHeader::SetEmberHash()
+void CBlockHeader::SetLuckyHash()
 {
-    CBlockHeader::hashFunction = &CBlockHeader::GetEmberHash;
+    CBlockHeader::hashFunction = &CBlockHeader::GetLuckyHash;
 }
 
 uint256 CBlockHeader::GetRawVerusPOSHash(int32_t blockVersion, uint32_t solVersion, uint32_t magic, const uint256 &nonce, int32_t height, bool isVerusMainnet)

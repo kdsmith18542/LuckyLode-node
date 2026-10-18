@@ -1,9 +1,9 @@
-// KAT gate for CEmberHash: asserts doc 05 §5.4 vectors + Addendum A vector A1.
+// KAT gate for CLuckyHash: asserts doc 05 §5.4 vectors + Addendum A vector A1.
 // Build & run (from repo root):
-//   verus/src/crypto/ember_kat.sh
+//   verus/src/crypto/lucky_kat.sh
 // Any mismatch exits non-zero — this gate must pass before any node build.
 
-#include "crypto/ember_hash.h"
+#include "crypto/lucky_hash.h"
 
 #include <stdio.h>
 #include <string.h>

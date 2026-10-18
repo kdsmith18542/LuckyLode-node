@@ -1,7 +1,7 @@
 // KAT gate for the Lucky Pot money rules (internal/16): frozen vectors
 // from the Rust reference (`lm-rewards::pot` tests). Build & run
 // standalone:
-//   g++ -O2 -std=c++11 -I<repo>/src <repo>/src/crypto/ember_pot_kat.cpp -o /tmp/pot && /tmp/pot
+//   g++ -O2 -std=c++11 -I<repo>/src <repo>/src/crypto/lucky_pot_kat.cpp -o /tmp/pot && /tmp/pot
 // Any mismatch exits non-zero.
 #include "consensus/lucky_pot.h"
 

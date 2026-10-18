@@ -280,8 +280,8 @@ public:
 
     // Lucky Lode: LuckyHash v1 block-header PoW digest (doc 05 rev 1.0 +
     // Addendum A). Height comes from validation context; see doc 10 D1.
-    uint256 GetEmberHash(int32_t height) const;
-    static void SetEmberHash();
+    uint256 GetLuckyHash(int32_t height) const;
+    static void SetLuckyHash();
 
     static uint256 GetRawVerusPOSHash(int32_t blockVersion, uint32_t solVersion, uint32_t magic, const uint256 &nonce, int32_t height, bool isVerusMainnet=true);
 

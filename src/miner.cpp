@@ -5,7 +5,7 @@
 // file COPYING or https://www.opensource.org/licenses/mit-license.php .
 
 #include "miner.h"
-#include "crypto/ember_hash.h"
+#include "crypto/lucky_hash.h"
 #include <chrono>
 #ifdef ENABLE_MINING
 #include "pow/tromp/equi_miner.h"
@@ -130,7 +130,7 @@ extern bool VERUS_MINTBLOCKS;
 extern uint64_t ASSETCHAINS_REWARD[ASSETCHAINS_MAX_ERAS], ASSETCHAINS_TIMELOCKGTE, ASSETCHAINS_NONCEMASK[];
 extern const char *ASSETCHAINS_ALGORITHMS[];
 extern int32_t VERUS_MIN_STAKEAGE, ASSETCHAINS_EQUIHASH, ASSETCHAINS_VERUSHASH, ASSETCHAINS_LASTERA, ASSETCHAINS_LWMAPOS, ASSETCHAINS_NONCESHIFT[], ASSETCHAINS_HASHESPERROUND[];
-extern uint32_t ASSETCHAINS_EMBERHASH;
+extern uint32_t ASSETCHAINS_LUCKYHASH;
 extern uint32_t ASSETCHAINS_ALGO;
 extern char ASSETCHAINS_SYMBOL[KOMODO_ASSETCHAIN_MAXLEN];
 extern uint160 ASSETCHAINS_CHAINID;
@@ -3762,7 +3762,7 @@ CBlockTemplate* CreateNewBlock(const CChainParams& chainparams, const std::vecto
         // Lucky Lode: the normal coinbase carries R + F - levy (doc 06 §6.2).
         // Jackpot bonus templates (J1) are served by pools, which check the
         // draw separately; this path grinds the normal template.
-        if (ASSETCHAINS_ALGO == ASSETCHAINS_EMBERHASH)
+        if (ASSETCHAINS_ALGO == ASSETCHAINS_LUCKYHASH)
         {
             uint64_t levy = jackpot::Levy((uint64_t)blockSubsidy, (uint64_t)rewardFees);
             rewardTotal -= (CAmount)levy;
@@ -4718,7 +4718,7 @@ void static BitcoinMiner_noeq()
                 // agree via that same helper). The V2 gate is VerusHash-era
                 // plumbing: skip it for LuckyHash so the production miner
                 // runs on fresh chains instead of spinning on this gate.
-                if ( ASSETCHAINS_ALGO != ASSETCHAINS_EMBERHASH )
+                if ( ASSETCHAINS_ALGO != ASSETCHAINS_LUCKYHASH )
                 {
                     // must not be in sync
                     printf("Mining on incorrect block version.\n");
@@ -4839,9 +4839,9 @@ void static BitcoinMiner_noeq()
             verusclhasher &vclh = vh2->vclh;
             minefunction mine_verus;
 #if defined(ENABLE_VERUS_ISA)
-            mine_verus = (ASSETCHAINS_ALGO == ASSETCHAINS_EMBERHASH) ? &mine_ember : (IsCPUVerusOptimized() ? &mine_verus_v2 : &mine_verus_v2_port);
+            mine_verus = (ASSETCHAINS_ALGO == ASSETCHAINS_LUCKYHASH) ? &mine_ember : (IsCPUVerusOptimized() ? &mine_verus_v2 : &mine_verus_v2_port);
 #else
-            mine_verus = (ASSETCHAINS_ALGO == ASSETCHAINS_EMBERHASH) ? &mine_ember : &mine_verus_v2_port;
+            mine_verus = (ASSETCHAINS_ALGO == ASSETCHAINS_LUCKYHASH) ? &mine_ember : &mine_verus_v2_port;
 #endif
 
             while (true)

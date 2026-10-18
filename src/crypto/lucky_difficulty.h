@@ -4,7 +4,7 @@
 //
 // LuckyHash difficulty: exact integer LWMA retarget (doc 05 §5.3 rev 1.1).
 // Normative reference: Rust `lm-pow::difficulty::lwma_next_target`; the KAT
-// runner (`ember_diff_kat.cpp`) must agree on every vector.
+// runner (`lucky_diff_kat.cpp`) must agree on every vector.
 //
 //   acc  = Σ clamp(times[i]-times[i-1], 0, 6T) * i,  i = 1..=60
 //   avg  = Σ targets / 60

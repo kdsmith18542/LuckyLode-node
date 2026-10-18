@@ -1224,7 +1224,7 @@ bool AppInit2(boost::thread_group& threadGroup, CScheduler& scheduler)
     globalVerifyHandle.reset(new ECCVerifyHandle());
 
     // set the hash algorithm to use for this chain
-    extern uint32_t ASSETCHAINS_ALGO, ASSETCHAINS_VERUSHASH, ASSETCHAINS_EMBERHASH;
+    extern uint32_t ASSETCHAINS_ALGO, ASSETCHAINS_VERUSHASH, ASSETCHAINS_LUCKYHASH;
     extern char ASSETCHAINS_SYMBOL[65];
     // Lucky Lode: -ac_algo=luckyhash selects LuckyHash v1 (doc 05); the
     // pre-rename value "emberhash" stays accepted for existing runbooks.
@@ -1242,24 +1242,24 @@ bool AppInit2(boost::thread_group& threadGroup, CScheduler& scheduler)
             {
                 return InitError(strprintf(_("This is the %s chain: -ac_algo=%s contradicts its consensus (luckyhash). Drop the flag or fix the value."), chainSym, algoArg));
             }
-            ASSETCHAINS_ALGO = ASSETCHAINS_EMBERHASH;
+            ASSETCHAINS_ALGO = ASSETCHAINS_LUCKYHASH;
         }
         else if (algoArg == "luckyhash" || algoArg == "emberhash")
         {
-            ASSETCHAINS_ALGO = ASSETCHAINS_EMBERHASH;
+            ASSETCHAINS_ALGO = ASSETCHAINS_LUCKYHASH;
         }
     }
     LogPrintf("LuckyLode bring-up: -ac_algo seen='%s', ASSETCHAINS_ALGO=%u\n",
         (mapMultiArgs.count("-ac_algo") && !mapMultiArgs["-ac_algo"].empty() ? mapMultiArgs["-ac_algo"][0].c_str() : "(none)"),
         ASSETCHAINS_ALGO);
-    if (ASSETCHAINS_ALGO == ASSETCHAINS_EMBERHASH)
+    if (ASSETCHAINS_ALGO == ASSETCHAINS_LUCKYHASH)
     {
         // PoS/stake internals remain on VerusHash (doc 10 keep-list), and
         // IsPOSNonce hashes via CVerusHash — both must be initialized even
         // when the PoW digest is LuckyHash.
         CVerusHash::init();
         CVerusHashV2::init();
-        CBlockHeader::SetEmberHash();
+        CBlockHeader::SetLuckyHash();
     }
     else if (ASSETCHAINS_ALGO == ASSETCHAINS_VERUSHASH)
     {

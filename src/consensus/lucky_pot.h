@@ -6,7 +6,7 @@
 // exact executable mirror of the Rust reference `lm-rewards::pot`. All
 // amounts are base units (uint64); all division floors; intermediates
 // saturate, never wrap. Pure header-only math: no chain state, no
-// consensus deps, so the KAT runner (`ember_pot_kat.cpp`) compiles
+// consensus deps, so the KAT runner (`lucky_pot_kat.cpp`) compiles
 // standalone.
 //
 // Rules:

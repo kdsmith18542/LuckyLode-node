@@ -5147,7 +5147,7 @@ bool ConnectBlock(const CBlock& block, CValidationState& state, CBlockIndex* pin
     // 100). Reserve and pot ride on the block index (reorg-safe by
     // construction). League/burn overflow is accounted here; league has no
     // consensus output, the pot excess burns (unspendable by construction).
-    if (ASSETCHAINS_ALGO == ASSETCHAINS_EMBERHASH)
+    if (ASSETCHAINS_ALGO == ASSETCHAINS_LUCKYHASH)
     {
         uint64_t baseReward = (uint64_t)GetBlockSubsidy(pindex->GetHeight(), chainparams.GetConsensus());
         uint64_t feeTotal = (uint64_t)rewardFees;

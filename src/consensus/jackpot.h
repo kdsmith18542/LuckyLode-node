@@ -6,7 +6,7 @@
 // Rust reference `lm-rewards::reserve`. All amounts are base units
 // (uint64); all division floors; intermediates saturate, never wrap.
 // Pure header-only math: no chain state, no consensus deps, so the KAT
-// runner (`ember_jackpot_kat.cpp`) compiles standalone.
+// runner (`lucky_jackpot_kat.cpp`) compiles standalone.
 #ifndef LUCKYLODE_JACKPOT_H
 #define LUCKYLODE_JACKPOT_H
 
