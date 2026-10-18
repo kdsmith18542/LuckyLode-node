@@ -4340,8 +4340,8 @@ bool CReserveTransactionDescriptor::AddReserveTransferImportOutputs(const CCurre
 
     if (nativeSourceCurrencyID != systemSourceID)
     {
-        printf("%s: systemSource import %s is not from either gateway, PBaaS chain, or other system level currency\n", __func__, systemSource.name.c_str());
-        LogPrintf("%s: systemSource import %s is not from either gateway, PBaaS chain, or other system level currency\n", __func__, systemSource.name.c_str());
+        printf("%s: systemSource import %s is not from either gateway, LuckyBridge chain, or other system level currency\n", __func__, systemSource.name.c_str());
+        LogPrintf("%s: systemSource import %s is not from either gateway, LuckyBridge chain, or other system level currency\n", __func__, systemSource.name.c_str());
         return false;
     }
 

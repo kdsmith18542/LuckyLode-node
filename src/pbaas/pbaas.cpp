@@ -170,7 +170,7 @@ bool ValidateCrossChainExport(struct CCcontract_info *cp, Eval* eval, const CTra
     {
         if (CConstVerusSolutionVector::GetVersionByHeight(spendingFromHeight) < CActivationHeight::ACTIVATE_PBAAS)
         {
-            return eval->Error("Multi-currency operation before PBaaS activation");
+            return eval->Error("Multi-currency operation before LuckyBridge activation");
         }
 
         if (thisExport.IsSupplemental())
@@ -268,7 +268,7 @@ bool ValidateCrossChainImport(struct CCcontract_info *cp, Eval* eval, const CTra
     {
         if (CConstVerusSolutionVector::GetVersionByHeight(spendingFromHeight) < CActivationHeight::ACTIVATE_PBAAS)
         {
-            return eval->Error("Multi-currency operation before PBaaS activation");
+            return eval->Error("Multi-currency operation before LuckyBridge activation");
         }
 
         CCrossChainImport matchedImport;
@@ -494,7 +494,7 @@ bool PrecheckCrossChainImport(const CTransaction &tx, int32_t outNum, CValidatio
     // importers, and notaries.
     if (CConstVerusSolutionVector::GetVersionByHeight(height) < CActivationHeight::ACTIVATE_PBAAS)
     {
-        return state.Error("Multi-currency operation before PBaaS activation");
+        return state.Error("Multi-currency operation before LuckyBridge activation");
     }
 
     bool isPreSync = chainActive.Height() < (height - 1);
@@ -1413,7 +1413,7 @@ bool PrecheckCrossChainExport(const CTransaction &tx, int32_t outNum, CValidatio
     // ensure that all reserve transfers spent are properly accounted for
     if (CConstVerusSolutionVector::GetVersionByHeight(height) < CActivationHeight::ACTIVATE_PBAAS)
     {
-        return state.Error("Multi-currency operation before PBaaS activation");
+        return state.Error("Multi-currency operation before LuckyBridge activation");
     }
 
     // ensure that this transaction has necessary finalization & notarization outputs, as required
@@ -4146,7 +4146,7 @@ bool PrecheckCurrencyDefinition(const CTransaction &tx, int32_t outNum, CValidat
                             ::AsVector(newCurrency),
                             newCurrency.GetID()))) > (CScript::MAX_SCRIPT_ELEMENT_SIZE - 128))
     {
-        return state.Error("Serialized currency is too large to send across PBaaS networks");
+        return state.Error("Serialized currency is too large to send across LuckyBridge networks");
     }
 
     if (newCurrency.endBlock != 0 &&
@@ -5402,7 +5402,7 @@ bool PrecheckReserveTransfer(const CTransaction &tx, int32_t outNum, CValidation
                         LogPrintf("%s: Cross-chain transfers temporarily disabled for security alert by notification oracle %s\n",
                                 __func__, PBAAS_DEFAULT_NOTIFICATION_ORACLE.c_str());
                     }
-                    return state.Error("PBaaS cross-chain disabled");
+                    return state.Error("LuckyBridge cross-chain disabled");
                 }
                 if (systemDest.IsGateway() &&
                     (ConnectedChains.activeUpgradesByKey.count(ConnectedChains.DisableGatewayCrossChainKey()) ||
@@ -5410,7 +5410,7 @@ bool PrecheckReserveTransfer(const CTransaction &tx, int32_t outNum, CValidation
                 {
                     if (LogAcceptCategory("defi"))
                     {
-                        LogPrintf("%s: Cross-chain transfers for non-PBaaS gateways temporarily disabled for security alert by notification oracle %s\n",
+                        LogPrintf("%s: Cross-chain transfers for non-LuckyBridge gateways temporarily disabled for security alert by notification oracle %s\n",
                                 __func__, PBAAS_DEFAULT_NOTIFICATION_ORACLE.c_str());
                     }
                     return state.Error("Gateway cross-chain disabled");
@@ -6494,7 +6494,7 @@ uint32_t CConnectedChains::CombineBlocks(CBlockHeader &bh, int32_t height)
             {
                 if (!bh.AddUpdatePBaaSHeader(pbh))
                 {
-                    LogPrintf("Failure to add PBaaS block header for %s chain\n", chain.second.chainDefinition.name.c_str());
+                    LogPrintf("Failure to add LuckyBridge block header for %s chain\n", chain.second.chainDefinition.name.c_str());
                     break;
                 }
                 else
@@ -6509,7 +6509,7 @@ uint32_t CConnectedChains::CombineBlocks(CBlockHeader &bh, int32_t height)
             }
             else
             {
-                LogPrintf("Merge mined block for %s does not contain PBaaS information\n", chain.second.chainDefinition.name.c_str());
+                LogPrintf("Merge mined block for %s does not contain LuckyBridge information\n", chain.second.chainDefinition.name.c_str());
             }
         }
         dirty = false;
@@ -8244,7 +8244,7 @@ bool CConnectedChains::CreateLatestImports(const CCurrencyDefinition &sourceSyst
     {
         if (LogAcceptCategory("crosschainimports"))
         {
-            LogPrintf("%s: Cross-chain imports for non-PBaaS gateways temporarily disabled for security alert by notification oracle %s\n",
+            LogPrintf("%s: Cross-chain imports for non-LuckyBridge gateways temporarily disabled for security alert by notification oracle %s\n",
                     __func__, PBAAS_DEFAULT_NOTIFICATION_ORACLE.c_str());
         }
         return false;
@@ -8349,7 +8349,7 @@ bool CConnectedChains::CreateLatestImports(const CCurrencyDefinition &sourceSyst
 
         if (isRefundingSeparateChain)
         {
-            printf("%s: processing refund from PBaaS chain currency %s\n", __func__, refundingPBaaSChain.name.c_str());
+            printf("%s: processing refund from LuckyBridge chain currency %s\n", __func__, refundingPBaaSChain.name.c_str());
         }
 
         // get reserve deposits for destination currency of export. these will be available whether the source is same chain
@@ -11193,7 +11193,7 @@ void CConnectedChains::AggregateChainTransfers(const CTransferDestination &feeRe
                 {
                     if (LogAcceptCategory("crosschainexports"))
                     {
-                        LogPrintf("%s: Cross-chain function for non-PBaaS gateways temporarily disabled for security alert by notification oracle %s\n",
+                        LogPrintf("%s: Cross-chain function for non-LuckyBridge gateways temporarily disabled for security alert by notification oracle %s\n",
                                 __func__, PBAAS_DEFAULT_NOTIFICATION_ORACLE.c_str());
                     }
                     isDisabled = true;

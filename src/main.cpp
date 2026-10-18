@@ -3857,7 +3857,7 @@ static int64_t nTimeIndex = 0;
 static int64_t nTimeCallbacks = 0;
 static int64_t nTimeTotal = 0;
 
-// Regtest-only draw overrides (internal/16 test affordances): make pot
+// Regtest-only draw overrides ( test affordances): make pot
 // events and the pity timer frequent so the full claim → PPLNS split →
 // balance → payout path is provable in minutes instead of days.
 // Defaults are the frozen spec; every non-regtest network always gets
@@ -5140,7 +5140,7 @@ bool ConnectBlock(const CBlock& block, CValidationState& state, CBlockIndex* pin
 
     CAmount nativeBlockReward = rewardFees + validExtraNative + GetBlockSubsidy(pindex->GetHeight(), chainparams.GetConsensus());
 
-    // Lucky Lode jackpot + pot money rules (doc 06 §6.2, internal/16): the
+    // Lucky Lode jackpot + pot money rules (doc 06 §6.2): the
     // spendable ceiling for the coinbase is (R + F - levy), plus the
     // jackpot bonus when this block's PoW digest wins the 1/100 draw, plus
     // the pot splash when it wins the 1/1000 pot draw (tier = digest mod
@@ -5155,7 +5155,7 @@ bool ConnectBlock(const CBlock& block, CValidationState& state, CBlockIndex* pin
         lucky_pot::PotState parentPot;
         parentPot.pot = pindex->pprev ? pindex->pprev->nLuckyReserve : 0;
         parentPot.drought = pindex->pprev ? pindex->pprev->nLuckyDrought : 0;
-        // Pre-committable draws (doc 06 rev 1.2, internal/16 §16.9): the
+        // Pre-committable draws (doc 06 rev 1.2): the
         // ticket is SHA256D(parent hash || height) — fixed before grinding,
         // so claim coinbases are built per template and every find lands.
         // Fixed fractions of the full 256-bit space (exactly 1/odds of all
@@ -5170,7 +5170,7 @@ bool ConnectBlock(const CBlock& block, CValidationState& state, CBlockIndex* pin
         lucky_pot::PotPayout lp = lucky_pot::ApplyPotBlock(parentReserve, parentPot, baseReward, feeTotal, draws, LuckyPotDroughtLimit());
         nativeBlockReward = (CAmount)lp.miner + validExtraNative;
         // Funds are debited only by the bonus/splash the coinbase ACTUALLY
-        // claims (drill-caught on the jackpot: assuming a full claim
+        // claims (found in testing on the jackpot: assuming a full claim
         // vaporized unclaimed bonus). The ceiling above permits up to
         // normal+bonus+splash; unclaimed amounts stay in their funds.
         // Attribution is canonical: jackpot first, then pot.
@@ -6328,7 +6328,7 @@ CBlockIndex* AddToBlockIndex(const CBlockHeader& block)
     }
     pindexNew->chainPower = (pindexNew->pprev ? CChainPower(pindexNew) + pindexNew->pprev->chainPower : CChainPower(pindexNew)) + GetBlockProof(*pindexNew);
     pindexNew->RaiseValidity(BLOCK_VALID_TREE);
-    // Lucky Lode genesis game-fund seed (internal/16 §16.1): applied at
+    // Lucky Lode genesis game-fund seed (): applied at
     // index construction so EVERY path (fresh DB, -reindex, re-import)
     // gets it. ConnectBlock early-returns for genesis before the money
     // rules, so these fields are never re-derived — and a -reindex used to

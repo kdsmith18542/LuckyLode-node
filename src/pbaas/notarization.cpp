@@ -5618,7 +5618,7 @@ bool CPBaaSNotarization::CheckEntropyHashMatch(const uint256 &entropyHash,
             }
             if (loop != ((uint32_t)checkCommitments[checkIndex]) >> 1)
             {
-                LogPrintf("%s: Invalid entropy for PBaaS protocol proof - currencyID: %s\n", __func__, EncodeDestination(CIdentityID(currencyID)).c_str());
+                LogPrintf("%s: Invalid entropy for LuckyBridge protocol proof - currencyID: %s\n", __func__, EncodeDestination(CIdentityID(currencyID)).c_str());
                 mismatchIndex = true;
                 break;
             }
@@ -5626,7 +5626,7 @@ bool CPBaaSNotarization::CheckEntropyHashMatch(const uint256 &entropyHash,
             {
                 if (++consecPoS > MAX_CONSEC_POS)
                 {
-                    LogPrintf("%s: Invalid consecutive PoS blocks for PBaaS protocol - currencyID: %s\n", __func__, EncodeDestination(CIdentityID(currencyID)).c_str());
+                    LogPrintf("%s: Invalid consecutive PoS blocks for LuckyBridge protocol - currencyID: %s\n", __func__, EncodeDestination(CIdentityID(currencyID)).c_str());
                     mismatchIndex = true;
                     break;
                 }
@@ -10613,7 +10613,7 @@ bool PreCheckAcceptedOrEarnedNotarization(const CTransaction &tx, int32_t outNum
     // though it would fail below, simplify failure messages pre-pbaas
     if (CConstVerusSolutionVector::GetVersionByHeight(height) < CActivationHeight::ACTIVATE_PBAAS)
     {
-        return state.Error("Notarizations not supported before PBaaS activation");
+        return state.Error("Notarizations not supported before LuckyBridge activation");
     }
 
     COptCCParams p;
@@ -10728,7 +10728,7 @@ bool PreCheckAcceptedOrEarnedNotarization(const CTransaction &tx, int32_t outNum
             !currentNotarization.IsBlockOneNotarization() &&
             !currentNotarization.proofRoots.count(currentNotarization.currencyID))
         {
-            return state.Error("Earned notarization besides PBaaS block one must contain proof root of system being notarized");
+            return state.Error("Earned notarization besides LuckyBridge block one must contain proof root of system being notarized");
         }
     }
     else if (p.evalCode == EVAL_EARNEDNOTARIZATION &&
@@ -11245,9 +11245,9 @@ bool PreCheckAcceptedOrEarnedNotarization(const CTransaction &tx, int32_t outNum
                     {
                         if (LogAcceptCategory("defi"))
                         {
-                            LogPrintf("%s: Non-PBaaS cross-chain functions temporarily disabled for security alert by notification oracle %s\n", __func__, PBAAS_DEFAULT_NOTIFICATION_ORACLE.c_str());
+                            LogPrintf("%s: Non-LuckyBridge cross-chain functions temporarily disabled for security alert by notification oracle %s\n", __func__, PBAAS_DEFAULT_NOTIFICATION_ORACLE.c_str());
                         }
-                        return state.Error(" Non-PBaaS cross-chain functions temporarily disabled for security alert by notification oracle. Notarization rejected " + currentNotarization.ToUniValue().write(1,2));
+                        return state.Error(" Non-LuckyBridge cross-chain functions temporarily disabled for security alert by notification oracle. Notarization rejected " + currentNotarization.ToUniValue().write(1,2));
                     }
 
                     CNativeHashWriter hw(hashType);

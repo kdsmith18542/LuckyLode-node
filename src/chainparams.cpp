@@ -309,7 +309,7 @@ void *chainparams_commandline(void *ptr)
         // this includes VRSCTEST, unlike the checkpoints and changes below
         if (isVerusActive)
         {
-            // Lucky Lode: transparent-first payouts (owner decision
+            // Lucky Lode: transparent-first payouts (decided
             // 2026-10-17). Upstream Verus set this true; inherited here it
             // makes EVERY transparent coinbase spend consensus-invalid
             // (pool payouts, PoS rewards, luckynode draws, wallet sends) —
@@ -467,7 +467,7 @@ public:
 
         vFixedSeeds.clear();
         vSeeds.clear();
-        //vSeeds.push_back(CDNSSeedData("z.cash", "dns.testnet.z.cash")); // Komodo
+        vSeeds.push_back(CDNSSeedData("luckylode", "seed.luckylode.cc"));
 
         // Lucky Lode TESTNET: distinct from both upstream Verus testnet
         // ({0},{5}) and Lucky Lode mainnet ({48},{50}). Bitcoin-testnet
@@ -493,12 +493,11 @@ public:
 
         vFixedSeeds.clear(); // Lucky Lode testnet: fresh chain, no upstream seeds
 
-        // Lucky Lode testnet bootstrap seed (2026-10-14): the staging VPS
-        // (40.160.149.124:9270) as a hardcoded fixed seed, so a fresh
-        // testnet node finds the network without -addnode. Fixed seeds are
-        // loaded into addrman at startup (net.cpp) and only bootstrap the
-        // address book — replace with seed.luckylode.cc DNS records
-        // (vSeeds) once the dedicated seed boxes and DNS are final.
+        // Lucky Lode testnet DNS seed (2026-10-18): seed.luckylode.cc
+        // resolves to the bootstrap node, so a fresh testnet node finds
+        // the network without -addnode. The hardcoded fixed seed below
+        // stays as a fallback for name-resolution failures; retire it
+        // when dedicated seed boxes replace the bootstrap node.
         {
             SeedSpec6 seed;
             memset(seed.addr, 0, sizeof(seed.addr));

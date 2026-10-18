@@ -1092,7 +1092,7 @@ bool ValidateSpendingIdentityReservation(const CTransaction &tx, int32_t outNum,
 
     if (!isPBaaS && !issuingCurrency.IsPBaaSChain())
     {
-        return state.Error("Advanced LuckyID registrations invalid until PBaaS upgrade");
+        return state.Error("Advanced LuckyID registrations invalid until LuckyBridge upgrade");
     }
 
     // if issuing IDs from this currency requires permission of the identity/DAO of the
@@ -1313,7 +1313,7 @@ bool ValidateSpendingIdentityReservation(const CTransaction &tx, int32_t outNum,
             CCurrencyDefinition gatewayCurrency = ConnectedChains.GetCachedCurrency(issuingCurrency.gatewayID);
             if (gatewayCurrency.GetID() != issuingCurrency.systemID)
             {
-                return state.Error("Cannot register an identity directly from a gateway converter of a non-PBaaS gateway");
+                return state.Error("Cannot register an identity directly from a gateway converter of a non-LuckyBridge gateway");
             }
         }
         if (!issuingCurrency.IsValid() || issuingCurrency.systemID != ASSETCHAINS_CHAINID)
@@ -2637,7 +2637,7 @@ bool PrecheckIdentityPrimary(const CTransaction &tx, int32_t outNum, CValidation
 
         if (isPBaaS && identity.nVersion < identity.VERSION_PBAAS)
         {
-            return state.Error("Inadequate identity version for post-PBaaS activation");
+            return state.Error("Inadequate identity version for post-LuckyBridge activation");
         }
 
         if (p.vData.size() < 3 ||
@@ -2785,7 +2785,7 @@ bool PrecheckIdentityPrimary(const CTransaction &tx, int32_t outNum, CValidation
     {
         if (identity.nVersion >= identity.VERSION_VAULT)
         {
-            return state.Error("Invalid identity version before PBaaS activation");
+            return state.Error("Invalid identity version before LuckyBridge activation");
         }
 
         // ensure that we have all required spend conditions for primary, revocation, and recovery

@@ -1,5 +1,5 @@
 // KAT gate for the pre-committable draw trigger (doc 06 rev 1.2,
-// internal/16 §16.9): digest = SHA256D(parent hash || height LE32),
+//): digest = SHA256D(parent hash || height LE32),
 // jackpot < floor(2^256/odds), tier = digest mod 100.
 // Vectors frozen 2026-10-14 (generated independently with Python hashlib).
 // Build & run: verus/src/crypto/lucky_kat.sh (runs all gates).

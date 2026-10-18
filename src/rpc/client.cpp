@@ -498,7 +498,7 @@ CCurrencyDefinition::CCurrencyDefinition(const UniValue &obj) :
         {
             if (!(IsPBaaSChain() || IsGateway()) || (IsPBaaSChain() && IsGateway()))
             {
-                LogPrintf("%s: a gateway converter currency may only be defined as part of a gateway or PBaaS system definition\n", __func__);
+                LogPrintf("%s: a gateway converter currency may only be defined as part of a gateway or LuckyBridge system definition\n", __func__);
                 nVersion = PBAAS_VERSION_INVALID;
                 return;
             }
@@ -525,7 +525,7 @@ CCurrencyDefinition::CCurrencyDefinition(const UniValue &obj) :
         notarizationProtocol = (ENotarizationProtocol)uni_get_int(find_value(obj, "notarizationprotocol"), (int32_t)NOTARIZATION_AUTO);
         if (notarizationProtocol != NOTARIZATION_AUTO && notarizationProtocol != NOTARIZATION_NOTARY_CONFIRM)
         {
-            LogPrintf("%s: notarization protocol for PBaaS chains must be %d (NOTARIZATION_AUTO) or %d (NOTARIZATION_NOTARY_CONFIRM)\n",
+            LogPrintf("%s: notarization protocol for LuckyBridge chains must be %d (NOTARIZATION_AUTO) or %d (NOTARIZATION_NOTARY_CONFIRM)\n",
                     __func__, (int)NOTARIZATION_AUTO, (int)NOTARIZATION_NOTARY_CONFIRM);
             nVersion = PBAAS_VERSION_INVALID;
             return;
@@ -911,7 +911,7 @@ CCurrencyDefinition::CCurrencyDefinition(const UniValue &obj) :
 
             if (!rewards.size())
             {
-                LogPrintf("%s: PBaaS chain does not have valid rewards eras", __func__);
+                LogPrintf("%s: LuckyBridge chain does not have valid rewards eras", __func__);
                 nVersion = PBAAS_VERSION_INVALID;
             }
         }

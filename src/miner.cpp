@@ -967,7 +967,7 @@ bool AddOneCurrencyImport(const CCurrencyDefinition &newCurrency,
             CTransaction firstExportTx;
             if (!pFirstExport || !(pFirstExport->second.IsValid() && !pFirstExport->second.GetPartialTransaction(firstExportTx).IsNull()))
             {
-                LogPrintf("%s: invalid first export for PBaaS or converter launch\n", __func__);
+                LogPrintf("%s: invalid first export for LuckyBridge or converter launch\n", __func__);
                 return false;
             }
 
@@ -975,7 +975,7 @@ bool AddOneCurrencyImport(const CCurrencyDefinition &newCurrency,
             CCrossChainExport ccx(firstExportTx.vout[pFirstExport->first.n].scriptPubKey);
             if (!ccx.IsValid())
             {
-                LogPrintf("%s: invalid export output for PBaaS or converter launch\n", __func__);
+                LogPrintf("%s: invalid export output for LuckyBridge or converter launch\n", __func__);
                 return false;
             }
 

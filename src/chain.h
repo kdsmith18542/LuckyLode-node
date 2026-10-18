@@ -309,13 +309,13 @@ public:
     //! revert it by construction. Zero on pre-jackpot history.
     uint64_t nJackpotReserve;
 
-    //! Lucky Lode pot balance resulting from this block (internal/16):
+    //! Lucky Lode pot balance resulting from this block :
     //! the second stochastic sink. Consensus state, reorg-safe like the
     //! reserve. Zero on pre-pot history.
     uint64_t nLuckyReserve;
 
     //! Consecutive event-less blocks ending at this block (pity timer
-    //! input, internal/16 §16.2). Consensus state, reorg-safe.
+    //! input). Consensus state, reorg-safe.
     uint64_t nLuckyDrought;
 
     //! Branch ID corresponding to the consensus rules used to validate this block.
@@ -707,7 +707,7 @@ public:
         // path needed.
         READWRITE(VARINT(nJackpotReserve));
 
-        // Lucky Lode: pot balance + pity-timer run (internal/16).
+        // Lucky Lode: pot balance + pity-timer run .
         READWRITE(VARINT(nLuckyReserve));
         READWRITE(VARINT(nLuckyDrought));
 

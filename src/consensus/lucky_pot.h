@@ -2,7 +2,7 @@
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 //
-// Lucky Pot money rules (internal/16, promotes to doc 06 on sign-off) —
+// Lucky Pot money rules (, see doc 06) —
 // exact executable mirror of the Rust reference `lm-rewards::pot`. All
 // amounts are base units (uint64); all division floors; intermediates
 // saturate, never wrap. Pure header-only math: no chain state, no
@@ -37,7 +37,7 @@ static const uint64_t TIER_A_MAX = 70;        // rolls < 70 pay a tenth
 static const uint64_t TIER_B_MAX = 95;        // rolls < 95 pay a quarter
 static const uint64_t POT_DROUGHT_LIMIT = 4320; // ~3 days at 60s blocks
 
-// Genesis game-fund seed (internal/16 §16.1): the initial balances block 1
+// Genesis game-fund seed (): the initial balances block 1
 // sees as its parent state. Consensus-locked, spendable only through the
 // payout rules, miners-only — the only genesis allocation. Sized in
 // max-payouts, not % of (infinite) supply: ≈100 max jackpots + pot

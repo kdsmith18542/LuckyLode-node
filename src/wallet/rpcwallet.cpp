@@ -4740,7 +4740,7 @@ UniValue getwalletinfo(const UniValue& params, bool fHelp)
             "{\n"
             "  \"walletversion\": xxxxx,     (numeric) the wallet version\n"
             "  \"balance\": xxxxxxx,         (numeric) the total confirmed balance of the wallet in " + strprintf("%s",komodo_chainname()) + "\n"
-            "  \"reserve_balance\": xxxxxxx, (numeric) for PBaaS reserve chains, the total confirmed reserve balance of the wallet in " + strprintf("%s",komodo_chainname()) + "\n"
+            "  \"reserve_balance\": xxxxxxx, (numeric) for LuckyBridge reserve chains, the total confirmed reserve balance of the wallet in " + strprintf("%s",komodo_chainname()) + "\n"
             "  \"unconfirmed_balance\": xxx, (numeric) the total unconfirmed balance of the wallet in " + strprintf("%s",komodo_chainname()) + "\n"
             "  \"unconfirmed_reserve_balance\": xxx, (numeric) total unconfirmed reserve balance of the wallet in " + strprintf("%s",komodo_chainname()) + "\n"
             "  \"immature_balance\": xxxxxx, (numeric) the total immature balance of the wallet in " + strprintf("%s",komodo_chainname()) + "\n"
@@ -7504,7 +7504,7 @@ UniValue z_shieldcoinbase(const UniValue& params, bool fHelp)
             + HelpExampleRpc("z_shieldcoinbase", "\"RD6GgnrMpPaTSMn8vai6yiGA7mN4QGPV\", \"ztfaW34Gj9FrnGUEf833ywDVL62NWXBM81u6EQnM6VR45eYnXhwztecW1SjxA7JrmAXKJhxhj3vDNEpVCQoSvVoSpmbhtjf\"")
         );
 
-    printf("Shielding coinbases in Lucky Lode or standard PBaaS bockchain networks is unnecessary and %s is a deprecated function\n", __func__);
+    printf("Shielding coinbases in Lucky Lode or standard LuckyBridge bockchain networks is unnecessary and %s is a deprecated function\n", __func__);
     LOCK2(cs_main, pwalletMain->cs_wallet);
 
     // Validate the from address

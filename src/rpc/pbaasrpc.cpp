@@ -424,7 +424,7 @@ bool SetThisChain(const UniValue &chainDefinition, CCurrencyDefinition *retDef)
     {
         ASSETCHAINS_STARTING_DIFF = ConnectedChains.ThisChain().initialBits;
     }
-    //printf("Starting PBaaS chain:\n%s\n", ConnectedChains.ThisChain().ToUniValue().write(1,2).c_str());
+    //printf("Starting LuckyBridge chain:\n%s\n", ConnectedChains.ThisChain().ToUniValue().write(1,2).c_str());
 
     if (!IsVerusActive())
     {
@@ -2004,7 +2004,7 @@ void CheckPBaaSAPIsValid()
     if (!chainActive.LastTip() ||
         CConstVerusSolutionVector::activationHeight.ActiveVersion(chainActive.LastTip()->GetHeight() + 1) < CConstVerusSolutionVector::activationHeight.ACTIVATE_PBAAS)
     {
-        throw JSONRPCError(RPC_INVALID_REQUEST, "PBaaS not activated on blockchain.");
+        throw JSONRPCError(RPC_INVALID_REQUEST, "LuckyBridge not activated on blockchain.");
     }
 }
 
@@ -2969,8 +2969,8 @@ UniValue getcurrency(const UniValue& params, bool fHelp)
             "    \"preallocations\" : \"[{\"i-address\":n}, ...]\", (objarray) LuckyIDs and amounts for pre-allocation at launch\n"
             "    \"initialcontributions\" : \"[n, ...]\",   (numberarray) amounts of pre-conversions reserved for launching ID\n"
             "    \"idregistrationfees\" : n,                (number) base cost of IDs for this currency namespace in this currency\n"
-            "    \"idreferrallevels\" : n,                  (int) levels of ID referrals (only for native PBaaS chains and IDs)\n"
-            "    \"idimportfees\" : n,                      (number) fees required to import an ID to this system (only for native PBaaS chains and IDs)\n"
+            "    \"idreferrallevels\" : n,                  (int) levels of ID referrals (only for native LuckyBridge chains and IDs)\n"
+            "    \"idimportfees\" : n,                      (number) fees required to import an ID to this system (only for native LuckyBridge chains and IDs)\n"
             "    \"eras\" : \"[obj, ...]\",                 (objarray) different chain phases of rewards and convertibility\n"
             "    {\n"
             "      \"reward\" : \"[n, ...]\",               (int) reward start for each era in native coin\n"
@@ -3867,8 +3867,8 @@ UniValue listcurrencies(const UniValue& params, bool fHelp)
             "    \"preallocations\" : \"[{\"i-address\":n}, ...]\", (objarray) LuckyIDs and amounts for pre-allocation at launch\n"
             "    \"initialcontributions\" : \"[n, ...]\",   (numberarray) amounts of pre-conversions reserved for launching ID\n"
             "    \"idregistrationfees\" : n,                (number) base cost of IDs for this currency namespace in this currency\n"
-            "    \"idreferrallevels\" : n,                  (int) levels of ID referrals (only for native PBaaS chains and IDs)\n"
-            "    \"idimportfees\" : n,                      (number) fees required to import an ID to this system (only for native PBaaS chains and IDs)\n"
+            "    \"idreferrallevels\" : n,                  (int) levels of ID referrals (only for native LuckyBridge chains and IDs)\n"
+            "    \"idimportfees\" : n,                      (number) fees required to import an ID to this system (only for native LuckyBridge chains and IDs)\n"
             "    \"eras\" : \"[obj, ...]\",                 (objarray) different chain phases of rewards and convertibility\n"
             "    {\n"
             "      \"reward\" : \"[n, ...]\",               (int) reward start for each era in native coin\n"
@@ -5066,7 +5066,7 @@ UniValue getnotarizationdata(const UniValue& params, bool fHelp)
     {
         throw runtime_error(
             "getnotarizationdata \"currencynameorid\" (getevidence) (separatecounterevidence)\n"
-            "\nReturns the latest PBaaS notarization data for the specifed currencyid.\n"
+            "\nReturns the latest LuckyBridge notarization data for the specifed currencyid.\n"
 
             "\nArguments\n"
             "1. \"currencyid\"                  (string, required) the hex-encoded ID or string name search for notarizations on\n"
@@ -6455,7 +6455,7 @@ UniValue submitacceptednotarization(const UniValue& params, bool fHelp)
             "\nArguments\n"
             "\"earnednotarization\"             (object, required) notarization earned on the other system, which is the basis for this\n"
             "\"notaryevidence\"                 (object, required) evidence and notary signatures validating the notarization\n"
-            "\"sourceoffunds\"                  (string, optional) any valid source of funds to enable privacy when notarizing multiple PBaaS chains\n"
+            "\"sourceoffunds\"                  (string, optional) any valid source of funds to enable privacy when notarizing multiple LuckyBridge chains\n"
 
             "\nResult:\n"
             "txid                               (hexstring) transaction ID of submitted transaction\n"
@@ -12706,7 +12706,7 @@ UniValue getinitialcurrencystate(const UniValue& params, bool fHelp)
     {
         throw runtime_error(
             "getinitialcurrencystate \"name\"\n"
-            "\nReturns the total amount of preconversions that have been confirmed on the blockchain for the specified PBaaS chain.\n"
+            "\nReturns the total amount of preconversions that have been confirmed on the blockchain for the specified LuckyBridge chain.\n"
             "This should be used to get information about chains that are not this chain, but are being launched by it.\n"
 
             "\nArguments\n"
@@ -13570,7 +13570,7 @@ CCurrencyDefinition ValidateNewUnivalueCurrencyDefinition(const UniValue &uniObj
         {
             if (!(currencySet.count(newCurrency.launchSystemID) && currencySet.count(newCurrency.gatewayID)))
             {
-                throw JSONRPCError(RPC_INVALID_PARAMETER, "Invalid gateway converter does not contain both launch chain and new PBaaS chain or gateway's native currencies");
+                throw JSONRPCError(RPC_INVALID_PARAMETER, "Invalid gateway converter does not contain both launch chain and new LuckyBridge chain or gateway's native currencies");
             }
         }
     }
@@ -13623,7 +13623,7 @@ UniValue definecurrency(const UniValue& params, bool fHelp)
             "                                                           3 = PROOF_ETHNOTARIZATION - Ethereum notarization & PATRICIA TRIE proof\n"
             "\n"
             "         \"expiryheight\"  : n,            (int,    optional) block height at which the transaction expires, default: curheight + 20\n"
-            "         \"startblock\"    : n,            (int,    optional) VRSC block must be notarized into block 1 of PBaaS chain, default: expiryheight\n"
+            "         \"startblock\"    : n,            (int,    optional) VRSC block must be notarized into block 1 of LuckyBridge chain, default: expiryheight\n"
             "         \"endblock\"      : n,            (int,    optional) chain or currency intended to end life after this height, 0 = no end\n"
 
             "         \"currencies\"    : \"[\"VRSC\",..]\", (list, optional) reserve currencies backing this chain in equal amounts\n"
@@ -13637,7 +13637,7 @@ UniValue definecurrency(const UniValue& params, bool fHelp)
             "         \"initialsupply\" : \"xx.xx\"    (value, required for fractional) supply after conversion of contributions, before preallocation\n"
             "         \"prelaunchcarveout\" : \"0.xx\", (value, optional) identities and % of pre-converted amounts from each reserve currency\n"
             "         \"preallocations\" : \"[{\"identity\":xx.xx}..]\", (list, optional)  list of identities and amounts from pre-allocation\n"
-            "         \"gatewayconvertername\" : \"name\", (string, optional) if this is a PBaaS chain, this names a co-launched gateway converter currency\n"
+            "         \"gatewayconvertername\" : \"name\", (string, optional) if this is a LuckyBridge chain, this names a co-launched gateway converter currency\n"
 
             "         \"blocktime\"          : n, (int, optional) target time in seconds to average between blocks (default 60 seconds)\n"
             "         \"powaveragingwindow\" : n, (int, optional) total number of blocks to look back when averaging for DAA (default 45 blocks)\n"
@@ -13682,7 +13682,7 @@ UniValue definecurrency(const UniValue& params, bool fHelp)
 
     if (!pwalletMain)
     {
-        throw JSONRPCError(RPC_WALLET_ERROR, "must have active wallet to define PBaaS chain");
+        throw JSONRPCError(RPC_WALLET_ERROR, "must have active wallet to define LuckyBridge chain");
     }
 
     UniValue valStr(UniValue::VSTR);
@@ -13798,7 +13798,7 @@ UniValue definecurrency(const UniValue& params, bool fHelp)
         }
         if (!startupNodes.size())
         {
-            throw JSONRPCError(RPC_INVALID_PARAMETER, "Must specify valid, initial launch nodes for a PBaaS chain");
+            throw JSONRPCError(RPC_INVALID_PARAMETER, "Must specify valid, initial launch nodes for a LuckyBridge chain");
         }
 
         if (!newChain.gatewayConverterName.empty())
@@ -13974,7 +13974,7 @@ UniValue definecurrency(const UniValue& params, bool fHelp)
                 !newGatewayConverter.IsFractional() ||
                 !newGatewayConverter.IsToken())
             {
-                throw JSONRPCError(RPC_INVALID_PARAMETER, "A gateway currency must have the PBaaS chain as parent and be a fractional token");
+                throw JSONRPCError(RPC_INVALID_PARAMETER, "A gateway currency must have the LuckyBridge chain as parent and be a fractional token");
             }
 
             auto currencyMap = newGatewayConverter.GetCurrenciesMap();
@@ -13983,7 +13983,7 @@ UniValue definecurrency(const UniValue& params, bool fHelp)
                 newGatewayConverter.weights[currencyMap[ASSETCHAINS_CHAINID]] < (SATOSHIDEN / 10) ||
                 newGatewayConverter.weights[currencyMap[newChainID]] < (SATOSHIDEN / 10))
             {
-                throw JSONRPCError(RPC_INVALID_PARAMETER, "A gateway currency must be a fractional token that includes both the launch coin and PBaaS native coin at 10% or greater ratio each");
+                throw JSONRPCError(RPC_INVALID_PARAMETER, "A gateway currency must be a fractional token that includes both the launch coin and LuckyBridge native coin at 10% or greater ratio each");
             }
         }
         else if (!IsVerusActive() || !PBAAS_TESTMODE)
@@ -13993,7 +13993,7 @@ UniValue definecurrency(const UniValue& params, bool fHelp)
     }
     else if (!newChain.gatewayConverterName.empty() || params.size() > 1)
     {
-        throw JSONRPCError(RPC_INVALID_PARAMETER, "A second currency definition is only supported as a converter currency for a PBaaS chain or gateway");
+        throw JSONRPCError(RPC_INVALID_PARAMETER, "A second currency definition is only supported as a converter currency for a LuckyBridge chain or gateway");
     }
 
     // now, we have one or two currencies. if we have two, it is because the first is a PBaaS chain, and the second
@@ -14556,7 +14556,7 @@ UniValue registernamecommitment(const UniValue& params, bool fHelp)
     {
         if (!isPBaaS)
         {
-            throw JSONRPCError(RPC_INVALID_PARAMETER, "Cannot issue identities from specified parent currencies until after PBaaS activates");
+            throw JSONRPCError(RPC_INVALID_PARAMETER, "Cannot issue identities from specified parent currencies until after LuckyBridge activates");
         }
         parentID = ValidateCurrencyName(uni_get_str(params[3]), true, &parentCurrency);
 
@@ -14993,7 +14993,7 @@ UniValue registeridentity(const UniValue& params, bool fHelp)
     {
         if (!isPBaaS)
         {
-            throw JSONRPCError(RPC_INVALID_PARAMETER, "Advanced identity reservations are only valid after PBaaS activates");
+            throw JSONRPCError(RPC_INVALID_PARAMETER, "Advanced identity reservations are only valid after LuckyBridge activates");
         }
         advReservation = CAdvancedNameReservation(nameResUni);
     }
@@ -16087,7 +16087,7 @@ UniValue updateidentity(const UniValue& params, bool fHelp)
 
     if (newID.nVersion < CIdentity::VERSION_PBAAS && newID.contentMultiMap.size())
     {
-        throw JSONRPCError(RPC_INVALID_PARAMETER, "contentmultimap may only be set in identities when PBaaS is active on the network");
+        throw JSONRPCError(RPC_INVALID_PARAMETER, "contentmultimap may only be set in identities when LuckyBridge is active on the network");
     }
 
     newID.flags &= newID.FLAG_LOCKED + newID.FLAG_REVOKED;
@@ -18304,8 +18304,8 @@ UniValue submitmergedblock(const UniValue& params, bool fHelp)
         throw runtime_error(
             "submitmergedblock \"hexdata\" ( \"jsonparametersobject\" )\n"
             "\nAttempts to submit one more more new blocks to one or more networks.\n"
-            "Each merged block submission may be valid for Verus and/or PBaaS merge mined chains.\n"
-            "The submitted block consists of a valid block for this chain, along with embedded headers of other PBaaS merge mined chains.\n"
+            "Each merged block submission may be valid for Verus and/or LuckyBridge merge mined chains.\n"
+            "The submitted block consists of a valid block for this chain, along with embedded headers of other LuckyBridge merge mined chains.\n"
             "If the hash for this header meets targets of other chains that have been added with 'addmergedblock', this API will\n"
             "submit those blocks to the specified URL endpoints with an RPC 'submitmergedblock' request."
             "\nAttempts to submit one more more new blocks to one or more networks.\n"
@@ -18314,9 +18314,9 @@ UniValue submitmergedblock(const UniValue& params, bool fHelp)
             "1. \"hexdata\"    (string, required) the hex-encoded block data to submit\n"
             "\nResults:\n"
             "\"    { rejected: \"reject reason\" }\n"
-            "\n  Submission to our chain and PBaaS chains\n"
+            "\n  Submission to our chain and LuckyBridge chains\n"
             "\"    { blockhash: \"hex\", accepted: true, pbaas_submissions: { \"Quantum\":\"chainID_hex\", ... } }\n"
-            "\n  Submission to only PBaaS chains\n"
+            "\n  Submission to only LuckyBridge chains\n"
             "\"    { blockhash: \"hex\", accepted: \"pbaas\", pbaas_submissions: { \"Quantum\":\"chainID_hex\", ... } }\n"
             "\nExamples:\n"
             + HelpExampleCli("submitmergedblock", "\"mydata\"")

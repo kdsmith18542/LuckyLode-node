@@ -527,18 +527,18 @@ std::string HelpMessage(HelpMessageMode mode)
     strUsage += HelpMessageOpt("-pubkey=<hexpubkey>", _("If set, mining and staking rewards will go to this address by default"));
 #endif
 
-    strUsage += HelpMessageGroup(_("PBaaS options:"));
+    strUsage += HelpMessageGroup(_("LuckyBridge options:"));
     strUsage += HelpMessageOpt("-allowdelayednotarizations", strprintf(_("Do not notarize in order to prevent slower notarizations (default = %u, notarize to prevent slowing down)"), DEFAULT_SPENTINDEX));
     strUsage += HelpMessageOpt("-alwayssubmitnotarizations", strprintf(_("Submit notarizations to notary chain whenevever merge mining/staking and eligible (default = %u, only as needed)"), DEFAULT_SPENTINDEX));
     strUsage += HelpMessageOpt("-approvecontractupgrade=<ETHcontracthash(0x...)>", strprintf(_("When validating blocks, vote to agree to upgrade to the specific contract. Default is no upgrade.")));
     strUsage += HelpMessageOpt("-blocktime=<n>", strprintf(_("Set target block time (in seconds) for difficulty adjustment (default: %d)"), CCurrencyDefinition::DEFAULT_BLOCKTIME_TARGET));
-    strUsage += HelpMessageOpt("-chain=pbaaschainname", _("loads either mainnet or resolves and loads a PBaaS chain if not the main chain"));
+    strUsage += HelpMessageOpt("-chain=pbaaschainname", _("loads either mainnet or resolves and loads a LuckyBridge chain if not the main chain"));
     strUsage += HelpMessageOpt("-miningdistributionpassthrough", _("uses the same miningdistribution values and addresses/IDs as the parent chain when merge mining"));
     strUsage += HelpMessageOpt("-notarizationperiod=<n>", strprintf(_("Set minimum spacing consensus between cross-chain notarization, in blocks (default: %d, min 10 min)"), CCurrencyDefinition::BLOCK_NOTARIZATION_MODULO));
-    strUsage += HelpMessageOpt("-notaryid=<i-address>", _("LuckyID used for PBaaS and Ethereum cross-chain notarization"));
-    strUsage += HelpMessageOpt("-notificationoracle=<i-address>", strprintf(_("LuckyID monitored for network alerts, triggers, and signals. Current default is \"%s\" for Lucky Lode and the chain ID for PBaaS chains"), PBAAS_DEFAULT_NOTIFICATION_ORACLE.c_str()));
+    strUsage += HelpMessageOpt("-notaryid=<i-address>", _("LuckyID used for LuckyBridge and Ethereum cross-chain notarization"));
+    strUsage += HelpMessageOpt("-notificationoracle=<i-address>", strprintf(_("LuckyID monitored for network alerts, triggers, and signals. Current default is \"%s\" for Lucky Lode and the chain ID for LuckyBridge chains"), PBAAS_DEFAULT_NOTIFICATION_ORACLE.c_str()));
     strUsage += HelpMessageOpt("-powaveragingwindow=<n>", strprintf(_("Set averaging window for PoW difficulty adjustment, in blocks (default: %d)"), CCurrencyDefinition::DEFAULT_AVERAGING_WINDOW));
-    strUsage += HelpMessageOpt("-testnet", _("loads PBaaS network in testmode"));
+    strUsage += HelpMessageOpt("-testnet", _("loads LuckyBridge network in testmode"));
 	
     strUsage += HelpMessageGroup(_("RPC server options:"));
     strUsage += HelpMessageOpt("-server", _("Accept command line and JSON-RPC commands"));
@@ -1228,7 +1228,7 @@ bool AppInit2(boost::thread_group& threadGroup, CScheduler& scheduler)
     extern char ASSETCHAINS_SYMBOL[65];
     // Lucky Lode: -ac_algo=luckyhash selects LuckyHash v1 (doc 05); the
     // pre-rename value "emberhash" stays accepted for existing runbooks.
-    // Consensus is never operator-selectable (review fix 2026-10-17): the
+    // Consensus is never operator-selectable : the
     // built-in root chains ALWAYS run LuckyHash + the jackpot/pot rules, and
     // a contradicting -ac_algo is a fatal misconfiguration, not a mode.
     {
@@ -1949,7 +1949,7 @@ bool AppInit2(boost::thread_group& threadGroup, CScheduler& scheduler)
                     {
                         if (isHeightExplicit)
                         {
-                            return InitError("Invalid blockchain - incorrect PBaaS solution at explicitly set height requiring version 8");
+                            return InitError("Invalid blockchain - incorrect LuckyBridge solution at explicitly set height requiring version 8");
                         }
                         // if block 1 is v8, set activation to block 1
                         if (chainActive.Height() > 0 &&
@@ -1994,7 +1994,7 @@ bool AppInit2(boost::thread_group& threadGroup, CScheduler& scheduler)
                             // then this has improperly switched over
                             if (pCheckIndex->nTime < PBAAS_VERSION8_SOLUTION_TIME_START || pCheckIndex->pprev->nTime >= PBAAS_VERSION8_SOLUTION_TIME_START)
                             {
-                                return InitError("Invalid blockchain - incorrect switchover to PBaaS solution version 8");
+                                return InitError("Invalid blockchain - incorrect switchover to LuckyBridge solution version 8");
                             }
 
                             if (CConstVerusSolutionVector::Version(pCheckIndex->nSolution.nSolution()) != CActivationHeight::SOLUTION_VERUSV8 ||
@@ -2032,12 +2032,12 @@ bool AppInit2(boost::thread_group& threadGroup, CScheduler& scheduler)
 
                                     if (CConstVerusSolutionVector::Version(pCheckIndex->pprev->nSolution.nSolution()) >= CActivationHeight::SOLUTION_VERUSV7)
                                     {
-                                        return InitError("Invalid blockchain, incorrect switchover to PBaaS solution version 8 from version 7");
+                                        return InitError("Invalid blockchain, incorrect switchover to LuckyBridge solution version 8 from version 7");
                                     }
                                 }
                                 else
                                 {
-                                    return InitError("Invalid blockchain, incorrect switchover to PBaaS solution version 8");
+                                    return InitError("Invalid blockchain, incorrect switchover to LuckyBridge solution version 8");
                                 }
                             }
 

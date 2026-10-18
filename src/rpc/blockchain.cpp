@@ -1949,7 +1949,7 @@ UniValue getjackpotinfo(const UniValue& params, bool fHelp)
     if (fHelp || params.size() > 1)
         throw runtime_error(
             "getjackpotinfo ( height )\n"
-            "\nLucky Lode: jackpot reserve + pot state (doc 06 section 6.2, internal/16).\n"
+            "\nLucky Lode: jackpot reserve + pot state (doc 06 section 6.2).\n"
             "\nArguments:\n"
             "1. height         (numeric, optional) block height (default: tip)\n"
             "\nResult:\n"

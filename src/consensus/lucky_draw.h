@@ -1,4 +1,4 @@
-// Lucky Lode pre-committable draws (doc 06 rev 1.2, internal/16 §16.9).
+// Lucky Lode pre-committable draws (doc 06 rev 1.2).
 //
 // The lottery ticket is the PARENT block's hash, mixed with the height:
 //

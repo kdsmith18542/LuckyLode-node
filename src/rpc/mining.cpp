@@ -1091,7 +1091,7 @@ UniValue getblocktemplate(const UniValue& params, bool fHelp)
     if (ASSETCHAINS_ALGO == ASSETCHAINS_LUCKYHASH)
     {
         // Lucky Lode: EXACT jackpot/pot claims for the next height (doc 06
-        // rev 1.2, internal/16 §16.9). Draws are pre-committable: the
+        // rev 1.2). Draws are pre-committable: the
         // ticket is SHA256D(tip hash || next height), so this template's
         // claim class is final before grinding — pools build the claim
         // coinbase for the height and submit every find (no withholding).
