@@ -8,8 +8,8 @@ komodo_test_SOURCES = \
 	test-komodo/testutils.cpp \
 	test-komodo/test_cryptoconditions.cpp
 
-komodo_test_CPPFLAGS = $(verusd_CPPFLAGS)
+komodo_test_CPPFLAGS = $(luckyd_CPPFLAGS)
 
-komodo_test_LDADD = -lgtest $(verusd_LDADD)
+komodo_test_LDADD = -lgtest $(luckyd_LDADD)
 
 komodo_test_LDFLAGS = $(RELDFLAGS) $(AM_LDFLAGS) $(LIBTOOL_APP_LDFLAGS) -static

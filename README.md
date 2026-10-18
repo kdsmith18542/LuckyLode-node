@@ -13,7 +13,7 @@ tooling — and the design documents live in the main repository:
 
 ```sh
 ./zcutil/build.sh -j"$(nproc)"
-./src/verusd --version
+./src/luckyd --version
 ```
 
 The five consensus KAT gates run standalone without a build:

@@ -104,7 +104,7 @@ noinst_PROGRAMS =
 TESTS =
 
 #if BUILD_BITCOIND
-  bin_PROGRAMS += verusd
+  bin_PROGRAMS += luckyd
 #endif
 
 if BUILD_BITCOIN_UTILS
@@ -560,16 +560,16 @@ nodist_libbitcoin_util_a_SOURCES = $(srcdir)/obj/build.h
 #
 
 # bitcoind binary #
-verusd_SOURCES = bitcoind.cpp
-verusd_CPPFLAGS = $(AM_CPPFLAGS) $(BITCOIN_INCLUDES)
-verusd_CXXFLAGS = $(AM_CXXFLAGS) $(PIE_FLAGS)
-verusd_LDFLAGS = $(RELDFLAGS) $(AM_LDFLAGS) $(LIBTOOL_APP_LDFLAGS)
+luckyd_SOURCES = bitcoind.cpp
+luckyd_CPPFLAGS = $(AM_CPPFLAGS) $(BITCOIN_INCLUDES)
+luckyd_CXXFLAGS = $(AM_CXXFLAGS) $(PIE_FLAGS)
+luckyd_LDFLAGS = $(RELDFLAGS) $(AM_LDFLAGS) $(LIBTOOL_APP_LDFLAGS)
 
 if TARGET_WINDOWS
-verusd_SOURCES += bitcoind-res.rc
+luckyd_SOURCES += bitcoind-res.rc
 endif
 
-verusd_LDADD = \
+luckyd_LDADD = \
   $(LIBBITCOIN_SERVER) \
   $(LIBBITCOIN_COMMON) \
   $(LIBUNIVALUE) \
@@ -586,10 +586,10 @@ verusd_LDADD = \
   $(LIBCRYPTOCONDITIONS)
 
 if ENABLE_WALLET
-verusd_LDADD += $(LIBBITCOIN_WALLET)
+luckyd_LDADD += $(LIBBITCOIN_WALLET)
 endif
 
-verusd_LDADD += \
+luckyd_LDADD += \
   $(BOOST_LIBS) \
   $(BDB_LIBS) \
   $(SSL_LIBS) \

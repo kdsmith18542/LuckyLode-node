@@ -537,7 +537,7 @@ UniValue z_exportwallet(const UniValue& params, bool fHelp)
             "z_exportwallet \"filename\" (omitemptytaddresses)\n"
             "\nExports all wallet keys, for taddr and zaddr, in a human-readable format.  Overwriting an existing file is not permitted.\n"
             "\nArguments:\n"
-            "1. \"filename\"            (string, required) The filename, saved in folder set by verusd -exportdir option\n"
+            "1. \"filename\"            (string, required) The filename, saved in folder set by luckyd -exportdir option\n"
             "2. \"omitemptytaddresses\" (boolean, optional) Defaults to false. If true, export only addresses with indexed UTXOs or that control IDs in the wallet\n"
             "                                               (do not use this option without being sure that all addresses of interest are included)\n"
             "\nResult:\n"
@@ -560,7 +560,7 @@ UniValue dumpwallet(const UniValue& params, bool fHelp)
             "dumpwallet \"filename\" (omitemptytaddresses)\n"
             "\nDumps taddr wallet keys in a human-readable format.  Overwriting an existing file is not permitted.\n"
             "\nArguments:\n"
-            "1. \"filename\"    (string, required) The filename, saved in folder set by verusd -exportdir option\n"
+            "1. \"filename\"    (string, required) The filename, saved in folder set by luckyd -exportdir option\n"
             "2. \"omitemptytaddresses\" (boolean, optional) Defaults to false. If true, export only addresses with indexed UTXOs or that control IDs in the wallet\n"
             "                                               (do not use this option without being sure that all addresses of interest are included)\n"
             "\nResult:\n"
@@ -586,7 +586,7 @@ UniValue dumpwallet_impl(const UniValue& params, bool fHelp, bool fDumpZKeys)
         throw JSONRPCError(RPC_INTERNAL_ERROR, e.what());
     }
     if (exportdir.empty()) {
-        throw JSONRPCError(RPC_WALLET_ERROR, "Cannot export wallet until the verusd -exportdir option has been set");
+        throw JSONRPCError(RPC_WALLET_ERROR, "Cannot export wallet until the luckyd -exportdir option has been set");
     }
 
     std::string unclean = params[0].get_str();

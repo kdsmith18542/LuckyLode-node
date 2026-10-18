@@ -998,7 +998,7 @@ bool ReadConfigFile(std::string chainName,
 #ifndef _WIN32
 boost::filesystem::path GetPidFile()
 {
-    boost::filesystem::path pathPidFile(GetArg("-pid", "verusd.pid"));
+    boost::filesystem::path pathPidFile(GetArg("-pid", "luckyd.pid"));
     if (!pathPidFile.is_complete()) pathPidFile = GetDataDir() / pathPidFile;
     return pathPidFile;
 }

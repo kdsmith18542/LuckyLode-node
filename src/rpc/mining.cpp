@@ -212,7 +212,7 @@ UniValue generate(const UniValue& params, bool fHelp)
             throw JSONRPCError(RPC_METHOD_NOT_FOUND, "Wallet disabled and -mineraddress not set");
         }
 #else
-        throw JSONRPCError(RPC_METHOD_NOT_FOUND, "verusd compiled without wallet and -mineraddress not set");
+        throw JSONRPCError(RPC_METHOD_NOT_FOUND, "luckyd compiled without wallet and -mineraddress not set");
 #endif
     }
     if (!Params().MineBlocksOnDemand())
@@ -376,7 +376,7 @@ UniValue setgenerate(const UniValue& params, bool fHelp)
             throw JSONRPCError(RPC_METHOD_NOT_FOUND, "Wallet disabled and -mineraddress not set");
         }
 #else
-        throw JSONRPCError(RPC_METHOD_NOT_FOUND, "verusd compiled without wallet and -mineraddress not set");
+        throw JSONRPCError(RPC_METHOD_NOT_FOUND, "luckyd compiled without wallet and -mineraddress not set");
 #endif
     }
     if (Params().MineBlocksOnDemand())
@@ -789,7 +789,7 @@ UniValue getblocktemplate(const UniValue& params, bool fHelp)
          );
 
 #ifndef ENABLE_WALLET
-    throw JSONRPCError(RPC_METHOD_NOT_FOUND, "verusd must be compiled with wallet, even if wallet isn't used");
+    throw JSONRPCError(RPC_METHOD_NOT_FOUND, "luckyd must be compiled with wallet, even if wallet isn't used");
 #endif
 
     LOCK(cs_main);

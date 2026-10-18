@@ -46,7 +46,7 @@ chmod 0755 -R $BUILD_DIR/*
 # Copy binaries
 cp $SRC_PATH/src/komodod $DEB_BIN
 strip $DEB_BIN/komodod
-cp $SRC_PATH/src/verusd $DEB_BIN
+cp $SRC_PATH/src/luckyd $DEB_BIN
 cp $SRC_PATH/src/komodo-cli $DEB_BIN
 strip $DEB_BIN/komodo-cli
 cp $SRC_PATH/src/verus $DEB_BIN

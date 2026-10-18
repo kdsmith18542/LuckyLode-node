@@ -57,4 +57,4 @@ jobs:
       - name: build (no params fetch needed to compile)
         run: ./zcutil/build.sh -j"$(nproc)"
       - name: "smoke: the binary answers --version"
-        run: ./src/verusd --version
+        run: ./src/luckyd --version

@@ -201,14 +201,14 @@ function exit_locked_error() {
 
 function overwrite_bootstrap_data() {
   for method in pgrep pidof failure; do
-    if "check_$method" verusd; then
+    if "check_$method" luckyd; then
       if [ -z "$PROCESS_RUNNING" ]; then
         for item in "${vrsc_data[@]}"; do
           echo "Removing ${item}"
           rm -rf "${item}"
         done
       else
-        echo Verusd is running, close and try again.
+        echo Luckyd is running, close and try again.
         exit 1
       fi
       break

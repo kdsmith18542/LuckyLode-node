@@ -14,7 +14,7 @@ AC_CONFIG_HEADERS([src/config/bitcoin-config.h])
 AC_CONFIG_AUX_DIR([build-aux])
 AC_CONFIG_MACRO_DIR([build-aux/m4])
 
-BITCOIN_DAEMON_NAME=verusd
+BITCOIN_DAEMON_NAME=luckyd
 BITCOIN_CLI_NAME=verus
 BITCOIN_TX_NAME=verus-tx
 

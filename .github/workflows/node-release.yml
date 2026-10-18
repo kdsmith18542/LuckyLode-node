@@ -1,6 +1,6 @@
 # Release builds for the Lucky Lode node (free-tier CI only).
 #
-# Builds verusd + verus CLI from this branch with the depends tree, runs
+# Builds luckyd + verus CLI from this branch with the depends tree, runs
 # the EmberHash KAT gates, and uploads stripped release artifacts that the
 # VPS boxes download and run (VPS machines never compile anything).
 #
@@ -69,7 +69,7 @@ jobs:
       - name: strip + package
         run: |
           mkdir -p dist
-          cp src/verusd dist/
+          cp src/luckyd dist/
           [ -f src/verus ] && cp src/verus dist/ || true
           [ -f src/verus-tx ] && cp src/verus-tx dist/ || true
           strip dist/* || true
