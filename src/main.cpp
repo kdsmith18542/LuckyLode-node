@@ -2903,10 +2903,43 @@ void Misbehaving(NodeId pnode, int howmuch)
     if (state == NULL)
         return;
 
-    // Lucky Lode: a hardcoded seed peer is never banned (see above).
+    // Lucky Lode: a hardcoded seed peer is never banned (see above) —
+    // but never-banned must not mean unlimited: every invalid header it
+    // sends costs a full Argon2id under cs_main. Rate-limit instead:
+    // misbehavior still is not counted toward a ban, but a seed flooding
+    // invalid data past the cap within the window gets a clean DISCONNECT
+    // (it may reconnect — availability preserved, the flood stopped).
     if (IsHardcodedSeedPeer(state->name)) {
-        LogPrintf("%s: %s misbehaved (%d) but is a hardcoded seed — not counted\n",
-                  __func__, state->name, howmuch);
+        static CCriticalSection csSeedLimits;
+        static std::map<std::string, std::pair<int64_t, int>> seedMisbehave;
+        static const int64_t SEED_WINDOW_SECS = 60;
+        static const int SEED_WINDOW_CAP = 100;
+        bool flood = false;
+        {
+            LOCK(csSeedLimits);
+            int64_t now = GetTime();
+            auto &entry = seedMisbehave[state->name];
+            if (now - entry.first > SEED_WINDOW_SECS)
+                entry = std::make_pair(now, 0);
+            entry.first = now;
+            entry.second += howmuch;
+            if (entry.second >= SEED_WINDOW_CAP)
+            {
+                flood = true;
+                entry = std::make_pair(now, 0); // re-arm after a disconnect
+            }
+        }
+        if (flood)
+        {
+            LogPrintf("%s: seed %s flooded invalid data (cap %d per %ds) — disconnecting (no ban, may reconnect)\n",
+                      __func__, state->name, SEED_WINDOW_CAP, (int)SEED_WINDOW_SECS);
+            CNode::RequestDisconnect(pnode, "seed invalid-data flood");
+        }
+        else
+        {
+            LogPrintf("%s: %s misbehaved (%d) but is a hardcoded seed — not counted\n",
+                      __func__, state->name, howmuch);
+        }
         return;
     }
 
@@ -5147,9 +5180,22 @@ bool ConnectBlock(const CBlock& block, CValidationState& state, CBlockIndex* pin
     // 100). Reserve and pot ride on the block index (reorg-safe by
     // construction). League/burn overflow is accounted here; league has no
     // consensus output, the pot excess burns (unspendable by construction).
+    // Lucky Lode money state for THIS block, computed in the branch below
+    // and committed to pindex only after every check passes (a rejected
+    // block must not mutate the funds, and fJustCheck passes must not
+    // write at all).
+    uint64_t luckyReserveAfter = 0, luckyPotAfter = 0, luckyDroughtAfter = 0;
+    bool luckyMoney = false;
+
     if (ASSETCHAINS_ALGO == ASSETCHAINS_LUCKYHASH)
     {
         uint64_t baseReward = (uint64_t)GetBlockSubsidy(pindex->GetHeight(), chainparams.GetConsensus());
+        // Fees are non-negative by construction (inputs >= outputs);
+        // a negative fee state is corruption, not a block to evaluate —
+        // the raw cast below would turn it into a huge unsigned levy
+        // base. Fail closed.
+        if (rewardFees < 0)
+            return state.DoS(100, error("ConnectBlock(): negative fee state"), REJECT_INVALID, "bad-fees");
         uint64_t feeTotal = (uint64_t)rewardFees;
         uint64_t parentReserve = pindex->pprev ? pindex->pprev->nJackpotReserve : 0;
         lucky_pot::PotState parentPot;
@@ -5167,6 +5213,7 @@ bool ConnectBlock(const CBlock& block, CValidationState& state, CBlockIndex* pin
         draws.jackpot = isPoW && lucky_draw::Jackpot(drawDigest, LuckyJackpotDrawDivisor());
         draws.pot_event = isPoW && lucky_draw::PotEvent(drawDigest, LuckyPotDrawDivisor());
         draws.tier = lucky_draw::Tier(drawDigest);
+        draws.isPow = isPoW; // PoS never collects, the forced splash included
         lucky_pot::PotPayout lp = lucky_pot::ApplyPotBlock(parentReserve, parentPot, baseReward, feeTotal, draws, LuckyPotDroughtLimit());
         nativeBlockReward = (CAmount)lp.miner + validExtraNative;
         // Funds are debited only by the bonus/splash the coinbase ACTUALLY
@@ -5175,16 +5222,23 @@ bool ConnectBlock(const CBlock& block, CValidationState& state, CBlockIndex* pin
         // normal+bonus+splash; unclaimed amounts stay in their funds.
         // Attribution is canonical: jackpot first, then pot.
         CAmount normalReward = (CAmount)(lp.miner - lp.jackpot_bonus - lp.pot_splash);
-        CAmount claimed = block.vtx[0].GetValueOut() - normalReward;
+        // validExtraNative is a legitimate coinbase component (valid
+        // conversions), not a game-fund claim: only value beyond
+        // normal + extra debits the bonus/splash funds.
+        CAmount claimed = block.vtx[0].GetValueOut() - (normalReward + validExtraNative);
         if (claimed < 0)
             claimed = 0;
         CAmount claimedJackpot = claimed < (CAmount)lp.jackpot_bonus ? claimed : (CAmount)lp.jackpot_bonus;
         CAmount claimedPot = claimed - claimedJackpot;
         if (claimedPot > (CAmount)lp.pot_splash)
             claimedPot = (CAmount)lp.pot_splash; // ceiling check rejects the block anyway
-        pindex->nJackpotReserve = lp.reserve + (uint64_t)((CAmount)lp.jackpot_bonus - claimedJackpot);
-        pindex->nLuckyReserve = lp.pot + (uint64_t)((CAmount)lp.pot_splash - claimedPot);
-        pindex->nLuckyDrought = lp.drought;
+        // Deferred pindex write: only the block's own passing checks
+        // may commit money state (see the assignment near the end of
+        // ConnectBlock).
+        luckyReserveAfter = lp.reserve + (uint64_t)((CAmount)lp.jackpot_bonus - claimedJackpot);
+        luckyPotAfter = lp.pot + (uint64_t)((CAmount)lp.pot_splash - claimedPot);
+        luckyDroughtAfter = lp.drought;
+        luckyMoney = true;
     }
     // reserve reward is in totalReserveTxFees
 
@@ -5466,6 +5520,17 @@ bool ConnectBlock(const CBlock& block, CValidationState& state, CBlockIndex* pin
 
     int64_t nTime4 = GetTimeMicros(); nTimeCallbacks += nTime4 - nTime3;
     LogPrint("bench", "    - Callbacks: %.2fms [%.2fs]\n", 0.001 * (nTime4 - nTime3), nTimeCallbacks * 0.000001);
+
+    // Commit the Lucky Lode money state only now: every check has
+    // passed, so the funds in the index reflect a connected block (and
+    // a failed or check-only ConnectBlock leaves the parent state
+    // intact for the retry).
+    if (luckyMoney)
+    {
+        pindex->nJackpotReserve = luckyReserveAfter;
+        pindex->nLuckyReserve = luckyPotAfter;
+        pindex->nLuckyDrought = luckyDroughtAfter;
+    }
 
     // Erase orphan transactions include or precluded by this block
     if (vOrphanErase.size()) {

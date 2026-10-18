@@ -14,7 +14,8 @@ static int failures = 0;
 using namespace lucky_pot;
 
 static PotState st(uint64_t pot, uint64_t drought) { PotState s; s.pot = pot; s.drought = drought; return s; }
-static BlockDraws dr(bool jackpot, bool event, uint64_t tier) { BlockDraws d; d.jackpot = jackpot; d.pot_event = event; d.tier = tier; return d; }
+static BlockDraws dr(bool jackpot, bool event, uint64_t tier) { BlockDraws d; d.jackpot = jackpot; d.pot_event = event; d.tier = tier; d.isPow = true; return d; }
+static BlockDraws pos(void) { BlockDraws d; d.jackpot = false; d.pot_event = false; d.tier = 0; d.isPow = false; return d; }
 
 int main()
 {
@@ -77,6 +78,14 @@ int main()
         CHECK(p3.pot_event && !p3.pity);
         CHECK(p3.drought == 0);
         CHECK(p3.pot_splash == (pot + 800000) / 2);
+        // PoS finders never collect — the forced splash included. The
+        // drought keeps counting; the next PoW block collects.
+        PotPayout s1 = ApplyPotBlock(0, st(pot, POT_DROUGHT_LIMIT), base, 0, pos());
+        CHECK(!s1.pot_event && !s1.pity && s1.pot_splash == 0);
+        CHECK(s1.drought == POT_DROUGHT_LIMIT + 1);
+        CHECK(s1.pot == pot + s1.to_pot); // levy credited, nothing taken
+        PotPayout s2 = ApplyPotBlock(0, st(pot, s1.drought), base, 0, dr(false, false, 99));
+        CHECK(s2.pot_event && s2.pity && s2.pot_splash > 0);
     }
 
     // The live J1 jackpot (block 21) replayed under the 4/1 split.

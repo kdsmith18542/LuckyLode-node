@@ -666,6 +666,21 @@ bool CNode::IsBanned(CSubNet subnet)
     return fResult;
 }
 
+void CNode::RequestDisconnect(NodeId id, const std::string& why)
+{
+    LOCK(cs_vNodes);
+    for (auto pNode : vNodes)
+    {
+        if (pNode->GetId() == id)
+        {
+            if (!pNode->fDisconnect)
+                LogPrintf("RequestDisconnect(%d): %s\n", id, why);
+            pNode->fDisconnect = true;
+            return;
+        }
+    }
+}
+
 void CNode::Ban(const CNetAddr& addr, int64_t bantimeoffset, bool sinceUnixEpoch) {
     CSubNet subNet(addr.ToString()+(addr.IsIPv4() ? "/32" : "/128"));
     Ban(subNet, bantimeoffset, sinceUnixEpoch);

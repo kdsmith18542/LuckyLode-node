@@ -2493,6 +2493,16 @@ bool AppInit2(boost::thread_group& threadGroup, CScheduler& scheduler)
 
     // ********************************************************* Step 11: finished
 
+    // Fail closed: every load path above is expected to clear the
+    // loading flag, but CheckProofOfWork accepts ANY header while it is
+    // set — clear it unconditionally here so no missed path can leave
+    // PoW checking disabled once the node serves.
+    if (KOMODO_LOADINGBLOCKS != 0)
+    {
+        LogPrintf("AppInitMain(): load paths left KOMODO_LOADINGBLOCKS set — clearing\n");
+        KOMODO_LOADINGBLOCKS = 0;
+    }
+
     SetRPCWarmupFinished();
     uiInterface.InitMessage(_("Done loading"));
 

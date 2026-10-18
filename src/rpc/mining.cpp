@@ -1118,6 +1118,7 @@ UniValue getblocktemplate(const UniValue& params, bool fHelp)
         nextDraws.jackpot = nextJackpot;
         nextDraws.pot_event = nextPot;
         nextDraws.tier = nextTier;
+        nextDraws.isPow = true; // templates are for miners: the PoW path
         lucky_pot::PotPayout potEst = lucky_pot::ApplyPotBlock(tipReserve, potState, nextR, nextF, nextDraws);
         // Exact bonus this height can claim (0 when not a jackpot height).
         // MUST come from ApplyPotBlock (the consensus 4/1 levy split) — the

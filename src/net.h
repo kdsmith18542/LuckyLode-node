@@ -768,6 +768,12 @@ public:
 
     void copyStats(CNodeStats &stats);
 
+    // Request a clean disconnect of one peer (no ban, no blacklist —
+    // the peer may reconnect). Used for never-banned peers that flood
+    // invalid data: each invalid header costs a full Argon2id under
+    // cs_main, so an unbannable peer needs a disconnect circuit breaker.
+    static void RequestDisconnect(NodeId id, const std::string& why);
+
     static bool IsWhitelistedRange(const CNetAddr &ip);
     static void AddWhitelistedRange(const CSubNet &subnet);
 

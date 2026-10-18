@@ -2,7 +2,7 @@
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 //
-// Lucky Pot money rules (, see doc 06) —
+// Lucky Pot money rules (see doc 06) —
 // exact executable mirror of the Rust reference `lm-rewards::pot`. All
 // amounts are base units (uint64); all division floors; intermediates
 // saturate, never wrap. Pure header-only math: no chain state, no
@@ -15,8 +15,10 @@
 //  2. Pot slice credits up to the cap (200 * R); the excess BURNS.
 //  3. Pot event iff the block digest < T/1000; tier = digest mod 100:
 //     0-69 -> 10% of pot, 70-94 -> 25%, 95-99 -> 50%.
-//  4. Pity timer: after 4320 event-less blocks the next block pays a
-//     forced tier-A (10%) splash.
+//  4. Pity timer: after 4320 event-less blocks the next PoW block pays
+//     a forced tier-A (10%) splash — PoW finders only (rule: jackpots
+//     and pot payouts never pay a staker; a PoS block at the limit
+//     counts the drought and collects nothing).
 //  5. Jackpot leg is unchanged (jackpot.h formulas, jackpot slice).
 //
 // Conservation: miner + (reserve - reserve_before) + (pot - pot_before)
@@ -37,12 +39,12 @@ static const uint64_t TIER_A_MAX = 70;        // rolls < 70 pay a tenth
 static const uint64_t TIER_B_MAX = 95;        // rolls < 95 pay a quarter
 static const uint64_t POT_DROUGHT_LIMIT = 4320; // ~3 days at 60s blocks
 
-// Genesis game-fund seed (): the initial balances block 1
+// Genesis game-fund seed: the initial balances block 1
 // sees as its parent state. Consensus-locked, spendable only through the
 // payout rules, miners-only — the only genesis allocation. Sized in
 // max-payouts, not % of (infinite) supply: ≈100 max jackpots + pot
-// equilibrium at the launch reward (founder decision §16.6 #2; frozen at
-// the genesis ceremony). 1 coin = 1e8 base units.
+// equilibrium at the launch reward (docs/06 §6.6; frozen at the genesis
+// ceremony). 1 coin = 1e8 base units.
 // Genesis game-fund seed — LOCKED 2026-10-13 for the locked emission curve
 // (peak 16 LKYL/block): jackpot seed = 100 max-payouts (100 × 5R = 8,000
 // LKYL); pot seed = the pot equilibrium at R=16 (≈ 1,000 LKYL). Consensus
@@ -64,6 +66,7 @@ struct BlockDraws
     bool jackpot;    // digest < T/100
     bool pot_event;  // digest < T/1000
     uint64_t tier;   // digest mod 100
+    bool isPow;      // PoW finder: gates the drought-forced splash
 };
 
 struct PotPayout
@@ -139,9 +142,11 @@ inline PotPayout ApplyPotBlock(uint64_t reserve, PotState state, uint64_t base, 
     uint64_t to_pot = pot_levy < proom ? pot_levy : proom;
     uint64_t to_burn = pot_levy - to_pot;
     uint64_t credited_pot = state.pot + to_pot;
-    // Pity: force a tier-A splash after a full drought; a digest event at
-    // any tier resets the run and never forces.
-    bool pity = !draws.pot_event && state.drought >= drought_limit;
+    // Pity: force a tier-A splash after a full drought — PoW finders
+    // only (jackpot/pot payouts never pay a staker, the forced splash
+    // included); a digest event at any tier resets the run and never
+    // forces.
+    bool pity = draws.isPow && !draws.pot_event && state.drought >= drought_limit;
     bool pot_event = draws.pot_event || pity;
     uint64_t splash = 0;
     if (pot_event)

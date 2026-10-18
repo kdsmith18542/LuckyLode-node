@@ -507,6 +507,23 @@ extern std::string NOTARY_PUBKEY;
 
 bool CheckProofOfWork(const CBlockHeader &blkHeader, int32_t height, const Consensus::Params& params)
 {
+    // LuckyHash chains: the PoW digest covers only the low 64 bits of
+    // the nonce (block.cpp GetLuckyHash reads LE64), so bytes 8..31
+    // MUST be zero on PoW blocks — anything else is a byte-distinct
+    // second serialization of the same work (same digest, different
+    // block hash): inventory ambiguity plus a covert channel. The
+    // reference miner only ever writes a u64; reject the rest. PoS
+    // blocks are exempt (the staker owns the nonce semantics), and the
+    // genesis (height 0) uses the SHA256D path.
+    if (ASSETCHAINS_ALGO == ASSETCHAINS_LUCKYHASH && height > 0 && !blkHeader.IsVerusPOSBlock())
+    {
+        const CPOSNonce &n = blkHeader.nNonce;
+        for (int i = 8; i < 32; i++)
+        {
+            if (n.begin()[i] != 0)
+                return error("CheckProofOfWork(): nonce bytes 8..31 must be zero on LuckyHash chains");
+        }
+    }
     uint256 hash;
     bool fNegative,fOverflow; 
     uint32_t tiptime, blocktimes[66];

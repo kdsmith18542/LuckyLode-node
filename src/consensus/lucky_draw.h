@@ -67,10 +67,12 @@ static inline uint256 Digest(const uint256 &prevHash, int32_t height)
     return out;
 }
 
-// floor(2^256 / divisor), divisor >= 1. Max() = 2^256 - 1, so
-// Max()/divisor == floor((2^256 - 1)/divisor) == floor(2^256/divisor)
-// for all divisor >= 1 (2^256 is divisible by no divisor > 1 except
-// powers of two, and the -1 only matters for exact divisors).
+// The threshold is (2^256 - 1)/divisor and a draw WINS iff
+// digest < threshold, so the winning set is {0 .. floor((2^256-1)/d)-1}:
+// floor((2^256-1)/d) values, at most one short of the exact 1/d share
+// (for powers of two it is exactly one short — 2^256 is divisible by
+// them, so the -1 in the numerator carries all the way down). The former
+// comment claimed this equaled floor(2^256/d) for all d; it does not.
 static inline arith_uint256 Threshold(uint64_t divisor)
 {
     return (~arith_uint256(0)) / (divisor < 1 ? 1 : divisor);
