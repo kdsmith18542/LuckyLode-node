@@ -55,5 +55,5 @@ jobs:
             zlib1g-dev wget bsdmainutils automake curl bison libsodium-dev
       - name: build (no params fetch needed to compile)
         run: ./zcutil/build.sh -j"$(nproc)"
-      - name: smoke: the binary answers --version
+      - name: "smoke: the binary answers --version"
         run: ./src/verusd --version
