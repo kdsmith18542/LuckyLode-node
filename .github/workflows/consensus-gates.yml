@@ -1,0 +1,59 @@
+# Consensus gates for the Lucky Lode node fork.
+#
+# kat-gate (every push/PR): standalone compile + run of all five KAT
+# binaries (LuckyHash, difficulty, jackpot money, Lucky Pot money, draw
+# trigger) via src/crypto/ember_kat.sh — no autotools, ~4 s. The frozen
+# vectors are the consensus contract (doc 05 §5.7); the x86_64/aarch64
+# matrix IS the cross-arch determinism gate (byte-identical vectors or
+# the job fails).
+#
+# build (weekly + on-demand): clean-tree full node build on fresh
+# runner infra, catching dep drift / missing-file / fresh-clone rot
+# that a single long-lived dev box cannot see. Not run per-push —
+# it costs ~45 min.
+name: consensus-gates
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+  schedule:
+    - cron: "0 3 * * 1" # Mondays 03:15 UTC, after the backup window
+
+jobs:
+  kat-gate:
+    name: KAT gate (${{ matrix.arch }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: ubuntu-latest
+            arch: x86_64
+          - os: ubuntu-24.04-arm
+            arch: aarch64
+    steps:
+      - uses: actions/checkout@v4
+      - name: toolchain + libsodium headers
+        run: |
+          sudo apt-get update -y
+          sudo apt-get install -y g++ gcc libsodium-dev pkg-config
+      - name: run all five KAT gates
+        run: sh src/crypto/ember_kat.sh
+
+  build:
+    name: clean full-node build (x86_64)
+    if: github.event_name == 'workflow_dispatch' || github.event_name == 'schedule'
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@v4
+      - name: build deps (verus/zcutil toolchain)
+        run: |
+          sudo apt-get update -y
+          sudo apt-get install -y build-essential pkg-config libc6-dev m4 \
+            g++-multilib autoconf libtool ncurses-dev unzip git python \
+            zlib1g-dev wget bsdmainutils automake curl bison libsodium-dev
+      - name: build (no params fetch needed to compile)
+        run: ./zcutil/build.sh -j"$(nproc)"
+      - name: smoke: the binary answers --version
+        run: ./src/verusd --version
