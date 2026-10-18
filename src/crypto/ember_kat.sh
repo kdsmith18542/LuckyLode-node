@@ -23,8 +23,11 @@ SYS_DEFS="-DHAVE_ENDIAN_H=1 -DHAVE_BYTESWAP_H=1 \
 
 # BLAKE3: portable path only for the KAT gate. Autotools wiring (follow-up)
 # adds per-file SIMD flags (-msse4.1, -mavx2, -mavx512f -mavx512vl) for
-# performance; the portable path is bit-identical.
-B3FLAGS="-DBLAKE3_NO_SSE2 -DBLAKE3_NO_SSE41 -DBLAKE3_NO_AVX2 -DBLAKE3_NO_AVX512 -DBLAKE3_NO_NEON"
+# performance; the portable path is bit-identical. NOTE: BLAKE3_USE_NEON=0
+# is the real override (blake3_impl.h autodetects AArch64 and the dispatch
+# then references blake3_hash_many_neon, which this script never compiles —
+# caught by the aarch64 CI leg); the BLAKE3_NO_* defines are x86-only.
+B3FLAGS="-DBLAKE3_NO_SSE2 -DBLAKE3_NO_SSE41 -DBLAKE3_NO_AVX2 -DBLAKE3_NO_AVX512 -DBLAKE3_USE_NEON=0"
 for f in "$DIR"/blake3/blake3.c "$DIR"/blake3/blake3_dispatch.c "$DIR"/blake3/blake3_portable.c; do
     $CC -O2 $B3FLAGS -c -I"$DIR/blake3" "$f" -o "$OUT/$(basename "$f" .c).o"
 done
