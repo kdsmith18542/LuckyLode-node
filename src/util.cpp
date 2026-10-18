@@ -598,6 +598,14 @@ boost::filesystem::path GetDefaultDataDir()
     {
         if (_IsVerusActive())
         {
+            // Lucky Lode: own datadir names on Windows, matching the
+            // macOS/Unix branches (and the wallet's managed-node
+            // default). Upstream chains keep upstream paths.
+            std::string sym(symbol);
+            if (sym == "LUCKYLODE")
+                return GetSpecialFolderPath(CSIDL_APPDATA) / "LuckyLode";
+            if (sym == "LUCKYLODETEST")
+                return GetSpecialFolderPath(CSIDL_APPDATA) / "LuckyLodeTest";
             return GetSpecialFolderPath(CSIDL_APPDATA) / "Komodo" / symbol;
         }
         else
@@ -684,6 +692,14 @@ boost::filesystem::path GetDefaultDataDir(std::string chainName)
     {
         return GetSpecialFolderPath(CSIDL_APPDATA) / "Komodo" / symbol;
     }
+    else if (canonicalName == "LUCKYLODE")
+    {
+        return GetSpecialFolderPath(CSIDL_APPDATA) / "LuckyLode";
+    }
+    else if (canonicalName == "LUCKYLODETEST")
+    {
+        return GetSpecialFolderPath(CSIDL_APPDATA) / "LuckyLodeTest";
+    }
     else
     {
         return GetSpecialFolderPath(CSIDL_APPDATA) / (PBAAS_TESTMODE ? "VerusTest" : "Verus") / "PBaaS" / symbol;
@@ -704,6 +720,14 @@ boost::filesystem::path GetDefaultDataDir(std::string chainName)
         pathRet /= "Komodo";
         TryCreateDirectory(pathRet);
     }
+    else if (canonicalName == "LUCKYLODETEST")
+    {
+        return pathRet / "LuckyLodeTest";
+    }
+    else if (canonicalName == "LUCKYLODE")
+    {
+        return pathRet / "LuckyLode";
+    }
     else
     {
         pathRet /= PBAAS_TESTMODE ? "VerusTest" : "Verus";
@@ -717,6 +741,14 @@ boost::filesystem::path GetDefaultDataDir(std::string chainName)
     if (canonicalName == "VRSC" || canonicalName == "vrsctest")
     {
         return pathRet / ".komodo" / symbol;
+    }
+    else if (canonicalName == "LUCKYLODETEST")
+    {
+        return pathRet / ".luckylodetest";
+    }
+    else if (canonicalName == "LUCKYLODE")
+    {
+        return pathRet / ".luckylode";
     }
     else
     {
