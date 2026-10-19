@@ -8,9 +8,11 @@
 #include "consensus/consensus.h"
 #include "consensus/jackpot.h"
 #include "consensus/lucky_pot.h"
+#include "consensus/lucky_seed.h"
 #include "consensus/lucky_draw.h"
 #include "consensus/validation.h"
 #include "core_io.h"
+#include "key_io.h"
 #ifdef ENABLE_MINING
 #include "crypto/equihash.h"
 #endif
@@ -21,6 +23,7 @@
 #include "net.h"
 #include "pow.h"
 #include "rpc/server.h"
+#include "script/standard.h"
 #include "txmempool.h"
 #include "util.h"
 #include "validationinterface.h"
@@ -1139,6 +1142,35 @@ UniValue getblocktemplate(const UniValue& params, bool fHelp)
         // Pity-aware pools need the effective limit to decide whether the
         // NEXT block is a forced (claimable) pot event.
         result.push_back(Pair("potdroughtlimit", (int64_t)LuckyPotDroughtLimit()));
+        // Seed-fund advisories (internal/20): EXACT faucet/dev amounts this
+        // height can claim (allowances, not schedules — the pool decides
+        // whether to claim). Scripts are the splice targets (verbatim);
+        // addresses are display + the pool's listunspent filter, derived
+        // from the pinned scripts (single source of truth — never
+        // configured). Empty pin (mainnet until ceremony) ⇒ allowance 0.
+        {
+            uint64_t tipFaucet = chainActive.Tip() ? chainActive.Tip()->nFaucetReserve : 0;
+            uint64_t tipDev = chainActive.Tip() ? chainActive.Tip()->nDevReserve : 0;
+            uint64_t nextHeight = (uint64_t)pindexPrev->GetHeight() + 1;
+            const CScript &faucetScript = Params().GetFaucetScript();
+            const CScript &devScript = Params().GetDevScript();
+            CTxDestination faucetDest, devDest;
+            std::string faucetAddr = ExtractDestination(faucetScript, faucetDest)
+                ? EncodeDestination(faucetDest) : "";
+            std::string devAddr = ExtractDestination(devScript, devDest)
+                ? EncodeDestination(devDest) : "";
+            result.push_back(Pair("faucetreserve", (int64_t)tipFaucet));
+            result.push_back(Pair("faucetdrip", (int64_t)lucky_seed::FaucetAllowance(tipFaucet, !faucetScript.empty())));
+            result.push_back(Pair("faucetscript", HexStr(faucetScript.begin(), faucetScript.end())));
+            result.push_back(Pair("faucetaddress", faucetAddr));
+            result.push_back(Pair("devreserve", (int64_t)tipDev));
+            result.push_back(Pair("devdrip", (int64_t)lucky_seed::DevAllowance(tipDev, nextHeight, !devScript.empty(), LuckyDevEpoch())));
+            result.push_back(Pair("devscript", HexStr(devScript.begin(), devScript.end())));
+            result.push_back(Pair("devaddress", devAddr));
+            // Same epoch accessor as consensus (regtest override parity):
+            // the pool must claim on exactly the heights the node pays.
+            result.push_back(Pair("devepoch", nextHeight % LuckyDevEpoch() == 0));
+        }
         // Draw class of the next height (spectacle + pool sanity checks).
         result.push_back(Pair("drawjackpot", nextJackpot));
         result.push_back(Pair("drawpot", nextPot));

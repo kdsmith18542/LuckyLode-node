@@ -518,6 +518,10 @@ bool ConnectBlock(const CBlock& block, CValidationState& state, CBlockIndex* pin
 uint64_t LuckyPotDrawDivisor();
 uint64_t LuckyPotDroughtLimit();
 uint64_t LuckyJackpotDrawDivisor();
+/** Lucky Lode: dev-claim epoch (every Nth block may carry a dev claim;
+ * regtest may override via -lucky-dev-epoch; every other network always
+ * returns the frozen spec value). */
+uint64_t LuckyDevEpoch();
 
 /** Context-independent validity checks */
 bool CheckBlockHeader(int32_t *futureblockp,int32_t height,CBlockIndex *pindex,const CBlockHeader& block, CValidationState& state, const CChainParams& chainparams, bool fCheckPOW = true);

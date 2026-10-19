@@ -22,6 +22,7 @@
 #include "consensus/jackpot.h"
 #include "consensus/lucky_pot.h"
 #include "consensus/lucky_draw.h"
+#include "consensus/lucky_seed.h"
 #include "deprecation.h"
 #include "init.h"
 #include "merkleblock.h"
@@ -3936,6 +3937,25 @@ uint64_t LuckyJackpotDrawDivisor()
     return cached;
 }
 
+// Regtest-only dev-epoch override (test affordance): dev claims land
+// every Nth block so the full claim → validate → wallet-accumulation
+// path is provable without mining 100 blocks. Frozen spec (100) on
+// every other network; the KAT pins the default math.
+uint64_t LuckyDevEpoch()
+{
+    static uint64_t cached = 0;
+    if (cached == 0)
+    {
+        int64_t v = GetArg("-lucky-dev-epoch", (int64_t)lucky_seed::DEV_EPOCH);
+        if (v < 1)
+            v = 1;
+        cached = Params().NetworkIDString() == "regtest" ? (uint64_t)v : lucky_seed::DEV_EPOCH;
+        if (cached != lucky_seed::DEV_EPOCH)
+            LogPrintf("regtest: lucky dev epoch overridden to %llu\n", (unsigned long long)cached);
+    }
+    return cached;
+}
+
 bool ConnectBlock(const CBlock& block, CValidationState& state, CBlockIndex* pindex, CCoinsViewCache& view, const CChainParams& chainparams, bool fJustCheck, bool fCheckPOW, bool updateCumulativeIndex)
 {
     uint32_t nHeight = pindex->GetHeight();
@@ -5185,6 +5205,7 @@ bool ConnectBlock(const CBlock& block, CValidationState& state, CBlockIndex* pin
     // block must not mutate the funds, and fJustCheck passes must not
     // write at all).
     uint64_t luckyReserveAfter = 0, luckyPotAfter = 0, luckyDroughtAfter = 0;
+    uint64_t luckyFaucetAfter = 0, luckyDevAfter = 0;
     bool luckyMoney = false;
 
     if (ASSETCHAINS_ALGO == ASSETCHAINS_LUCKYHASH)
@@ -5215,17 +5236,51 @@ bool ConnectBlock(const CBlock& block, CValidationState& state, CBlockIndex* pin
         draws.tier = lucky_draw::Tier(drawDigest);
         draws.isPow = isPoW; // PoS never collects, the forced splash included
         lucky_pot::PotPayout lp = lucky_pot::ApplyPotBlock(parentReserve, parentPot, baseReward, feeTotal, draws, LuckyPotDroughtLimit());
-        nativeBlockReward = (CAmount)lp.miner + validExtraNative;
+        // Seed-fund claims (internal/20): the coinbase may pay the pinned
+        // faucet/dev scripts up to their allowances. Unlike the jackpot/pot
+        // (finder-directed, attributed from the total), seed claims are
+        // DIRECTED — only outputs paying the exact pinned scripts count —
+        // so a miner cannot debit the seed funds by padding their own
+        // output. Empty pin (mainnet until ceremony) disables that leg.
+        uint64_t faucetSum = 0, devSum = 0;
+        const CScript &faucetScript = chainparams.GetFaucetScript();
+        const CScript &devScript = chainparams.GetDevScript();
+        const bool faucetPinned = !faucetScript.empty();
+        const bool devPinned = !devScript.empty();
+        for (const CTxOut &out : block.vtx[0].vout)
+        {
+            if (out.nValue < 0)
+                return state.DoS(100, error("ConnectBlock(): negative coinbase output"), REJECT_INVALID, "bad-cb-amount");
+            if (faucetPinned && out.scriptPubKey == faucetScript)
+                faucetSum += (uint64_t)out.nValue;
+            else if (devPinned && out.scriptPubKey == devScript)
+                devSum += (uint64_t)out.nValue;
+        }
+        uint64_t parentFaucet = pindex->pprev ? pindex->pprev->nFaucetReserve : 0;
+        uint64_t parentDev = pindex->pprev ? pindex->pprev->nDevReserve : 0;
+            lucky_seed::SeedPayout sp = lucky_seed::ApplySeedBlock(
+                parentFaucet, parentDev, (uint64_t)pindex->GetHeight(),
+                faucetSum, devSum, faucetPinned, devPinned, LuckyDevEpoch());
+        if (!sp.ok)
+            return state.DoS(100, error("ConnectBlock(): seed-fund claim exceeds allowance (faucet=%llu dev=%llu)",
+                (unsigned long long)faucetSum, (unsigned long long)devSum),
+                REJECT_INVALID, "bad-seed-claim");
+        luckyFaucetAfter = sp.faucet;
+        luckyDevAfter = sp.dev;
+        nativeBlockReward = (CAmount)lp.miner + validExtraNative + (CAmount)faucetSum + (CAmount)devSum;
         // Funds are debited only by the bonus/splash the coinbase ACTUALLY
         // claims (found in testing on the jackpot: assuming a full claim
         // vaporized unclaimed bonus). The ceiling above permits up to
         // normal+bonus+splash; unclaimed amounts stay in their funds.
-        // Attribution is canonical: jackpot first, then pot.
+        // Attribution is canonical: jackpot first, then pot. Seed-fund
+        // outputs were validated above and are excluded here — they debit
+        // their own reserves, never the game funds.
         CAmount normalReward = (CAmount)(lp.miner - lp.jackpot_bonus - lp.pot_splash);
         // validExtraNative is a legitimate coinbase component (valid
         // conversions), not a game-fund claim: only value beyond
-        // normal + extra debits the bonus/splash funds.
-        CAmount claimed = block.vtx[0].GetValueOut() - (normalReward + validExtraNative);
+        // normal + extra + directed seed outputs debits the bonus/splash
+        // funds.
+        CAmount claimed = block.vtx[0].GetValueOut() - (normalReward + validExtraNative + (CAmount)faucetSum + (CAmount)devSum);
         if (claimed < 0)
             claimed = 0;
         CAmount claimedJackpot = claimed < (CAmount)lp.jackpot_bonus ? claimed : (CAmount)lp.jackpot_bonus;
@@ -5530,6 +5585,8 @@ bool ConnectBlock(const CBlock& block, CValidationState& state, CBlockIndex* pin
         pindex->nJackpotReserve = luckyReserveAfter;
         pindex->nLuckyReserve = luckyPotAfter;
         pindex->nLuckyDrought = luckyDroughtAfter;
+        pindex->nFaucetReserve = luckyFaucetAfter;
+        pindex->nDevReserve = luckyDevAfter;
     }
 
     // Erase orphan transactions include or precluded by this block
@@ -6404,6 +6461,8 @@ CBlockIndex* AddToBlockIndex(const CBlockHeader& block)
         pindexNew->nJackpotReserve = lucky_pot::JACKPOT_SEED;
         pindexNew->nLuckyReserve = lucky_pot::LUCKY_SEED;
         pindexNew->nLuckyDrought = 0;
+        pindexNew->nFaucetReserve = lucky_seed::FAUCET_SEED;
+        pindexNew->nDevReserve = lucky_seed::DEV_SEED;
     }
     if (pindexBestHeader == NULL || pindexBestHeader->chainPower < pindexNew->chainPower)
         pindexBestHeader = pindexNew;
@@ -8268,6 +8327,8 @@ bool InitBlockIndex(const CChainParams& chainparams)
             pindex->nJackpotReserve = lucky_pot::JACKPOT_SEED;
             pindex->nLuckyReserve = lucky_pot::LUCKY_SEED;
             pindex->nLuckyDrought = 0;
+            pindex->nFaucetReserve = lucky_seed::FAUCET_SEED;
+            pindex->nDevReserve = lucky_seed::DEV_SEED;
             if (!ReceivedBlockTransactions(block, state, chainparams, pindex, blockPos))
                 return error("LoadBlockIndex(): genesis block not accepted");
             if (!ActivateBestChain(state, chainparams, &block))

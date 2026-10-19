@@ -1964,6 +1964,8 @@ UniValue getjackpotinfo(const UniValue& params, bool fHelp)
             "  \"potdrought\": n,    (numeric) effective pity-timer limit (4320 = spec)\n"
             "  \"jackpotdivisor\": n,(numeric) effective jackpot draw divisor (100 = spec;\n"
             "                        regtest-only override via -lucky-jackpot-divisor)\n"
+            "  \"faucet\": n,        (numeric) seed-funded faucet balance after this block, base units\n"
+            "  \"dev\": n,           (numeric) seed-funded dev-fund balance after this block, base units\n"
             "}\n"
         );
     LOCK(cs_main);
@@ -1988,6 +1990,11 @@ UniValue getjackpotinfo(const UniValue& params, bool fHelp)
     ret.push_back(Pair("potdivisor", (int64_t)LuckyPotDrawDivisor()));
     ret.push_back(Pair("potdrought", (int64_t)LuckyPotDroughtLimit()));
     ret.push_back(Pair("jackpotdivisor", (int64_t)LuckyJackpotDrawDivisor()));
+    // Seed-funded operational balances (internal/20): faucet working
+    // capital + dev starter fund, seeded at genesis, debited only by
+    // capped per-block claims to the pinned addresses.
+    ret.push_back(Pair("faucet", (int64_t)pindex->nFaucetReserve));
+    ret.push_back(Pair("dev", (int64_t)pindex->nDevReserve));
     return ret;
 }
 

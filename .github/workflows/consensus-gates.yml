@@ -1,7 +1,8 @@
 # Consensus gates for the Lucky Lode node fork.
 #
-# kat-gate (every push/PR): standalone compile + run of all five KAT
+# kat-gate (every push/PR): standalone compile + run of all six KAT
 # binaries (LuckyHash, difficulty, jackpot money, Lucky Pot money, draw
+# trigger, seed-fund money)
 # trigger) via src/crypto/lucky_kat.sh — no autotools, ~4 s. The frozen
 # vectors are the consensus contract (doc 05 §5.7); the x86_64/aarch64
 # matrix IS the cross-arch determinism gate (byte-identical vectors or
@@ -37,7 +38,7 @@ jobs:
         run: |
           sudo apt-get update -y
           sudo apt-get install -y g++ gcc libsodium-dev pkg-config
-      - name: run all five KAT gates
+      - name: run all six KAT gates
         run: sh src/crypto/lucky_kat.sh
 
   build:

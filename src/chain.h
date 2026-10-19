@@ -318,6 +318,14 @@ public:
     //! input). Consensus state, reorg-safe.
     uint64_t nLuckyDrought;
 
+    //! Lucky Lode seed-fund reserves resulting from this block
+    //! (internal/20): the faucet balance and the dev-fund balance.
+    //! Consensus state carried per index entry, so reorgs revert them by
+    //! construction. Seeded at genesis, debited only by capped claims to
+    //! the pinned addresses.
+    uint64_t nFaucetReserve;
+    uint64_t nDevReserve;
+
     //! Branch ID corresponding to the consensus rules used to validate this block.
     //! Only cached if block validity is BLOCK_VALID_CONSENSUS.
     //! Persisted at each activation height, memory-only for intervening blocks.
@@ -378,6 +386,8 @@ public:
         nJackpotReserve = 0;
         nLuckyReserve = 0;
         nLuckyDrought = 0;
+        nFaucetReserve = 0;
+        nDevReserve = 0;
         nCachedBranchId = boost::none;
         hashSproutAnchor = uint256();
         hashFinalSproutRoot = uint256();
@@ -710,6 +720,10 @@ public:
         // Lucky Lode: pot balance + pity-timer run .
         READWRITE(VARINT(nLuckyReserve));
         READWRITE(VARINT(nLuckyDrought));
+
+        // Lucky Lode: faucet + dev seed-fund reserves (internal/20).
+        READWRITE(VARINT(nFaucetReserve));
+        READWRITE(VARINT(nDevReserve));
 
         // If you have just added new serialized fields above, remember to add
         // them to CBlockTreeDB::LoadBlockIndexGuts() in txdb.cpp :)

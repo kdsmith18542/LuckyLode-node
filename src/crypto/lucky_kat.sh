@@ -63,3 +63,7 @@ $CXX -O2 -I"$(dirname "$DIR")" $SODIUM_INC $SYS_DEFS \
     "$DIR/sha256.cpp" \
     -o "$OUT/lucky_draw_kat"
 "$OUT/lucky_draw_kat"
+
+# Seed-fund money KAT (internal/20: faucet/dev reserves; header-only math).
+$CXX -O2 -std=c++11 -I"$(dirname "$DIR")" "$DIR/lucky_seed_kat.cpp" -o "$OUT/lucky_seed_kat"
+"$OUT/lucky_seed_kat"

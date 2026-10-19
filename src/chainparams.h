@@ -75,6 +75,8 @@ public:
     const CMessageHeader::MessageStartChars& MessageStart() const { return pchMessageStart; }
     const std::vector<unsigned char>& AlertKey() const { return vAlertPubKey; }
     int GetDefaultPort() const { return nDefaultPort; }
+    const CScript& GetFaucetScript() const { return faucetScript; }
+    const CScript& GetDevScript() const { return devScript; }
 
     CAmount SproutValuePoolCheckpointHeight() const { return nSproutValuePoolCheckpointHeight; }
     CAmount SproutValuePoolCheckpointBalance() const { return nSproutValuePoolCheckpointBalance; }
@@ -149,6 +151,11 @@ protected:
     bool fTestnetToBeDeprecatedFieldRPC = false;
     CCheckpointData checkpointData;
     std::vector<std::string> vFoundersRewardAddress;
+    //! Lucky Lode seed-fund claim destinations (internal/20): the pinned
+    //! faucet / dev coinbase scripts. Empty = that leg is disabled
+    //! (mainnet until the ceremony pins real addresses).
+    CScript faucetScript;
+    CScript devScript;
 
     CAmount nSproutValuePoolCheckpointHeight = 0;
     CAmount nSproutValuePoolCheckpointBalance = 0;

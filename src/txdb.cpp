@@ -2589,6 +2589,8 @@ bool CBlockTreeDB::LoadBlockIndexGuts(std::function<CBlockIndex*(const uint256&)
                 pindexNew->nJackpotReserve = diskindex.nJackpotReserve;
                 pindexNew->nLuckyReserve = diskindex.nLuckyReserve;
                 pindexNew->nLuckyDrought = diskindex.nLuckyDrought;
+                pindexNew->nFaucetReserve = diskindex.nFaucetReserve;
+                pindexNew->nDevReserve = diskindex.nDevReserve;
                 pindexNew->nCachedBranchId = diskindex.nCachedBranchId;
                 pindexNew->nTx            = diskindex.nTx;
                 pindexNew->nSproutValue   = diskindex.nSproutValue;

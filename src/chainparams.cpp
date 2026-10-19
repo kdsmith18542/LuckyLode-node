@@ -188,6 +188,13 @@ public:
         bech32HRPs[SAPLING_EXTENDED_SPEND_KEY]   = "secret-extended-key-main";
         bech32HRPs[SAPLING_EXTENDED_FVK]         = "zxviews";
 
+        // Lucky Lode seed-fund pins (internal/20): the faucet/dev claim
+        // destinations are consensus-pinned scripts. Mainnet pins stay
+        // EMPTY until the launch ceremony pins real addresses — an empty
+        // pin disables that leg (allowance 0), so mainnet boots inert.
+        // (faucetScript/devScript default-construct empty; set below only
+        // on testnet + regtest.)
+
         fMiningRequiresPeers = true;
         fDefaultConsistencyChecks = false;
         fRequireStandard = true;
@@ -511,6 +518,15 @@ public:
             vFixedSeeds.push_back(seed);
         }
 
+        // Lucky Lode testnet seed-fund pins (internal/20): live test
+        // keys — the faucet P2PKH the drip wallet spends from, and the
+        // 2-of-3 dev multisig P2SH. Both verified byte-for-byte against
+        // the node (`validateaddress`/`createmultisig`/`decodescript`
+        // round-trip, 2026-10-19). Regtest reuses these pins (same
+        // address prefixes; throwaway chains).
+        faucetScript = CScript(ParseHex("76a914ba38cfe49e436bb2a43898083a98becc148c204488ac"));
+        devScript = CScript(ParseHex("a914f581da35b024c755572850ad3a9d6f5bd8b1afcc87"));
+
         //fRequireRPCPassword = true;
         fMiningRequiresPeers = false;//true;
         fDefaultConsistencyChecks = false;
@@ -685,6 +701,11 @@ public:
         // Founders reward script expects a vector of 2-of-3 multisig addresses
         vFoundersRewardAddress = { "t2FwcEhFdNXuFMv1tcYwaBJtYVtMj8b1uTg" };
         assert(vFoundersRewardAddress.size() <= consensus.GetLastFoundersRewardBlockHeight(0));
+        // Regtest reuses the testnet seed-fund pins (same P2PKH/P2SH
+        // script shapes; regtest chains are throwaway, and the regtest
+        // e2e proofs need live claim destinations).
+        faucetScript = CScript(ParseHex("76a914ba38cfe49e436bb2a43898083a98becc148c204488ac"));
+        devScript = CScript(ParseHex("a914f581da35b024c755572850ad3a9d6f5bd8b1afcc87"));
     }
 
     void UpdateNetworkUpgradeParameters(Consensus::UpgradeIndex idx, int nActivationHeight)
