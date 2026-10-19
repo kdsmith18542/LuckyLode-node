@@ -524,8 +524,10 @@ public:
         // the node (`validateaddress`/`createmultisig`/`decodescript`
         // round-trip, 2026-10-19). Regtest reuses these pins (same
         // address prefixes; throwaway chains).
-        faucetScript = CScript(ParseHex("76a914ba38cfe49e436bb2a43898083a98becc148c204488ac"));
-        devScript = CScript(ParseHex("a914f581da35b024c755572850ad3a9d6f5bd8b1afcc87"));
+        { std::vector<unsigned char> v = ParseHex("76a914ba38cfe49e436bb2a43898083a98becc148c204488ac");
+        faucetScript = CScript(v.begin(), v.end()); }
+        { std::vector<unsigned char> v = ParseHex("a914f581da35b024c755572850ad3a9d6f5bd8b1afcc87");
+        devScript = CScript(v.begin(), v.end()); }
 
         //fRequireRPCPassword = true;
         fMiningRequiresPeers = false;//true;
@@ -704,8 +706,10 @@ public:
         // Regtest reuses the testnet seed-fund pins (same P2PKH/P2SH
         // script shapes; regtest chains are throwaway, and the regtest
         // e2e proofs need live claim destinations).
-        faucetScript = CScript(ParseHex("76a914ba38cfe49e436bb2a43898083a98becc148c204488ac"));
-        devScript = CScript(ParseHex("a914f581da35b024c755572850ad3a9d6f5bd8b1afcc87"));
+        { std::vector<unsigned char> v = ParseHex("76a914ba38cfe49e436bb2a43898083a98becc148c204488ac");
+        faucetScript = CScript(v.begin(), v.end()); }
+        { std::vector<unsigned char> v = ParseHex("a914f581da35b024c755572850ad3a9d6f5bd8b1afcc87");
+        devScript = CScript(v.begin(), v.end()); }
     }
 
     void UpdateNetworkUpgradeParameters(Consensus::UpgradeIndex idx, int nActivationHeight)
