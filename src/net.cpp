@@ -143,6 +143,31 @@ static CCriticalSection cs_vNonTLSNodesInbound;
 static std::vector<NODE_ADDR> vNonTLSNodesOutbound;
 static CCriticalSection cs_vNonTLSNodesOutbound;
 
+// Inbound peers always speak first: either a TLS ClientHello or a plaintext
+// version message. Sniff those bytes so the accept side does not have to
+// guess the peer's wire from stale per-IP state.
+enum class InboundWire { UNKNOWN, PLAINTEXT, TLS };
+
+static InboundWire DetectInboundWire(SOCKET hSocket)
+{
+    fd_set recvSet;
+    FD_ZERO(&recvSet);
+    FD_SET(hSocket, &recvSet);
+    struct timeval timeout = {2, 0};
+
+    int ready = select(hSocket + 1, &recvSet, NULL, NULL, &timeout);
+    if (ready <= 0)
+        return InboundWire::UNKNOWN;
+
+    unsigned char buf[2] = {0, 0};
+    int nRead = recv(hSocket, (char*)buf, sizeof(buf), MSG_PEEK);
+    if (nRead <= 0)
+        return InboundWire::UNKNOWN;
+
+    // A TLS record starts with a handshake type (0x16) and major version 3.
+    return (nRead >= 2 && buf[0] == 0x16 && buf[1] == 0x03) ? InboundWire::TLS : InboundWire::PLAINTEXT;
+}
+
 void AddOneShot(const std::string& strDest)
 {
     LOCK(cs_vOneShots);
@@ -490,13 +515,9 @@ CNode* ConnectNode(CAddress addrConnect, const char *pszDest)
                 else
                 {
                     LogPrintf ("Connection to %s will be unencrypted\n", addrConnect.ToString());
-
-                    vNonTLSNodesOutbound.erase(
-                            remove(
-                                    vNonTLSNodesOutbound.begin(),
-                                    vNonTLSNodesOutbound.end(),
-                                    nodeAddr),
-                            vNonTLSNodesOutbound.end());
+                    // Keep the hint until the cleaner expires it. Erasing it on
+                    // use made the next attempt try TLS again, flipping the two
+                    // peers into opposite modes on every reconnect.
                 }
             }
         }
@@ -1275,17 +1296,40 @@ SetSocketNonBlocking(hSocket, true);
 /* TCP connection is ready. Do server side SSL. */
 if (CNode::GetTlsFallbackNonTls())
 {
-    LOCK(cs_vNonTLSNodesInbound);
-
     LogPrint("tls", "%s():%d - handling connection from %s\n", __func__, __LINE__,  addr.ToString());
 
-    NODE_ADDR nodeAddr(addr.ToStringIP());
+    const bool fTlsDisabled = GetBoolArg("-tlsdisable", false);
+    const bool bTlsEnforcement = !fTlsDisabled && (GetBoolArg("-tlsenforcement", true) || GetArg("-tlsenforcement", "") == "1");
 
-    bool bUseTLS = !GetBoolArg("-tlsdisable", false);
-    bool bTlsEnforcement = bUseTLS && (GetBoolArg("-tlsenforcement", true) || GetArg("-tlsenforcement", "") == "1");
-    bUseTLS = bUseTLS && (find(vNonTLSNodesInbound.begin(),
-                            vNonTLSNodesInbound.end(),
-                            nodeAddr) == vNonTLSNodesInbound.end());
+    // The peer speaks first, so its wire is detectable. Relying on a per-IP
+    // hint instead let one failed handshake drive the two ends into opposite
+    // modes (one plaintext, one TLS) with no way back.
+    InboundWire wire = fTlsDisabled ? InboundWire::PLAINTEXT : DetectInboundWire(hSocket);
+    bool bUseTLS = !fTlsDisabled;
+
+    if (wire == InboundWire::TLS)
+    {
+        bUseTLS = true;
+    }
+    else if (wire == InboundWire::PLAINTEXT)
+    {
+        if (bTlsEnforcement)
+        {
+            LogPrintf("TLS: Connection from %s is plaintext but TLS is enforced; dropping\n", addr.ToString());
+            CloseSocket(hSocket);
+            return;
+        }
+        bUseTLS = false;
+        LogPrintf ("TLS: Connection from %s will be unencrypted\n", addr.ToStringIP());
+    }
+    else
+    {
+        // No bytes yet: fall back to the historical peer-IP hint.
+        bUseTLS = bUseTLS && !tlsmanager.isNonTLSAddr(addr.ToStringIP(), vNonTLSNodesInbound, cs_vNonTLSNodesInbound);
+        if (!bUseTLS)
+            LogPrintf ("TLS: Connection from %s will be unencrypted\n", addr.ToStringIP());
+    }
+
     unsigned long err_code = 0;
     if (bUseTLS)
     {
@@ -1303,6 +1347,7 @@ if (CNode::GetTlsFallbackNonTls())
                 //Do not allow unencrypted connection if TLS Enforcement is set
                 if (!bTlsEnforcement) {
                     // Further reconnection will be made in non-TLS (unencrypted) mode
+                    LOCK(cs_vNonTLSNodesInbound);
                     vNonTLSNodesInbound.push_back(NODE_ADDR(addr.ToStringIP(), GetTimeMillis()));
                     LogPrint("tls", "%s():%d - err_code %x, adding connection from %s vNonTLSNodesInbound list (sz=%d)\n",
                         __func__, __LINE__, err_code, addr.ToStringIP(), vNonTLSNodesInbound.size());
@@ -1311,18 +1356,6 @@ if (CNode::GetTlsFallbackNonTls())
             CloseSocket(hSocket);
             return;
         }
-    }
-    else
-    {
-        LogPrintf ("TLS: Connection from %s will be unencrypted\n", addr.ToStringIP());
-
-        vNonTLSNodesInbound.erase(
-                remove(
-                        vNonTLSNodesInbound.begin(),
-                        vNonTLSNodesInbound.end(),
-                        nodeAddr
-                ),
-                vNonTLSNodesInbound.end());
     }
 }
 else
