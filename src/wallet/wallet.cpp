@@ -2029,6 +2029,14 @@ CAmount CWallet::EligibleStakeOutputs(std::vector<COutput> &vecOutputs, std::vec
             vecOutputs[i].tx = &vwtx[i];
         }
     }
+    else
+    {
+        // Nothing qualified: report empty, not the unfiltered input set.
+        // Callers (staking loop, RPC counts) must not see young, immature
+        // or nonstandard outputs as candidates.
+        vecOutputs.clear();
+        vwtx.clear();
+    }
     return totalStakingAmount;
 }
 
