@@ -498,8 +498,15 @@ UniValue getmininginfo(const UniValue& params, bool fHelp)
             }
             else
             {
-                // subtract block reward from total output of coinbase and add the rest for an average
-                bigTotalFees = bigTotalFees + arith_uint256(block.vtx[0].GetValueOut() - GetBlockSubsidy(index.GetHeight(), consensus));
+                // Subtract block reward from total output of coinbase and add the rest for an average.
+                // This chain burns transaction fees instead of paying them to miners, so the
+                // coinbase can sit below the subsidy. Clamp each block's contribution at zero:
+                // miners here collect no fees, and the inherited unsigned math would otherwise
+                // wrap a negative difference into garbage.
+                CAmount blockFees = block.vtx[0].GetValueOut() - GetBlockSubsidy(index.GetHeight(), consensus);
+                if (blockFees < 0)
+                    blockFees = 0;
+                bigTotalFees = bigTotalFees + arith_uint256((uint64_t)blockFees);
             }
 
             // if POS block, add stake

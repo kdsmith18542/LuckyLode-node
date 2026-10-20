@@ -19,7 +19,9 @@ static const string CHARS_ALPHA_NUM = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNO
 
 static const string SAFE_CHARS[] =
 {
-    CHARS_ALPHA_NUM + " .,;_/:?@()", // SAFE_CHARS_DEFAULT
+    // SAFE_CHARS_DEFAULT also covers the sanitized peer subver shown by getpeerinfo;
+    // it must keep '-', or a version like 2.0.7-3 displays as 2.0.73.
+    CHARS_ALPHA_NUM + " .,;_/:?@()-", // SAFE_CHARS_DEFAULT
     CHARS_ALPHA_NUM + " .,;_?@", // SAFE_CHARS_UA_COMMENT
     CHARS_ALPHA_NUM + "!*'();:@&=+$,/?#[]-_.~%" // SAFE_CHARS_URI
 };
