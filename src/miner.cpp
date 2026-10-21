@@ -5103,11 +5103,18 @@ void static BitcoinMiner_noeq()
 
         VERUS_MINTBLOCKS = (VERUS_MINTBLOCKS && ASSETCHAINS_LWMAPOS != 0);
 
-        if (fGenerate == true || VERUS_MINTBLOCKS)
+        if (fGenerate == true)
         {
+            // Record that PoW mining is on (read back by getgenerate/
+            // getmininginfo and by the post-op mining-restart calls).
+            // Staking-only (VERUS_MINTBLOCKS without fGenerate) must NOT
+            // set this: a stake-only box reports generate:false and never
+            // resumes PoW threads after wallet ops.
             OverrideSetArg("-gen", "1");
+        }
 
-            if (VERUS_DEFAULT_ZADDR.size() > 0)
+        if (fGenerate == true || VERUS_MINTBLOCKS)
+        {            if (VERUS_DEFAULT_ZADDR.size() > 0)
             {
                 if (defaultSaplingDest == boost::none)
                 {
@@ -5139,7 +5146,10 @@ void static BitcoinMiner_noeq()
         if ( nThreads == 0 && ASSETCHAINS_STAKED )
             nThreads = 1;
 
-        if (!fGenerate)
+        // add the PBaaS thread when mining or staking (the early return
+        // above preserves this: staking starts its threads with
+        // fGenerate == false).
+        if (!fGenerate && !VERUS_MINTBLOCKS)
             return;
 
         minerThreads = new boost::thread_group();

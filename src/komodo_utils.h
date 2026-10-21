@@ -1817,6 +1817,13 @@ void komodo_args(char *argv0)
     {
         name = "VRSC";
     }
+    else if (lowerName == "luckylode")
+    {
+        // Same typo-proof as VRSC above: mixed/lower case still selects
+        // the root chain instead of falling into the PBaaS path and
+        // failing to resolve.
+        name = "LUCKYLODE";
+    }
 
     OverrideSetArg("-ac_name", name);
     memset(ASSETCHAINS_SYMBOL, 0, sizeof(ASSETCHAINS_SYMBOL));
@@ -1843,6 +1850,11 @@ void komodo_args(char *argv0)
                            : (PBAAS_TESTMODE ? "VRSCTEST" : "VRSC"));
     VERUS_CHAINID = CCrossChainRPCData::GetID(VERUS_CHAINNAME);
 
+    // Tracks whether a non-root name resolved to a real PBaaS installation
+    // (local conf file found). Set in the PBaaS branch below; consulted by
+    // the unknown-chain guard in the generic params block.
+    bool fLocalChainConf = false;
+
     if (name == "VRSC" || name == "VRSCTEST" || name == "LUCKYLODE" || name == "LUCKYLODETEST")
     {
         mainVerusCurrency = CCurrencyDefinition(name, PBAAS_TESTMODE);
@@ -1860,7 +1872,11 @@ void komodo_args(char *argv0)
         ASSETCHAINS_LASTERA = numEras - 1;
         OverrideSetArg("-ac_eras", to_string(numEras));
 
-        if (PBAAS_TESTMODE)
+        // Upstream VRSCTEST affordance: lets testnet emission be tweaked
+        // from the CLI. Lucky Lode testnet emission is LOCKED like
+        // mainnet (docs/04 §4.1) — one flag must never diverge it — so
+        // this override stays VRSC-family-only.
+        if (PBAAS_TESTMODE && name != "LUCKYLODE" && name != "LUCKYLODETEST")
         {
             uint32_t defaultHalving = mainVerusCurrency.halving[0];
             std::string halving = GetArg("-ac_halving", std::to_string(defaultHalving)); // this assignment is required for an ARM compiler workaround
@@ -1951,7 +1967,14 @@ void komodo_args(char *argv0)
         // this is a PBaaS chain, so look for an installation on the local file system or check the Verus daemon if it's running
         // printf("Reading config file for %s\n", name.c_str());
         name = boost::to_lower_copy(name);
-        if (!ReadConfigFile(name, mapArgs, mapMultiArgs))
+        if (ReadConfigFile(name, mapArgs, mapMultiArgs))
+        {
+            // Local chain conf found: this is a real PBaaS installation
+            // whose params come from its own conf file (not the CLI).
+            // Mark it so the unknown-chain guard below lets it through.
+            fLocalChainConf = true;
+        }
+        if (!fLocalChainConf)
         {
             // if we are requested to automatically load the information from the Verus chain, do it if we can find the daemon
             if (ReadConfigFile(PBAAS_TESTMODE ? "VRSCTEST" : "VRSC", settings, settingsmulti))
@@ -2059,6 +2082,22 @@ void komodo_args(char *argv0)
     {
         if (!PARAMS_LOADED)
         {
+            // Lucky Lode: this binary serves the LUCKYLODE/LUCKYLODETEST
+            // root chains, upstream VRSC/VRSCTEST (consensus-compatible —
+            // all Lucky Lode money rules are ASSETCHAINS_LUCKYHASH-gated),
+            // and resolvable PBaaS chains (PARAMS_LOADED above). Anything
+            // else is a typo, not a chain: launching a CLI-defined
+            // assetchain here would silently diverge consensus, so fail
+            // closed (bitcoind `-chain` allowlist model). Real PBaaS
+            // installations (local conf found, or currency-loaded above)
+            // pass through untouched.
+            if (!fLocalChainConf &&
+                name != "LUCKYLODE" && name != "LUCKYLODETEST" &&
+                name != "VRSC" && name != "VRSCTEST")
+            {
+                printf("Unknown chain \"%s\": this binary serves LUCKYLODE, LUCKYLODETEST, VRSC, VRSCTEST, and resolvable PBaaS chains only. Check -ac_name/-chain for typos.\n", name.c_str());
+                exit(1);
+            }
             ASSETCHAINS_ALGO = ASSETCHAINS_VERUSHASH;
 
             ASSETCHAINS_LASTERA = GetArg("-ac_eras", 1);

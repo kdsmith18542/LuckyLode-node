@@ -44,6 +44,10 @@ void pre_wallet_load()
     if (pwalletMain)
         pwalletMain->Flush(false);
 #ifdef ENABLE_MINING
+    // Benchmarks pause mining for the rest of the process. Clear staking
+    // too, so the stake-aware early return in GenerateBitcoins keeps the
+    // teardown total (matching the old unconditional `if (!fGenerate)`).
+    VERUS_MINTBLOCKS = 0;
 #ifdef ENABLE_WALLET
     GenerateBitcoins(false, NULL, 0);
 #else

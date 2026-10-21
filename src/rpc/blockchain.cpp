@@ -151,6 +151,9 @@ UniValue blockheaderToJSON(const CBlockIndex* blockindex)
     result.push_back(Pair("solution", HexStr(blockindex->nSolution.nSolution())));
     result.push_back(Pair("bits", strprintf("%08x", blockindex->nBits)));
     result.push_back(Pair("difficulty", GetDifficulty(blockindex)));
+    // Lucky Lode: exact PoS marker, same rule as getblock (`pos` bool) —
+    // lets header-only consumers (explorer backfill) skip the full block.
+    result.push_back(Pair("pos", block.IsVerusPOSBlock()));
     result.push_back(Pair("chainwork", blockindex->chainPower.chainWork.GetHex()));
     result.push_back(Pair("chainstake", blockindex->chainPower.chainStake.GetHex()));
     result.push_back(Pair("segid", (int64_t)blockindex->segid));

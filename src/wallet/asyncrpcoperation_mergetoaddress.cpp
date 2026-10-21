@@ -137,6 +137,11 @@ void AsyncRPCOperation_mergetoaddress::main()
     bool success = false;
 
 #ifdef ENABLE_MINING
+    // Pause everything including staking: save/clear VERUS_MINTBLOCKS so
+    // the stake-aware early return in GenerateBitcoins performs a full
+    // teardown; restored below before resuming.
+    bool fWasMinting = VERUS_MINTBLOCKS;
+    VERUS_MINTBLOCKS = 0;
 #ifdef ENABLE_WALLET
     GenerateBitcoins(false, NULL, 0);
 #else
@@ -167,6 +172,7 @@ void AsyncRPCOperation_mergetoaddress::main()
 
 #ifdef ENABLE_MINING
 #ifdef ENABLE_WALLET
+    VERUS_MINTBLOCKS = fWasMinting;
     GenerateBitcoins(GetBoolArg("-gen", false), pwalletMain, GetArg("-genproclimit", 0));
 #else
     GenerateBitcoins(GetBoolArg("-gen", false), GetArg("-genproclimit", 0));

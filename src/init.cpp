@@ -203,6 +203,10 @@ void Shutdown()
 
 #ifdef ENABLE_MINING
 #ifdef ENABLE_WALLET
+    // Clear staking first (same reason as the `stop` RPC): with the
+    // stake-aware early return, GenerateBitcoins(false) would otherwise
+    // restart stake threads during shutdown.
+    VERUS_MINTBLOCKS = 0;
     GenerateBitcoins(false, NULL, 0);
 #else
     GenerateBitcoins(false, 0);
@@ -523,7 +527,7 @@ std::string HelpMessage(HelpMessageMode mode)
  #endif
             ));
     strUsage += HelpMessageOpt("-miningdistribution={\"addressorid\":<n>,...}", _("destination addresses and relative amounts used as ratios to divide total rewards + fees"));
-    strUsage += HelpMessageOpt("-mint", strprintf(_("Mint/stake coins automatically (default: %u)"), 0));
+    strUsage += HelpMessageOpt("-mint", strprintf(_("Mint/stake coins automatically; stake-only, does not enable PoW mining (use -gen) (default: %u)"), 0));
     strUsage += HelpMessageOpt("-pubkey=<hexpubkey>", _("If set, mining and staking rewards will go to this address by default"));
 #endif
 
@@ -1246,7 +1250,11 @@ bool AppInit2(boost::thread_group& threadGroup, CScheduler& scheduler)
         }
         else if (algoArg == "luckyhash" || algoArg == "emberhash")
         {
-            ASSETCHAINS_ALGO = ASSETCHAINS_LUCKYHASH;
+            // LuckyHash outside the Lucky Lode root chains is an unreviewed
+            // combo (LuckyHash PoW + jackpot/pot money rules, no game-fund
+            // ceremony). Refuse it the same way a contradicting -ac_algo on
+            // a root chain is refused.
+            return InitError(strprintf(_("Chain %s cannot use -ac_algo=%s: luckyhash is consensus for LUCKYLODE/LUCKYLODETEST only."), chainSym, algoArg));
         }
     }
     LogPrintf("LuckyLode bring-up: -ac_algo seen='%s', ASSETCHAINS_ALGO=%u\n",
@@ -2477,7 +2485,10 @@ bool AppInit2(boost::thread_group& threadGroup, CScheduler& scheduler)
         LogPrintf("regtest: COINBASE_MATURITY overridden to %d\n", COINBASE_MATURITY);
     }
     VERUS_MINTBLOCKS = GetBoolArg("-mint", false);
-    OverrideSetArg("-gen", gen || VERUS_MINTBLOCKS ? "1" : "0");
+    // Staking (-mint) and PoW mining (-gen) are independent switches, the
+    // same model as the setgenerate RPC (`true 0` = stake-only). -mint no
+    // longer implies -gen: a staking box must not silently burn hashpower.
+    OverrideSetArg("-gen", gen ? "1" : "0");
     OverrideSetArg("-genproclimit", itostr(GetArg("-genproclimit", gen ? -1 : 0)));
     // Update KOMODO_MININGTHREADS here since komodo_args runs before config file is read
     KOMODO_MININGTHREADS = GetArg("-genproclimit", gen ? -1 : 0);
@@ -2511,7 +2522,11 @@ bool AppInit2(boost::thread_group& threadGroup, CScheduler& scheduler)
     // This prevents potential hangs from mining threads waiting for initialization
  #ifdef ENABLE_WALLET
     if (pwalletMain || !GetArg("-mineraddress", "").empty())
-        GenerateBitcoins(gen || VERUS_MINTBLOCKS, pwalletMain, KOMODO_MININGTHREADS);
+        // NOTE: pass `gen` only — staking rides on VERUS_MINTBLOCKS inside
+        // GenerateBitcoins (staker + submission threads start without
+        // fGenerate). Passing `gen || MINTBLOCKS` here used to re-arm -gen
+        // and misreport generate:true on stake-only boxes.
+        GenerateBitcoins(gen, pwalletMain, KOMODO_MININGTHREADS);
  #else
     GenerateBitcoins(gen, KOMODO_MININGTHREADS);
  #endif

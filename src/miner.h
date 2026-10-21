@@ -39,6 +39,10 @@ CBlockTemplate* CreateNewBlockWithKey();
 #endif
 
 #ifdef ENABLE_MINING
+/** Staking switch (set by -mint / setgenerate). Cleared alongside -gen
+ * whenever mining threads are fully paused, so the stake-aware startup
+ * path in GenerateBitcoins resumes staking afterwards. */
+extern bool VERUS_MINTBLOCKS;
 /** Get script for -mineraddress */
 void GetScriptForMinerAddress(boost::shared_ptr<CReserveScript> &script);
 /** Modify the extranonce in a block */
