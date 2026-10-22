@@ -62,7 +62,7 @@ extern std::string NOTARY_PUBKEY;
 extern int32_t KOMODO_EXCHANGEWALLET;
 extern char ASSETCHAINS_SYMBOL[KOMODO_ASSETCHAIN_MAXLEN];
 extern uint160 ASSETCHAINS_CHAINID;
-extern int32_t VERUS_MIN_STAKEAGE;
+extern int32_t LUCKY_MIN_STAKEAGE;
 extern uint32_t MAX_STAKE_ATTEMPTS; // Lucky Lode solo-PoS liveness (internal/22)
 CBlockIndex *komodo_chainactive(int32_t height);
 extern std::string DONATION_PUBKEY;
@@ -1936,7 +1936,7 @@ CAmount CWallet::EligibleStakeOutputs(std::vector<COutput> &vecOutputs, std::vec
             txout.i < txout.tx->vout.size() &&
             txout.tx->vout[txout.i].nValue > 0 &&
             txout.fSpendable &&
-            (txout.nDepth >= VERUS_MIN_STAKEAGE) &&
+            (txout.nDepth >= LUCKY_MIN_STAKEAGE) &&
             ((txout.tx->vout[txout.i].scriptPubKey.IsPayToCryptoCondition(p) &&
                 extendedStake &&
                 p.IsValid() &&
@@ -2045,7 +2045,7 @@ CAmount CWallet::EligibleStakeOutputs(std::vector<COutput> &vecOutputs, std::vec
 // UTXO with the smallest coin age if there is more than one, as larger coin age will win more often and is worth saving
 // each attempt consists of taking a VerusHash of the following values:
 //  ASSETCHAINS_MAGIC, nHeight, txid, voutNum
-bool CWallet::VerusSelectStakeOutput(CBlock *pBlock, arith_uint256 &hashResult, CTransaction &stakeSource, int32_t &voutNum, int32_t nHeight, uint32_t &bnTarget) const
+bool CWallet::LuckySelectStakeOutput(CBlock *pBlock, arith_uint256 &hashResult, CTransaction &stakeSource, int32_t &voutNum, int32_t nHeight, uint32_t &bnTarget) const
 {
     arith_uint256 target;
     arith_uint256 curHash;
@@ -2065,7 +2065,7 @@ bool CWallet::VerusSelectStakeOutput(CBlock *pBlock, arith_uint256 &hashResult, 
     std::vector<CWalletTx> vwtx;
     CAmount totalStakingAmount = 0;
 
-    uint32_t solutionVersion = CConstVerusSolutionVector::GetVersionByHeight(nHeight);
+    uint32_t solutionVersion = CConstLuckySolutionVector::GetVersionByHeight(nHeight);
     bool isPBaaS = solutionVersion >= CActivationHeight::ACTIVATE_PBAAS;
     bool extendedStake = solutionVersion >= CActivationHeight::ACTIVATE_EXTENDEDSTAKE;
 
@@ -2133,7 +2133,7 @@ bool CWallet::VerusSelectStakeOutput(CBlock *pBlock, arith_uint256 &hashResult, 
                 int nRequired = 0;
                 bool canSign = false, canSpend = false;
 
-                if (UintToArith256(txout.tx->GetVerusPOSHash(&(pBlock->nNonce), txout.i, nHeight, pastHash, fRetryRules)) <= target)
+                if (UintToArith256(txout.tx->GetLuckyPOSHash(&(pBlock->nNonce), txout.i, nHeight, pastHash, fRetryRules)) <= target)
                 {
                     if (isVerusETHBridgeCleanup && txout.tx->vout[txout.i].scriptPubKey.ReserveOutValue().Intersects(BridgeCurrencyAdjustmentMap()))
                     {
@@ -2170,7 +2170,7 @@ bool CWallet::VerusSelectStakeOutput(CBlock *pBlock, arith_uint256 &hashResult, 
                                             CIdentity destIdentity;
                                             uint32_t idHeight;
                                             if (!(destIdentity = CIdentity::LookupIdentity(GetDestinationID(oneDest), 0, &idHeight)).IsValid() ||
-                                                (nHeight - idHeight) < VERUS_MIN_STAKEAGE)
+                                                (nHeight - idHeight) < LUCKY_MIN_STAKEAGE)
                                             {
                                                 if (LogAcceptCategory("staking"))
                                                 {
@@ -2180,7 +2180,7 @@ bool CWallet::VerusSelectStakeOutput(CBlock *pBlock, arith_uint256 &hashResult, 
                                                     }
                                                     else
                                                     {
-                                                        LogPrintf("%s: Identity, %s, has been updated more recently than minimum stake age (%d) blocks renders UTXO ineligible to stake\n", __func__, EncodeDestination(CIdentityID(GetDestinationID(oneDest))).c_str(), VERUS_MIN_STAKEAGE);
+                                                        LogPrintf("%s: Identity, %s, has been updated more recently than minimum stake age (%d) blocks renders UTXO ineligible to stake\n", __func__, EncodeDestination(CIdentityID(GetDestinationID(oneDest))).c_str(), LUCKY_MIN_STAKEAGE);
                                                     }
                                                 }
                                                 isValid = false;
@@ -2215,10 +2215,10 @@ bool CWallet::VerusSelectStakeOutput(CBlock *pBlock, arith_uint256 &hashResult, 
             stakeSource = static_cast<CTransaction>(*pwinner->tx);
 
             // arith_uint256 post;
-            // post.SetCompact(pBlock->GetVerusPOSTarget());
+            // post.SetCompact(pBlock->GetLuckyPOSTarget());
             // printf("Found stake transaction\n");
             // printf("POS hash: %s  \ntarget:   %s\n\n",
-            //         stakeSource.GetVerusPOSHash(&(pBlock->nNonce), pwinner->i, nHeight, pastHash).GetHex().c_str(),
+            //         stakeSource.GetLuckyPOSHash(&(pBlock->nNonce), pwinner->i, nHeight, pastHash).GetHex().c_str(),
             //         ArithToUint256(post).GetHex().c_str());
 
             voutNum = pwinner->i;
@@ -2265,7 +2265,7 @@ bool CWallet::VerusSelectStakeOutput(CBlock *pBlock, arith_uint256 &hashResult, 
                     return false;
                 }
 
-                BlockMMRange blockMMR(block.GetBlockMMRTree(posSourceInfo ? block.GetVerusEntropyHashComponent(srcIndex) : uint256()));
+                BlockMMRange blockMMR(block.GetBlockMMRTree(posSourceInfo ? block.GetLuckyEntropyHashComponent(srcIndex) : uint256()));
                 BlockMMView blockView(blockMMR);
 
                 int txIndexPos;
@@ -2345,7 +2345,7 @@ bool CWallet::VerusSelectStakeOutput(CBlock *pBlock, arith_uint256 &hashResult, 
 
                 // printf("\nFound Stake transaction... all proof serialized size == %lu\n", stx.size());
 
-                CVerusSolutionVector(pBlock->nSolution).ResizeExtraData(stx.size());
+                CLuckySolutionVector(pBlock->nSolution).ResizeExtraData(stx.size());
 
                 pBlock->SetExtraData(stx.data(), stx.size());
 
@@ -2359,7 +2359,7 @@ bool CWallet::VerusSelectStakeOutput(CBlock *pBlock, arith_uint256 &hashResult, 
     return false;
 }
 
-int32_t CWallet::VerusStakeTransaction(CBlock *pBlock, CMutableTransaction &txNew, uint32_t &bnTarget, arith_uint256 &hashResult, std::vector<unsigned char> &utxosig, CTxDestination &rewardDest) const
+int32_t CWallet::LuckyStakeTransaction(CBlock *pBlock, CMutableTransaction &txNew, uint32_t &bnTarget, arith_uint256 &hashResult, std::vector<unsigned char> &utxosig, CTxDestination &rewardDest) const
 {
     CTransaction stakeSource;
     int32_t voutNum, siglen = 0;
@@ -2369,11 +2369,11 @@ int32_t CWallet::VerusStakeTransaction(CBlock *pBlock, CMutableTransaction &txNe
 
     CBlockIndex *tipindex = chainActive.LastTip();
     uint32_t stakeHeight = tipindex->GetHeight() + 1;
-    bool extendedStake = CConstVerusSolutionVector::GetVersionByHeight(stakeHeight) >= CActivationHeight::ACTIVATE_EXTENDEDSTAKE;
+    bool extendedStake = CConstLuckySolutionVector::GetVersionByHeight(stakeHeight) >= CActivationHeight::ACTIVATE_EXTENDEDSTAKE;
 
     bnTarget = lwmaGetNextPOSRequired(tipindex, Params().GetConsensus());
 
-    if (!VerusSelectStakeOutput(pBlock, hashResult, stakeSource, voutNum, stakeHeight, bnTarget))
+    if (!LuckySelectStakeOutput(pBlock, hashResult, stakeSource, voutNum, stakeHeight, bnTarget))
     {
         //LogPrintf("Searched for eligible staking transactions, no winners found\n");
         return 0;
@@ -2487,7 +2487,7 @@ int32_t CWallet::VerusStakeTransaction(CBlock *pBlock, CMutableTransaction &txNe
     // reward pubkey is required — the v2 form is rejected by
     // ValidateStakeTransaction (found live 2026-10-13: the staker minted v2
     // blocks that the node's own validator refused).
-    bool stakeExtended = CConstVerusSolutionVector::GetVersionByHeight(tipindex->GetHeight() + 1) >= CActivationHeight::ACTIVATE_EXTENDEDSTAKE;
+    bool stakeExtended = CConstLuckySolutionVector::GetVersionByHeight(tipindex->GetHeight() + 1) >= CActivationHeight::ACTIVATE_EXTENDEDSTAKE;
     CPubKey rewardPk;
     if (!stakeExtended)
     {
@@ -5509,8 +5509,8 @@ void CWallet::AvailableCoins(vector<COutput>& vCoins, bool fOnlyConfirmed, const
             if (isCoinbase &&
                 !fIncludeProtectedCoinbase &&
                 Params().GetConsensus().fCoinbaseMustBeProtected &&
-                CConstVerusSolutionVector::GetVersionByHeight(coinHeight) < CActivationHeight::SOLUTION_VERUSV4 &&
-                CConstVerusSolutionVector::GetVersionByHeight(nHeight) < CActivationHeight::SOLUTION_VERUSV5)
+                CConstLuckySolutionVector::GetVersionByHeight(coinHeight) < CActivationHeight::SOLUTION_V4 &&
+                CConstLuckySolutionVector::GetVersionByHeight(nHeight) < CActivationHeight::SOLUTION_V5)
                 continue;
 
             for (int i = 0; i < pcoin->vout.size(); i++)

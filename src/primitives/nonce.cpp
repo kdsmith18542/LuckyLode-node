@@ -37,7 +37,7 @@ void CPOSNonce::SetPOSEntropy(const uint256 &pastHash, uint256 txid, int32_t vou
     // The attempt counter rides in the nonce itself (bits 32..39, written
     // by the staker via SetStakeAttempt before this call).
     uint32_t attempt = fRetryRules ? GetStakeAttempt() : 0;
-    if (version == VERUS_V2)
+    if (version == LUCKY_V2)
     {
         // get low 96 bits of past hash and put it in top 96 bits of low 128 bits of nonce
         CVerusHashV2Writer hashWriter = CVerusHashV2Writer(SER_GETHASH, PROTOCOL_VERSION);
@@ -113,7 +113,7 @@ bool CPOSNonce::CheckPOSEntropy(const uint256 &pastHash, uint256 txid, int32_t v
     // The attempt counter rides in the nonce itself (bits 32..39); the
     // validator re-derives with the same attempt the staker used.
     uint32_t attempt = fRetryRules ? GetStakeAttempt() : 0;
-    if (version == VERUS_V2)
+    if (version == LUCKY_V2)
     {
         // get low 96 bits of past hash and put it in top 96 bits of low 128 bits of nonce
         CVerusHashV2Writer hashWriter = CVerusHashV2Writer(SER_GETHASH, PROTOCOL_VERSION);

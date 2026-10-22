@@ -122,14 +122,14 @@ UniValue blockheaderToJSON(const CBlockIndex* blockindex)
 
     CBlockHeader block = blockindex->GetBlockHeader();
 
-    if (block.IsVerusPOSBlock())
+    if (block.IsLuckyPOSBlock())
     {
         result.push_back(Pair("validationtype", "stake"));
         arith_uint256 posTarget;
-        posTarget.SetCompact(block.GetVerusPOSTarget());
+        posTarget.SetCompact(block.GetLuckyPOSTarget());
         result.push_back(Pair("postarget", ArithToUint256(posTarget).GetHex()));
         uint256 rawPOSHash;
-        block.GetRawVerusPOSHash(rawPOSHash, blockindex->GetHeight());
+        block.GetRawLuckyPOSHash(rawPOSHash, blockindex->GetHeight());
         result.push_back(Pair("rawposhashbh", rawPOSHash.GetHex()));
         CPOSNonce scratchNonce(block.nNonce);
     }
@@ -153,14 +153,14 @@ UniValue blockheaderToJSON(const CBlockIndex* blockindex)
     result.push_back(Pair("difficulty", GetDifficulty(blockindex)));
     // Lucky Lode: exact PoS marker, same rule as getblock (`pos` bool) —
     // lets header-only consumers (explorer backfill) skip the full block.
-    result.push_back(Pair("pos", block.IsVerusPOSBlock()));
+    result.push_back(Pair("pos", block.IsLuckyPOSBlock()));
     result.push_back(Pair("chainwork", blockindex->chainPower.chainWork.GetHex()));
     result.push_back(Pair("chainstake", blockindex->chainPower.chainStake.GetHex()));
     result.push_back(Pair("segid", (int64_t)blockindex->segid));
-    if (block.nVersion >= block.VERUS_V2)
+    if (block.nVersion >= block.LUCKY_V2)
     {
         auto vch = block.nSolution;
-        CPBaaSSolutionDescriptor solDescr = CVerusSolutionVector(vch).Descriptor();
+        CPBaaSSolutionDescriptor solDescr = CLuckySolutionVector(vch).Descriptor();
         result.push_back(Pair("previousstateroot", solDescr.hashPrevMMRRoot.GetHex()));
         result.push_back(Pair("blockmmrroot", solDescr.hashBlockMMRRoot.GetHex()));
     }
@@ -285,8 +285,8 @@ UniValue blockToDeltasJSON(const CBlock& block, const CBlockIndex* blockindex)
     result.push_back(Pair("bits", strprintf("%08x", block.nBits)));
     // Lucky Lode: exact PoS marker for the explorer/wallet "minted blocks"
     // view (review follow-up 2026-10-18). Read-only: the same
-    // IsVerusPOSBlock() the validator uses — no new rule, just exposed.
-    result.push_back(Pair("pos", block.IsVerusPOSBlock()));
+    // IsLuckyPOSBlock() the validator uses — no new rule, just exposed.
+    result.push_back(Pair("pos", block.IsLuckyPOSBlock()));
     result.push_back(Pair("difficulty", GetDifficulty(blockindex)));
     result.push_back(Pair("chainwork", blockindex->chainPower.chainWork.GetHex()));
     result.push_back(Pair("chainstake", blockindex->chainPower.chainStake.GetHex()));
@@ -296,10 +296,10 @@ UniValue blockToDeltasJSON(const CBlock& block, const CBlockIndex* blockindex)
     CBlockIndex *pnext = chainActive.Next(blockindex);
     if (pnext)
         result.push_back(Pair("nextblockhash", pnext->GetBlockHash().GetHex()));
-    if (block.nVersion >= block.VERUS_V2)
+    if (block.nVersion >= block.LUCKY_V2)
     {
         auto vch = block.nSolution;
-        CPBaaSSolutionDescriptor solDescr = CVerusSolutionVector(vch).Descriptor();
+        CPBaaSSolutionDescriptor solDescr = CLuckySolutionVector(vch).Descriptor();
         result.push_back(Pair("previousstateroot", solDescr.hashPrevMMRRoot.GetHex()));
         result.push_back(Pair("blockmmrroot", solDescr.hashBlockMMRRoot.GetHex()));
     }
@@ -312,14 +312,14 @@ UniValue blockToJSON(const CBlock& block, const CBlockIndex* blockindex, bool tx
     UniValue result(UniValue::VOBJ);
     int32_t height = blockindex->GetHeight();
     result.push_back(Pair("hash", block.GetHash(blockindex->GetHeight()).GetHex()));
-    if (block.IsVerusPOSBlock())
+    if (block.IsLuckyPOSBlock())
     {
         result.push_back(Pair("validationtype", "stake"));
         arith_uint256 posTarget;
-        posTarget.SetCompact(block.GetVerusPOSTarget());
+        posTarget.SetCompact(block.GetLuckyPOSTarget());
         result.push_back(Pair("postarget", ArithToUint256(posTarget).GetHex()));
         uint256 rawPOSHash;
-        block.GetRawVerusPOSHash(rawPOSHash, height);
+        block.GetRawLuckyPOSHash(rawPOSHash, height);
         result.push_back(Pair("poshashbh", ArithToUint256(UintToArith256(rawPOSHash) / block.vtx.back().vout[0].nValue).GetHex()));
         CPOSNonce scratchNonce(block.nNonce);
         CTransaction posSourceTx;
@@ -329,7 +329,7 @@ UniValue blockToJSON(const CBlock& block, const CBlockIndex* blockindex, bool tx
         {
             uint256 pastHash = chainActive.GetVerusEntropyHash(height);
 
-            result.push_back(Pair("poshashtx", posSourceTx.GetVerusPOSHash(&scratchNonce, block.vtx.back().vin[0].prevout.n, height, pastHash, height >= Params().GetConsensus().nStakeRetryActivationHeight).GetHex()));
+            result.push_back(Pair("poshashtx", posSourceTx.GetLuckyPOSHash(&scratchNonce, block.vtx.back().vin[0].prevout.n, height, pastHash, height >= Params().GetConsensus().nStakeRetryActivationHeight).GetHex()));
             result.push_back(Pair("possourcetxid", block.vtx.back().vin[0].prevout.hash.GetHex()));
             result.push_back(Pair("possourcevoutnum", (int)block.vtx.back().vin[0].prevout.n));
             COptCCParams p;
@@ -383,12 +383,12 @@ UniValue blockToJSON(const CBlock& block, const CBlockIndex* blockindex, bool tx
     result.push_back(Pair("solution", HexStr(block.nSolution)));
     result.push_back(Pair("bits", strprintf("%08x", block.nBits)));
     // Lucky Lode: exact PoS marker (see above) — same rule, full-tx variant.
-    result.push_back(Pair("pos", block.IsVerusPOSBlock()));
+    result.push_back(Pair("pos", block.IsLuckyPOSBlock()));
     result.push_back(Pair("difficulty", GetDifficulty(blockindex)));
     result.push_back(Pair("chainwork", blockindex->chainPower.chainWork.GetHex()));
     result.push_back(Pair("chainstake", blockindex->chainPower.chainStake.GetHex()));
     result.push_back(Pair("anchor", blockindex->hashFinalSproutRoot.GetHex()));
-    result.push_back(Pair("blocktype", block.IsVerusPOSBlock() ? "minted" : "mined"));
+    result.push_back(Pair("blocktype", block.IsLuckyPOSBlock() ? "minted" : "mined"));
 
     UniValue valuePools(UniValue::VARR);
     valuePools.push_back(ValuePoolDesc("sprout", blockindex->nChainSproutValue, blockindex->nSproutValue));
@@ -1370,7 +1370,7 @@ UniValue getblock(const UniValue& params, bool fHelp)
     if (pblockindex)
     {
         blockUni.pushKV("proofroot", CProofRoot::GetProofRoot(pblockindex->GetHeight()).ToUniValue());
-        if (CConstVerusSolutionVector::GetVersionByHeight(pblockindex->GetHeight()) >= CActivationHeight::ACTIVATE_PBAAS_HEADER)
+        if (CConstLuckySolutionVector::GetVersionByHeight(pblockindex->GetHeight()) >= CActivationHeight::ACTIVATE_PBAAS_HEADER)
         {
             blockUni.pushKV("prevmmrroot", block.GetPrevMMRRoot().GetHex());
         }

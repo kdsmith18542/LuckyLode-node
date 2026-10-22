@@ -82,7 +82,7 @@ extern bool PARAMS_LOADED;
 extern char ASSETCHAINS_SYMBOL[KOMODO_ASSETCHAIN_MAXLEN];
 extern uint16_t ASSETCHAINS_P2PPORT,ASSETCHAINS_RPCPORT;
 extern uint32_t ASSETCHAIN_INIT, ASSETCHAINS_MAGIC, ASSETCHAINS_ALGO, ASSETCHAINS_EQUIHASH, ASSETCHAINS_VERUSHASH;
-extern int32_t VERUS_BLOCK_POSUNITS, ASSETCHAINS_LWMAPOS, ASSETCHAINS_SAPLING, ASSETCHAINS_OVERWINTER;
+extern int32_t LUCKY_BLOCK_POSUNITS, ASSETCHAINS_LWMAPOS, ASSETCHAINS_SAPLING, ASSETCHAINS_OVERWINTER;
 extern int64_t ASSETCHAINS_SUPPLY;
 extern std::string VERUS_DEFAULT_ZADDR;
 
@@ -307,9 +307,9 @@ void *chainparams_commandline(void *ptr)
             mainParams.consensus.nPOSAveragingWindow = 45;
             // spacing is 1000 units per block to get better resolution, POS is 50% hard coded for now, we can vary it later
             // when we get reliable integer math on nLwmaPOSAjustedWeight
-            mainParams.consensus.nPOSTargetSpacing = VERUS_BLOCK_POSUNITS * 2;
+            mainParams.consensus.nPOSTargetSpacing = LUCKY_BLOCK_POSUNITS * 2;
             // nLwmaPOSAjustedWeight = (N+1)/2 * (0.9989^(500/nPOSAveragingWindow)) * nPOSTargetSpacing
-            // this needs to be recalculated if VERUS_BLOCK_POSUNITS is changed
+            // this needs to be recalculated if LUCKY_BLOCK_POSUNITS is changed
             mainParams.consensus.nLwmaPOSAjustedWeight = 46531;
             // Lucky Lode solo-PoS liveness (internal/22): bounded stake
             // attempts + relaxed consecutive-PoS cap apply from genesis
@@ -423,7 +423,7 @@ public:
         // 646-coin stake but the target was 0x00..00, unwinnable.)
         consensus.posLimit = uint256S("000000000f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f");
         consensus.nPOSAveragingWindow = 45;
-        consensus.nPOSTargetSpacing = VERUS_BLOCK_POSUNITS * 2;
+        consensus.nPOSTargetSpacing = LUCKY_BLOCK_POSUNITS * 2;
         consensus.nLwmaPOSAjustedWeight = 46531;
         // Lucky Lode solo-PoS liveness (internal/22): post-reset testnet
         // activates the bounded-attempt rule at h200 (PoS impossible before
@@ -615,7 +615,7 @@ public:
         // 646-coin stake but the target was 0x00..00, unwinnable.)
         consensus.posLimit = uint256S("000000000f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f");
         consensus.nPOSAveragingWindow = 45;
-        consensus.nPOSTargetSpacing = VERUS_BLOCK_POSUNITS * 2;
+        consensus.nPOSTargetSpacing = LUCKY_BLOCK_POSUNITS * 2;
         consensus.nLwmaPOSAjustedWeight = 46531;
         // Lucky Lode solo-PoS liveness (internal/22): regtest activates
         // early so the solo-PoS e2e (zero-PoW chain advance) exercises the

@@ -17,8 +17,8 @@
 class CPOSNonce : public uint256
 {
 public:
-    static const int32_t VERUS_V1=4;
-    static const int32_t VERUS_V2=0x00010004;
+    static const int32_t LUCKY_V1=4;
+    static const int32_t LUCKY_V2=0x00010004;
 
     static bool NewPOSActive(int32_t height);
     static bool NewNonceActive(int32_t height);
@@ -61,11 +61,11 @@ public:
         return nBits;
     }
 
-    bool IsPOSNonce(uint32_t version=VERUS_V1) const
+    bool IsPOSNonce(uint32_t version=LUCKY_V1) const
     {
         arith_uint256 arNonce = UintToArith256(*this);
         arith_uint256 tmpNonce = ((arNonce << 128) >> 128);
-        if (version == VERUS_V2)
+        if (version == LUCKY_V2)
         {
             CVerusHashV2Writer hashWriter = CVerusHashV2Writer(SER_GETHASH, PROTOCOL_VERSION);
             hashWriter << ArithToUint256(tmpNonce);
@@ -79,11 +79,11 @@ public:
         }
     }
 
-    void SetPOSTarget(uint32_t nBits, uint32_t version=VERUS_V1)
+    void SetPOSTarget(uint32_t nBits, uint32_t version=LUCKY_V1)
     {
         arith_uint256 arNonce = (UintToArith256(*this) & entropyMask) | nBits;
 
-        if (version == VERUS_V2)
+        if (version == LUCKY_V2)
         {
             CVerusHashV2Writer hashWriter = CVerusHashV2Writer(SER_GETHASH, PROTOCOL_VERSION);
             hashWriter << ArithToUint256(arNonce);

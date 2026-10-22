@@ -30,7 +30,7 @@ extern string VERUS_CHAINNAME;
 extern string PBAAS_HOST;
 extern string PBAAS_USERPASS;
 extern int32_t PBAAS_PORT;
-extern int32_t VERUS_MIN_STAKEAGE;
+extern int32_t LUCKY_MIN_STAKEAGE;
 extern std::string NOTARY_PUBKEY;
 
 CNotaryEvidence::CNotaryEvidence(const UniValue &uni)
@@ -3045,11 +3045,11 @@ std::vector<unsigned char> CreatePoSBlockProof(ChainMerkleMountainView &mmrView,
         return emptyVec;
     }
 
-    bool isPBaaS = CConstVerusSolutionVector::GetVersionByHeight(height) >= CActivationHeight::ACTIVATE_PBAAS;
+    bool isPBaaS = CConstLuckySolutionVector::GetVersionByHeight(height) >= CActivationHeight::ACTIVATE_PBAAS;
 
     bool posSourceInfo = isPBaaS;
 
-    BlockMMRange blockMMR(block.GetBlockMMRTree(posSourceInfo ? block.GetVerusEntropyHashComponent(sourceBlockNum) : uint256()));
+    BlockMMRange blockMMR(block.GetBlockMMRTree(posSourceInfo ? block.GetLuckyEntropyHashComponent(sourceBlockNum) : uint256()));
     BlockMMView blockView(blockMMR);
 
     int txIndexPos;
@@ -4070,18 +4070,18 @@ CPBaaSNotarization IsValidPrimaryChainEvidence(const CCurrencyDefinition &extern
                         UnpackBlockCommitment(priorNotarizationCommitments[blockToProve]) :
                         std::vector<uint32_t>({blockHeader.nTime,
                                                blockHeader.nBits,
-                                               blockHeader.GetVerusPOSTarget(),
-                                               blockToProve << 1 | (uint32_t)blockHeader.IsVerusPOSBlock()});
+                                               blockHeader.GetLuckyPOSTarget(),
+                                               blockToProve << 1 | (uint32_t)blockHeader.IsLuckyPOSBlock()});
 
                     if (((CChainObject<CBlockHeaderAndProof> *)proofComponent)->object.GetBlockHeight() == blockToProve &&
                         futureProofRoot.rootHeight == ((CChainObject<CBlockHeaderAndProof> *)proofComponent)->object.GetProofHeight() &&
                         blockHeader.nTime == oneBlockCommitment[0] &&
-                        blockHeader.IsVerusPOSBlock() == (oneBlockCommitment[3] & 1) &&
-                        ((oneBlockCommitment[3] & 1) ? blockHeader.GetVerusPOSTarget() == oneBlockCommitment[2] : blockHeader.nBits == oneBlockCommitment[1]) &&
+                        blockHeader.IsLuckyPOSBlock() == (oneBlockCommitment[3] & 1) &&
+                        ((oneBlockCommitment[3] & 1) ? blockHeader.GetLuckyPOSTarget() == oneBlockCommitment[2] : blockHeader.nBits == oneBlockCommitment[1]) &&
                         ((CChainObject<CBlockHeaderAndProof> *)proofComponent)->object.ValidateBlockHash(blockHeader.GetHash(blockToProve), blockToProve) ==
                             futureProofRoot.stateRoot)
                     {
-                        if (blockHeader.IsVerusPOSBlock())
+                        if (blockHeader.IsLuckyPOSBlock())
                         {
                             posBlockHeaderAndProof = ((CChainObject<CBlockHeaderAndProof> *)proofComponent)->object;
                             posEntropyHeaders.clear();
@@ -4339,11 +4339,11 @@ CPBaaSNotarization IsValidPrimaryChainEvidence(const CCurrencyDefinition &extern
                         }
 
                         arith_uint256 posTarget;
-                        posTarget.SetCompact(posBlockHeaderAndProof.blockHeader.GetVerusPOSTarget());
+                        posTarget.SetCompact(posBlockHeaderAndProof.blockHeader.GetLuckyPOSTarget());
 
-                        uint256 rawPosHash = CBlockHeader::GetRawVerusPOSHash(
+                        uint256 rawPosHash = CBlockHeader::GetRawLuckyPOSHash(
                             posBlockHeaderAndProof.blockHeader.nVersion,
-                            CConstVerusSolutionVector::Version(posBlockHeaderAndProof.blockHeader.nSolution),
+                            CConstLuckySolutionVector::Version(posBlockHeaderAndProof.blockHeader.nSolution),
                             externalCurrency.MagicNumber(),
                             posBlockHeaderAndProof.blockHeader.nNonce,
                             provingBlockHeight,
@@ -4359,7 +4359,7 @@ CPBaaSNotarization IsValidPrimaryChainEvidence(const CCurrencyDefinition &extern
                                 //LogPrintf("Currency:\n%s\n", externalCurrency.ToUniValue().write(1,2).c_str());
 
                                 LogPrintf("Solution version: %u\nPoS target: %s\nMagic number: %d\nNonce: %s\nHeight: %u\n",
-                                            CConstVerusSolutionVector::Version(posBlockHeaderAndProof.blockHeader.nSolution),
+                                            CConstLuckySolutionVector::Version(posBlockHeaderAndProof.blockHeader.nSolution),
                                             ArithToUint256(posTarget).GetHex().c_str(),
                                             (int)externalCurrency.MagicNumber(),
                                             posBlockHeaderAndProof.blockHeader.nNonce.GetHex().c_str(),
@@ -4468,7 +4468,7 @@ CPBaaSNotarization IsValidPrimaryChainEvidence(const CCurrencyDefinition &extern
                     }
                     else if (((CChainObject<CPartialTransactionProof> *)proofComponent)->object.IsChainProof() &&
                              posBlockHeaderAndProof.GetBlockHeight() > 0 &&
-                             (posBlockHeaderAndProof.GetBlockHeight() - ((CChainObject<CPartialTransactionProof> *)proofComponent)->object.GetBlockHeight()) >= VERUS_MIN_STAKEAGE &&
+                             (posBlockHeaderAndProof.GetBlockHeight() - ((CChainObject<CPartialTransactionProof> *)proofComponent)->object.GetBlockHeight()) >= LUCKY_MIN_STAKEAGE &&
                              ((((CChainObject<CPartialTransactionProof> *)proofComponent)->object.GetBlockHeight() > startingRoot.rootHeight &&
                                ((CChainObject<CPartialTransactionProof> *)proofComponent)->object.GetProofHeight() == (posBlockHeaderAndProof.GetBlockHeight() - 1) &&
                                txMMRRoot == posBlockHeaderAndProof.blockHeader.GetPrevMMRRoot()) ||
@@ -5726,10 +5726,10 @@ std::vector<__uint128_t> GetBlockCommitments(uint32_t fromHeight, uint32_t toHei
             int64_t loopLimit = oneRange.first;
             for (int64_t blockNum = oneRange.second; blockNum >= loopLimit; (blockNum--, currentOffset--))
             {
-                bool isPosBlock = chainActive[blockNum]->IsVerusPOSBlock();
+                bool isPosBlock = chainActive[blockNum]->IsLuckyPOSBlock();
                 __uint128_t bigCommitmentNum((uint32_t)chainActive[blockNum]->nTime);
                 bigCommitmentNum = (bigCommitmentNum << 32) | (uint32_t)chainActive[blockNum]->nBits;
-                bigCommitmentNum = (bigCommitmentNum << 32) | (uint32_t)chainActive[blockNum]->GetVerusPOSTarget();
+                bigCommitmentNum = (bigCommitmentNum << 32) | (uint32_t)chainActive[blockNum]->GetLuckyPOSTarget();
                 bigCommitmentNum = (bigCommitmentNum << 32) | ((uint32_t)(blockNum << 1) | (uint32_t)isPosBlock);
                 blockCommitmentsSmall[currentOffset] = bigCommitmentNum;
 
@@ -5787,10 +5787,10 @@ bool ProvePosBlock(uint32_t lastProofRootHeight, const CBlockIndex *pindex, CNot
     }
 
     uint256 entropyHash;
-    bool isNewFormatBlock = CConstVerusSolutionVector::GetVersionByHeight(pindex->GetHeight()) >= CActivationHeight::ACTIVATE_PBAAS;
+    bool isNewFormatBlock = CConstLuckySolutionVector::GetVersionByHeight(pindex->GetHeight()) >= CActivationHeight::ACTIVATE_PBAAS;
     if (isNewFormatBlock)
     {
-        entropyHash = pindex->GetVerusEntropyHashComponent();
+        entropyHash = pindex->GetLuckyEntropyHashComponent();
     }
 
     int posh, powh, alth, firstHeight, secondHeight;
@@ -5803,7 +5803,7 @@ bool ProvePosBlock(uint32_t lastProofRootHeight, const CBlockIndex *pindex, CNot
     }
 
     uint32_t heightAfterFirstEntropy = firstHeight + 1;
-    if (!(CConstVerusSolutionVector::Version(chainActive[heightAfterFirstEntropy]->nSolution.nSolution()) >= CActivationHeight::ACTIVATE_PBAAS))
+    if (!(CConstLuckySolutionVector::Version(chainActive[heightAfterFirstEntropy]->nSolution.nSolution()) >= CActivationHeight::ACTIVATE_PBAAS))
     {
         heightAfterFirstEntropy++;
     }
@@ -6429,7 +6429,7 @@ bool CPBaaSNotarization::CreateEarnedNotarization(const CRPCChainData &externalS
                 CBlockIndex *pCurNotarizationIndex = mapBlockIndex[txes[unchallengedForks[j][k]].second];
                 CBlockIndex *pPriorNotarizationIndex = mapBlockIndex[txes[unchallengedForks[j][k - 1]].second];
                 if (pCurNotarizationIndex->GetHeight() > CPBaaSNotarization::BlocksBeforeAlternateStakeEnforcement() &&
-                    pCurNotarizationIndex->IsVerusPOSBlock() == pPriorNotarizationIndex->IsVerusPOSBlock())
+                    pCurNotarizationIndex->IsLuckyPOSBlock() == pPriorNotarizationIndex->IsLuckyPOSBlock())
                 {
                     validIndexSet.erase(unchallengedForks[j][k]);
                 }
@@ -7175,7 +7175,7 @@ bool CPBaaSNotarization::CreateEarnedNotarization(const CRPCChainData &externalS
              ((ConnectedChains.ThisChain().notarizationProtocol == CCurrencyDefinition::NOTARIZATION_AUTO ||
                ConnectedChains.ThisChain().notarizationProtocol == CCurrencyDefinition::NOTARIZATION_NOTARY_CONFIRM ||
                ConnectedChains.ThisChain().notarizationProtocol == CCurrencyDefinition::NOTARIZATION_NOTARY_CHAINID) &&
-              isStake == mapBlockIt->second->IsVerusPOSBlock()))
+              isStake == mapBlockIt->second->IsLuckyPOSBlock()))
         {
             if (LogAcceptCategory("notarization"))
             {
@@ -7186,7 +7186,7 @@ bool CPBaaSNotarization::CreateEarnedNotarization(const CRPCChainData &externalS
                         height,
                         ConnectedChains.ThisChain().notarizationProtocol,
                         isStake ? "true" : "false",
-                        mapBlockIt->second->IsVerusPOSBlock() ? "true" : "false");
+                        mapBlockIt->second->IsLuckyPOSBlock() ? "true" : "false");
                 if (LogAcceptCategory("verbose"))
                 {
                     printf("%s: block period #%d, prior block period #%d, height: %u, notarization protocol: %d, isPoS: %s, is last notarization PoS: %s\n",
@@ -7196,7 +7196,7 @@ bool CPBaaSNotarization::CreateEarnedNotarization(const CRPCChainData &externalS
                             height,
                             ConnectedChains.ThisChain().notarizationProtocol,
                             isStake ? "true" : "false",
-                            mapBlockIt->second->IsVerusPOSBlock() ? "true" : "false");
+                            mapBlockIt->second->IsLuckyPOSBlock() ? "true" : "false");
                 }
             }
             return state.Error("ineligible");
@@ -10616,7 +10616,7 @@ bool PreCheckAcceptedOrEarnedNotarization(const CTransaction &tx, int32_t outNum
     }
 
     // though it would fail below, simplify failure messages pre-pbaas
-    if (CConstVerusSolutionVector::GetVersionByHeight(height) < CActivationHeight::ACTIVATE_PBAAS)
+    if (CConstLuckySolutionVector::GetVersionByHeight(height) < CActivationHeight::ACTIVATE_PBAAS)
     {
         return state.Error("Notarizations not supported before LuckyBridge activation");
     }
@@ -11019,7 +11019,7 @@ bool PreCheckAcceptedOrEarnedNotarization(const CTransaction &tx, int32_t outNum
                                 }
                             }
 
-                            if (pLastIndex->IsVerusPOSBlock() == isStake)
+                            if (pLastIndex->IsLuckyPOSBlock() == isStake)
                             {
                                 if (LogAcceptCategory("staking"))
                                 {
@@ -11905,8 +11905,8 @@ bool PreCheckFinalizeNotarization(const CTransaction &tx, int32_t outNum, CValid
     uint32_t chainHeight = chainActive.Height();
     bool haveFullChain = height <= chainHeight + 1;
 
-    auto upgradeVersion = CConstVerusSolutionVector::GetVersionByHeight(height);
-    if (upgradeVersion < CActivationHeight::ACTIVATE_VERUSVAULT)
+    auto upgradeVersion = CConstLuckySolutionVector::GetVersionByHeight(height);
+    if (upgradeVersion < CActivationHeight::ACTIVATE_LUCKYVAULT)
     {
         return true;
     }

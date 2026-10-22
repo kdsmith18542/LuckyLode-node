@@ -20,7 +20,7 @@
 
 #define DEFAULT_STAKE_TXFEE 0
 
-extern int32_t VERUS_MIN_STAKEAGE;
+extern int32_t LUCKY_MIN_STAKEAGE;
 
 bool UnpackStakeOpRet(const CTransaction &stakeTx, std::vector<std::vector<unsigned char>> &vData);
 

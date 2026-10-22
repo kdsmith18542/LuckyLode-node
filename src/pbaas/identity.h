@@ -607,7 +607,7 @@ public:
     {
         // to make the code simpler, these are just done in order, and more than one may be done if an ID
         // goes through multiple updates
-        if (CConstVerusSolutionVector::GetVersionByHeight(height) >= CActivationHeight::ACTIVATE_VERUSVAULT)
+        if (CConstLuckySolutionVector::GetVersionByHeight(height) >= CActivationHeight::ACTIVATE_LUCKYVAULT)
         {
             if (nVersion < VERSION_VAULT)
             {
@@ -615,7 +615,7 @@ public:
                 systemID = parent.IsNull() ? GetID() : parent;
             }
         }
-        if (CConstVerusSolutionVector::GetVersionByHeight(height) >= CActivationHeight::ACTIVATE_PBAAS)
+        if (CConstLuckySolutionVector::GetVersionByHeight(height) >= CActivationHeight::ACTIVATE_PBAAS)
         {
             if (nVersion < VERSION_PBAAS)
             {
@@ -845,9 +845,9 @@ public:
 
     bool IsPrimaryMutation(const CIdentity &newIdentity, uint32_t height) const
     {
-        auto nSolVersion = CConstVerusSolutionVector::GetVersionByHeight(height);
+        auto nSolVersion = CConstLuckySolutionVector::GetVersionByHeight(height);
         bool isPBaaS = nSolVersion >= CActivationHeight::ACTIVATE_PBAAS;
-        bool isRevokedExempt = isPBaaS || nSolVersion >= CActivationHeight::ACTIVATE_VERUSVAULT && newIdentity.IsRevoked();
+        bool isRevokedExempt = isPBaaS || nSolVersion >= CActivationHeight::ACTIVATE_LUCKYVAULT && newIdentity.IsRevoked();
         if (CPrincipal::IsPrimaryMutation(newIdentity, isPBaaS ? VERSION_PBAAS : VERSION_VAULT) ||
             (nSolVersion >= CActivationHeight::ACTIVATE_IDCONSENSUS2 && name != newIdentity.name && GetID() == newIdentity.GetID()) ||
             contentMap != newIdentity.contentMap ||
@@ -874,7 +874,7 @@ public:
 
     bool IsRevocationMutation(const CIdentity &newIdentity, uint32_t height) const
     {
-        auto nSolVersion = CConstVerusSolutionVector::GetVersionByHeight(height);
+        auto nSolVersion = CConstLuckySolutionVector::GetVersionByHeight(height);
         if (revocationAuthority != newIdentity.revocationAuthority &&
             (nSolVersion < CActivationHeight::ACTIVATE_IDCONSENSUS2 || !IsRevoked()))
         {
@@ -894,7 +894,7 @@ public:
 
     bool IsRecoveryMutation(const CIdentity &newIdentity, uint32_t height) const
     {
-        auto nSolVersion = CConstVerusSolutionVector::GetVersionByHeight(height);
+        auto nSolVersion = CConstLuckySolutionVector::GetVersionByHeight(height);
         if (recoveryAuthority != newIdentity.recoveryAuthority ||
             (IsRevoked() &&
              ((nSolVersion >= CActivationHeight::ACTIVATE_IDCONSENSUS2 && revocationAuthority != newIdentity.revocationAuthority) ||

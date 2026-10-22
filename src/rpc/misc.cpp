@@ -109,7 +109,7 @@ UniValue getinfo(const UniValue& params, bool fHelp)
     CProofRoot confirmedRoot = ConnectedChains.FinalizedChainRoot();
 
     UniValue obj(UniValue::VOBJ);
-    obj.push_back(Pair("LKYLversion", VERUS_VERSION));
+    obj.push_back(Pair("LKYLversion", LUCKYD_VERSION));
     obj.push_back(Pair("version", CLIENT_VERSION));
     obj.push_back(Pair("protocolversion", PROTOCOL_VERSION));
     obj.push_back(Pair("chainid", EncodeDestination(CIdentityID(ASSETCHAINS_CHAINID))));
@@ -1741,7 +1741,7 @@ bool timestampSort(std::pair<CMempoolAddressDeltaKey, CMempoolAddressDelta> a,
 void CurrencyValuesAndNames(UniValue &output, bool spending, const CScript &script, CAmount satoshis, bool friendlyNames=false);
 void CurrencyValuesAndNames(UniValue &output, bool spending, const CScript &script, CAmount satoshis, bool friendlyNames)
 {
-    if (CConstVerusSolutionVector::GetVersionByHeight(chainActive.Height()) >= CActivationHeight::ACTIVATE_PBAAS)
+    if (CConstLuckySolutionVector::GetVersionByHeight(chainActive.Height()) >= CActivationHeight::ACTIVATE_PBAAS)
     {
         CCurrencyValueMap reserves = script.ReserveOutValue();
         if (spending)
@@ -2407,7 +2407,7 @@ UniValue getaddressbalance(const UniValue& params, bool fHelp)
     CCurrencyValueMap reserveReceived;
 
     // Get reserve currency balances
-    if (fCurrencyIndex && CConstVerusSolutionVector::GetVersionByHeight(chainActive.Height()) >= CActivationHeight::ACTIVATE_PBAAS)
+    if (fCurrencyIndex && CConstLuckySolutionVector::GetVersionByHeight(chainActive.Height()) >= CActivationHeight::ACTIVATE_PBAAS)
     {
         // Fast path: use the reserve balance index
         for (std::vector<std::pair<CAddressIndexKey, CAmount> >::const_iterator it=addressIndex.begin(); it!=addressIndex.end(); it++) {
@@ -2435,7 +2435,7 @@ UniValue getaddressbalance(const UniValue& params, bool fHelp)
             }
         }
     }
-    else if (CConstVerusSolutionVector::GetVersionByHeight(chainActive.Height()) >= CActivationHeight::ACTIVATE_PBAAS)
+    else if (CConstLuckySolutionVector::GetVersionByHeight(chainActive.Height()) >= CActivationHeight::ACTIVATE_PBAAS)
     {
         // Slow path: calculate reserve balances by scanning transactions
         CTransaction curTx;
@@ -2482,7 +2482,7 @@ UniValue getaddressbalance(const UniValue& params, bool fHelp)
     result.push_back(Pair("balance", balance));
     result.push_back(Pair("received", received));
 
-    if (CConstVerusSolutionVector::GetVersionByHeight(chainActive.Height()) >= CActivationHeight::ACTIVATE_PBAAS)
+    if (CConstLuckySolutionVector::GetVersionByHeight(chainActive.Height()) >= CActivationHeight::ACTIVATE_PBAAS)
     {
         if (balance || received)
         {

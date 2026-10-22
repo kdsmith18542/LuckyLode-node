@@ -1611,9 +1611,9 @@ bool COptCCParams::IsValid(bool strict, uint32_t nHeight) const
 {
     // verify that the output is spendable as a normal smart transaction output with all known combinations and no others
     // that may not be spendable
-    uint32_t solutionVer = CConstVerusSolutionVector::GetVersionByHeight(nHeight);
+    uint32_t solutionVer = CConstLuckySolutionVector::GetVersionByHeight(nHeight);
     bool isPBaaS = solutionVer >= CActivationHeight::ACTIVATE_PBAAS;
-    bool isVault = solutionVer >= CActivationHeight::ACTIVATE_VERUSVAULT;
+    bool isVault = solutionVer >= CActivationHeight::ACTIVATE_LUCKYVAULT;
 
     bool versionInRange = (!isPBaaS && (version == VERSION_V1 || version == VERSION_V2 || version == VERSION_V3)) || (isPBaaS && version == VERSION_V3);
     if (!((isPBaaS || isVault) && strict) ||

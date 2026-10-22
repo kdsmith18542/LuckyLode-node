@@ -828,7 +828,7 @@ bool IsStandardTx(const CTransaction& tx, string& reason, bool fLimitDust, const
             // CHECKMULTISIG scriptPubKey, though such a scriptPubKey is not
             // considered standard)
             int scriptSigMaxSize = 1650;
-            if (CVerusSolutionVector::GetVersionByHeight(nHeight) >= CActivationHeight::ACTIVATE_VERUSVAULT)
+            if (CLuckySolutionVector::GetVersionByHeight(nHeight) >= CActivationHeight::ACTIVATE_LUCKYVAULT)
             {
                 scriptSigMaxSize = CScript::MAX_SCRIPT_ELEMENT_SIZE;
             }
@@ -908,7 +908,7 @@ bool IsFinalTx(const CTransaction &tx, int nBlockHeight, int64_t nBlockTime)
     {
         if ( txin.nSequence == 0xfffffffe && (((int64_t)tx.nLockTime >= LOCKTIME_THRESHOLD && (int64_t)tx.nLockTime > nBlockTime) || ((int64_t)tx.nLockTime < LOCKTIME_THRESHOLD && (int64_t)tx.nLockTime > nBlockHeight)) )
         {
-            if (!IsVerusActive() || CConstVerusSolutionVector::GetVersionByHeight(nBlockHeight) >= CActivationHeight::SOLUTION_VERUSV4)
+            if (!IsVerusActive() || CConstLuckySolutionVector::GetVersionByHeight(nBlockHeight) >= CActivationHeight::SOLUTION_V4)
             {
                 return false;
             }
@@ -1243,8 +1243,8 @@ bool ContextualCheckTransaction(
     bool saplingActive = chainparams.GetConsensus().NetworkUpgradeActive(nHeight, Consensus::UPGRADE_SAPLING);
     bool isSprout = !overwinterActive;
 
-    uint32_t verusVersion = CVerusSolutionVector::GetVersionByHeight(nHeight);
-    bool isVerusVault = verusVersion >= CActivationHeight::ACTIVATE_VERUSVAULT;
+    uint32_t verusVersion = CLuckySolutionVector::GetVersionByHeight(nHeight);
+    bool isVerusVault = verusVersion >= CActivationHeight::ACTIVATE_LUCKYVAULT;
     bool isPBaaS = verusVersion >= CActivationHeight::ACTIVATE_PBAAS;
 
     // If Sprout rules apply, reject transactions which are intended for Overwinter and beyond
@@ -3089,7 +3089,7 @@ namespace Consensus {
         int32_t outNum;
         CCrossChainImport cci(tx, &outNum);
 
-        bool isPBaaS = CConstVerusSolutionVector::GetVersionByHeight(nSpendHeight) >= CActivationHeight::ACTIVATE_PBAAS;
+        bool isPBaaS = CConstLuckySolutionVector::GetVersionByHeight(nSpendHeight) >= CActivationHeight::ACTIVATE_PBAAS;
 
         CReserveTransactionDescriptor rtxd(tx, inputs, nSpendHeight);
         if (isPBaaS && !rtxd.IsValid())
@@ -3116,7 +3116,7 @@ namespace Consensus {
                     uint64_t unlockTime = komodo_block_unlocktime(coins->nHeight);
                     if ((coins->nHeight >= 31680 && coins->nHeight <= 129600) && nSpendHeight < unlockTime)
                     {
-                        if (CConstVerusSolutionVector::GetVersionByHeight(nSpendHeight) < CActivationHeight::ACTIVATE_IDENTITY)
+                        if (CConstLuckySolutionVector::GetVersionByHeight(nSpendHeight) < CActivationHeight::ACTIVATE_IDENTITY)
                         {
                             LogPrintf("Questionable spend at height %u of coinbase at height %u\n", nSpendHeight, coins->nHeight);
                         }
@@ -3146,8 +3146,8 @@ namespace Consensus {
                 // After careful consideration, it seems that while there is no real privacy benefit to the
                 // coinbase protection beyond forcing the private address pool to be used at least a little by everyone, it does increase the size of the blockchain
                 // and often reduces privacy by mixing multiple coinbase payment addresses
-                if (CConstVerusSolutionVector::GetVersionByHeight(coins->nHeight) < CActivationHeight::SOLUTION_VERUSV4 &&
-                    CConstVerusSolutionVector::GetVersionByHeight(nSpendHeight) < CActivationHeight::SOLUTION_VERUSV5 &&
+                if (CConstLuckySolutionVector::GetVersionByHeight(coins->nHeight) < CActivationHeight::SOLUTION_V4 &&
+                    CConstLuckySolutionVector::GetVersionByHeight(nSpendHeight) < CActivationHeight::SOLUTION_V5 &&
                     fCoinbaseEnforcedProtectionEnabled &&
                     consensusParams.fCoinbaseMustBeProtected &&
                     !(tx.vout.size() == 0 || (tx.vout.size() == 1 && tx.vout[0].nValue == 0)) &&
@@ -3452,7 +3452,7 @@ enum DisconnectResult
 
 void SetMaxScriptElementSize(uint32_t height)
 {
-    if (CConstVerusSolutionVector::GetVersionByHeight(height) >= CActivationHeight::ACTIVATE_PBAAS)
+    if (CConstLuckySolutionVector::GetVersionByHeight(height) >= CActivationHeight::ACTIVATE_PBAAS)
     {
         CScript::MAX_SCRIPT_ELEMENT_SIZE = MAX_SCRIPT_ELEMENT_SIZE_PBAAS;
     }
@@ -3491,19 +3491,19 @@ static DisconnectResult DisconnectBlock(const CBlock& block, CValidationState& s
     std::map<CAddressReserveBalanceKey, CAddressReserveBalanceValue> reserveBalanceUpdates;
 
     uint32_t nHeight = pindex->GetHeight();
-    bool isPBaaS = CConstVerusSolutionVector::GetVersionByHeight(nHeight) >= CActivationHeight::ACTIVATE_PBAAS;
+    bool isPBaaS = CConstLuckySolutionVector::GetVersionByHeight(nHeight) >= CActivationHeight::ACTIVATE_PBAAS;
 
     // if the block being removed triggered the next solution version, undo it
     bool isExplicitHeight = false;
-    if (updateIndices && nHeight == CConstVerusSolutionVector::activationHeight.GetVersionActivationHeight(CActivationHeight::SOLUTION_VERUSV8, &isExplicitHeight) &&
+    if (updateIndices && nHeight == CConstLuckySolutionVector::activationHeight.GetVersionActivationHeight(CActivationHeight::SOLUTION_V8, &isExplicitHeight) &&
         !isExplicitHeight &&
         pindex->nTime >= PBAAS_VERSION8_SOLUTION_TIME_START &&
         (pindex->pprev->nTime < PBAAS_VERSION8_SOLUTION_TIME_START ||
-         CConstVerusSolutionVector::Version(pindex->pprev->nSolution.nSolution()) < CActivationHeight::SOLUTION_VERUSV7))
+         CConstLuckySolutionVector::Version(pindex->pprev->nSolution.nSolution()) < CActivationHeight::SOLUTION_V7))
     {
         printf("%s: Reverting activation height for version 8 solution back to block height %u\n", __func__, CActivationHeight::DEFAULT_UPGRADE_HEIGHT);
         LogPrintf("%s: Reverting activation height for version 8 solution back to block height %u\n", __func__, CActivationHeight::DEFAULT_UPGRADE_HEIGHT);
-        CConstVerusSolutionVector::activationHeight.SetActivationHeight(CActivationHeight::SOLUTION_VERUSV8, CActivationHeight::DEFAULT_UPGRADE_HEIGHT, false);
+        CConstLuckySolutionVector::activationHeight.SetActivationHeight(CActivationHeight::SOLUTION_V8, CActivationHeight::DEFAULT_UPGRADE_HEIGHT, false);
     }
 
     // undo transactions in reverse order
@@ -3975,7 +3975,7 @@ bool ConnectBlock(const CBlock& block, CValidationState& state, CBlockIndex* pin
     SetMaxScriptElementSize(nHeight);
     ConnectedChains.CheckOracleUpgrades(nHeight);
 
-    if (CConstVerusSolutionVector::GetVersionByHeight(nHeight) >= CActivationHeight::ACTIVATE_PBAAS)
+    if (CConstLuckySolutionVector::GetVersionByHeight(nHeight) >= CActivationHeight::ACTIVATE_PBAAS)
     {
         ConnectedChains.ConfigureEthBridge();
     }
@@ -4013,7 +4013,7 @@ bool ConnectBlock(const CBlock& block, CValidationState& state, CBlockIndex* pin
     SaplingMerkleTree sapling_tree;
     int64_t nTimeStart = 0;
 
-    uint32_t solutionVersion = CConstVerusSolutionVector::GetVersionByHeight(nHeight);
+    uint32_t solutionVersion = CConstLuckySolutionVector::GetVersionByHeight(nHeight);
     bool isPBaaS = solutionVersion >= CActivationHeight::ACTIVATE_PBAAS;
     bool isVerusActive = IsVerusActive();
     bool isPBaaSBlockOne = (nHeight == 1 && !isVerusActive);
@@ -4051,7 +4051,7 @@ bool ConnectBlock(const CBlock& block, CValidationState& state, CBlockIndex* pin
     {
         LOCK2(smartTransactionCS, mempool.cs);
 
-        if (block.IsVerusPOSBlock())
+        if (block.IsLuckyPOSBlock())
         {
             if (!verusCheckPOSBlock(true, &block, nHeight))
             {
@@ -4218,7 +4218,7 @@ bool ConnectBlock(const CBlock& block, CValidationState& state, CBlockIndex* pin
         std::map<uint160, std::pair<int32_t, int32_t>> exportTransferCount;
         std::map<uint160, int32_t> currencyExportTransferCount;
         std::map<uint160, int32_t> identityExportTransferCount;
-        bool isPBaaS = CConstVerusSolutionVector::GetVersionByHeight(nHeight) >= CActivationHeight::ACTIVATE_PBAAS;
+        bool isPBaaS = CConstLuckySolutionVector::GetVersionByHeight(nHeight) >= CActivationHeight::ACTIVATE_PBAAS;
 
         // duplicate checks combining identity reservation and imports as well as ID and currency exports
         // in addition to those done in ContextualCheckBlock, as we can expect valid prior block dependencies when we are here that will
@@ -4249,7 +4249,7 @@ bool ConnectBlock(const CBlock& block, CValidationState& state, CBlockIndex* pin
             }
 
             bool missingInputs = false;
-            bool isPosTx = block.IsVerusPOSBlock() && (i + 1) == block.vtx.size();
+            bool isPosTx = block.IsLuckyPOSBlock() && (i + 1) == block.vtx.size();
             if (((tx.IsCoinBase() ||
                   isPosTx ||
                   chainActive.Height() >= pindex->GetHeight()) &&
@@ -5124,23 +5124,23 @@ bool ConnectBlock(const CBlock& block, CValidationState& state, CBlockIndex* pin
 
     // enforce fee pooling if we are at PBAAS or past
     CAmount rewardFees = nFees;
-    CAmount verusFees = (!isVerusActive && totalReserveTxFees.valueMap.count(VERUS_CHAINID)) ? totalReserveTxFees.valueMap[VERUS_CHAINID] : 0;
+    CAmount notaryFees = (!isVerusActive && totalReserveTxFees.valueMap.count(VERUS_CHAINID)) ? totalReserveTxFees.valueMap[VERUS_CHAINID] : 0;
     if (solutionVersion >= CActivationHeight::ACTIVATE_PBAAS)
     {
         // all potential fees may be taken and no more, all fees not taken
         // must remain in the fee pool
         CFeePool feePoolCheck;
 
-        if (CConstVerusSolutionVector::GetVersionByHeight(nHeight - 1) < CActivationHeight::ACTIVATE_PBAAS ||
+        if (CConstLuckySolutionVector::GetVersionByHeight(nHeight - 1) < CActivationHeight::ACTIVATE_PBAAS ||
             (CFeePool::GetCoinbaseFeePool(feePoolCheck, nHeight - 1) && feePoolCheck.IsValid()))
         {
             CAmount feePoolCheckVal =
                 feePoolCheck.reserveValues.valueMap[ASSETCHAINS_CHAINID] =
                     feePoolCheck.reserveValues.valueMap[ASSETCHAINS_CHAINID] + nFees;
 
-            if (verusFees)
+            if (notaryFees)
             {
-                feePoolCheck.reserveValues.valueMap[VERUS_CHAINID] += verusFees;
+                feePoolCheck.reserveValues.valueMap[VERUS_CHAINID] += notaryFees;
             }
 
             CAmount verusCheckVal = (!isVerusActive && feePoolCheck.reserveValues.valueMap.count(VERUS_CHAINID)) ?
@@ -5148,7 +5148,7 @@ bool ConnectBlock(const CBlock& block, CValidationState& state, CBlockIndex* pin
 
             CFeePool oneFeeShare = feePoolCheck.OneFeeShare();
             rewardFees = oneFeeShare.reserveValues.valueMap[ASSETCHAINS_CHAINID];
-            verusFees = isVerusActive ? 0 : oneFeeShare.reserveValues.valueMap[VERUS_CHAINID];
+            notaryFees = isVerusActive ? 0 : oneFeeShare.reserveValues.valueMap[VERUS_CHAINID];
 
             CFeePool feePool;
             CAmount feePoolVal;
@@ -5162,21 +5162,21 @@ bool ConnectBlock(const CBlock& block, CValidationState& state, CBlockIndex* pin
                 (feePoolVal = feePool.reserveValues.valueMap[ASSETCHAINS_CHAINID]) < (feePoolCheckVal - rewardFees) ||
                 feePoolVal > feePoolCheckVal ||
                 (!isVerusActive &&
-                 (((verusFeePoolVal = feePool.reserveValues.valueMap[VERUS_CHAINID]) < (verusCheckVal - verusFees) && !isPBaaSBlockOne) ||
+                 (((verusFeePoolVal = feePool.reserveValues.valueMap[VERUS_CHAINID]) < (verusCheckVal - notaryFees) && !isPBaaSBlockOne) ||
                   verusFeePoolVal > verusCheckVal)) ||
                 (feePool.reserveValues.IntersectingValues(intersectMap)).CanonicalMap().valueMap.size() != (feePool.reserveValues).CanonicalMap().valueMap.size())
             {
-                printf("%s: rewardfees: %" PRId64 ", verusfees: %" PRId64 ", feePool: %s\nfeepoolcheck: %s\n",
+                printf("%s: rewardfees: %" PRId64 ", notaryfees: %" PRId64 ", feePool: %s\nfeepoolcheck: %s\n",
                         __func__,
                         rewardFees,
-                        verusFees,
+                        notaryFees,
                         feePool.ToUniValue().write(1,2).c_str(),
                         feePoolCheck.ToUniValue().write(1,2).c_str());
                 return state.DoS(100, error("ConnectBlock(): invalid fee pool usage in block"), REJECT_INVALID, "bad-blk-fees");
             }
             rewardFees = feePoolCheckVal - feePool.reserveValues.valueMap[ASSETCHAINS_CHAINID];
-            verusFees = isVerusActive ? 0 : verusCheckVal - feePool.reserveValues.valueMap[VERUS_CHAINID];
-            //printf("%s: rewardfees: %ld, verusfees: %ld\n", __func__, rewardFees, verusFees);
+            notaryFees = isVerusActive ? 0 : verusCheckVal - feePool.reserveValues.valueMap[VERUS_CHAINID];
+            //printf("%s: rewardfees: %ld, notaryfees: %ld\n", __func__, rewardFees, notaryFees);
         }
         else
         {
@@ -5230,7 +5230,7 @@ bool ConnectBlock(const CBlock& block, CValidationState& state, CBlockIndex* pin
         // claim (locked 2026-10-13) — the reserve keeps the bonus.
         uint256 drawDigest = lucky_draw::Digest(block.hashPrevBlock, (int32_t)pindex->GetHeight());
         lucky_pot::BlockDraws draws;
-        bool isPoW = !block.IsVerusPOSBlock();
+        bool isPoW = !block.IsLuckyPOSBlock();
         draws.jackpot = isPoW && lucky_draw::Jackpot(drawDigest, LuckyJackpotDrawDivisor());
         draws.pot_event = isPoW && lucky_draw::PotEvent(drawDigest, LuckyPotDrawDivisor());
         draws.tier = lucky_draw::Tier(drawDigest);
@@ -5331,9 +5331,9 @@ bool ConnectBlock(const CBlock& block, CValidationState& state, CBlockIndex* pin
                             REJECT_INVALID, "bad-cb-amount");
     }
 
-    if (verusFees)
+    if (notaryFees)
     {
-        validExtraCoinbaseOutputs.valueMap[VERUS_CHAINID] += verusFees;
+        validExtraCoinbaseOutputs.valueMap[VERUS_CHAINID] += notaryFees;
     }
 
     if ( block.vtx[0].GetValueOut() > nativeBlockReward || outOverflow || (block.vtx[0].GetReserveValueOut() > validExtraCoinbaseOutputs) )
@@ -5359,11 +5359,11 @@ bool ConnectBlock(const CBlock& block, CValidationState& state, CBlockIndex* pin
     if (reserveRewardTaken.valueMap.size() &&
         (reserveRewardTaken.valueMap.size() > 1 ||
          !reserveRewardTaken.valueMap.count(VERUS_CHAINID) ||
-         reserveRewardTaken.valueMap[VERUS_CHAINID] > verusFees))
+         reserveRewardTaken.valueMap[VERUS_CHAINID] > notaryFees))
     {
         return state.DoS(100,
                             error("ConnectBlock(): coinbase pays too much reserve currency (actual=%ld vs limit=%ld)",
-                                reserveRewardTaken.valueMap[VERUS_CHAINID], verusFees),
+                                reserveRewardTaken.valueMap[VERUS_CHAINID], notaryFees),
                             REJECT_INVALID, "bad-cb-amount");
     }
 
@@ -5373,17 +5373,17 @@ bool ConnectBlock(const CBlock& block, CValidationState& state, CBlockIndex* pin
     bool setSolutionV8 = false;
     bool resetSolutionV8 = false;
     bool isSol8HeightExplicit = false;
-    uint32_t curSolVersion = CConstVerusSolutionVector::Version(pindex->nSolution.nSolution());
-    uint32_t solV8Height = CConstVerusSolutionVector::activationHeight.GetVersionActivationHeight(CActivationHeight::SOLUTION_VERUSV8, &isSol8HeightExplicit);
-    uint32_t solVersionByHeight = CConstVerusSolutionVector::activationHeight.ActiveVersion(pindex->GetHeight());
+    uint32_t curSolVersion = CConstLuckySolutionVector::Version(pindex->nSolution.nSolution());
+    uint32_t solV8Height = CConstLuckySolutionVector::activationHeight.GetVersionActivationHeight(CActivationHeight::SOLUTION_V8, &isSol8HeightExplicit);
+    uint32_t solVersionByHeight = CConstLuckySolutionVector::activationHeight.ActiveVersion(pindex->GetHeight());
     if (!isSol8HeightExplicit &&
-        solVersionByHeight > CActivationHeight::SOLUTION_VERUSV6 &&
+        solVersionByHeight > CActivationHeight::SOLUTION_V6 &&
         (pindex->pprev->nTime < PBAAS_VERSION8_SOLUTION_TIME_START ||
-         CConstVerusSolutionVector::Version(pindex->pprev->nSolution.nSolution()) < CActivationHeight::SOLUTION_VERUSV7))
+         CConstLuckySolutionVector::Version(pindex->pprev->nSolution.nSolution()) < CActivationHeight::SOLUTION_V7))
     {
         if (pindex->nTime >= PBAAS_VERSION8_SOLUTION_TIME_START)
         {
-            if (curSolVersion == CActivationHeight::SOLUTION_VERUSV8)
+            if (curSolVersion == CActivationHeight::SOLUTION_V8)
             {
                 if (solV8Height != nHeight)
                 {
@@ -5394,13 +5394,13 @@ bool ConnectBlock(const CBlock& block, CValidationState& state, CBlockIndex* pin
             {
                 return state.DoS(100,
                                  error("ConnectBlock(): wrong block solution version (actual=%d vs expected=%d)",
-                                    CConstVerusSolutionVector::Version(pindex->nSolution.nSolution()), CActivationHeight::SOLUTION_VERUSV8),
+                                    CConstLuckySolutionVector::Version(pindex->nSolution.nSolution()), CActivationHeight::SOLUTION_V8),
                                  REJECT_INVALID, "bad-solution-version");
             }
         }
         else if (pindex->nTime < PBAAS_VERSION8_SOLUTION_TIME_START)
         {
-            if (curSolVersion < CActivationHeight::SOLUTION_VERUSV8)
+            if (curSolVersion < CActivationHeight::SOLUTION_V8)
             {
                 if (solV8Height != CActivationHeight::DEFAULT_UPGRADE_HEIGHT)
                 {
@@ -5411,7 +5411,7 @@ bool ConnectBlock(const CBlock& block, CValidationState& state, CBlockIndex* pin
             {
                 return state.DoS(100,
                                  error("ConnectBlock(): invalid block solution version (actual=%d vs expected=%d)",
-                                    CConstVerusSolutionVector::Version(pindex->nSolution.nSolution()), CActivationHeight::SOLUTION_VERUSV7),
+                                    CConstLuckySolutionVector::Version(pindex->nSolution.nSolution()), CActivationHeight::SOLUTION_V7),
                                  REJECT_INVALID, "bad-solution-version");
             }
         }
@@ -5459,13 +5459,13 @@ bool ConnectBlock(const CBlock& block, CValidationState& state, CBlockIndex* pin
     {
         printf("%s: Setting activation height for version 8 solution to block height %u\n", __func__, pindex->GetHeight());
         LogPrintf("%s: Setting activation height for version 8 solution to block height %u\n", __func__, pindex->GetHeight());
-        CConstVerusSolutionVector::activationHeight.SetActivationHeight(CActivationHeight::SOLUTION_VERUSV8, pindex->GetHeight(), false);
+        CConstLuckySolutionVector::activationHeight.SetActivationHeight(CActivationHeight::SOLUTION_V8, pindex->GetHeight(), false);
     }
     else if (resetSolutionV8)
     {
         printf("%s: Resetting activation height for version 8 solution to default (pending time activation) height %u\n", __func__, CActivationHeight::DEFAULT_UPGRADE_HEIGHT);
         LogPrintf("%s: Resetting activation height for version 8 solution to default (pending time activation) height %u\n", __func__, CActivationHeight::DEFAULT_UPGRADE_HEIGHT);
-        CConstVerusSolutionVector::activationHeight.SetActivationHeight(CActivationHeight::SOLUTION_VERUSV8, CActivationHeight::DEFAULT_UPGRADE_HEIGHT, false);
+        CConstLuckySolutionVector::activationHeight.SetActivationHeight(CActivationHeight::SOLUTION_V8, CActivationHeight::DEFAULT_UPGRADE_HEIGHT, false);
     }
 
     if (fTxIndex)
@@ -5761,7 +5761,7 @@ void static UpdateTip(CBlockIndex *pindexNew, const CChainParams& chainParams) {
             pindex = pindex->pprev;
         }
         if (nUpgraded > 0)
-            LogPrintf("%s: %d of last 100 blocks above version %d\n", __func__, nUpgraded, (int)CBlock::VERUS_V2);
+            LogPrintf("%s: %d of last 100 blocks above version %d\n", __func__, nUpgraded, (int)CBlock::LUCKY_V2);
         if (nUpgraded > 100/2)
         {
             // strMiscWarning is read by GetWarnings(), called by the JSON-RPC code to warn the user:
@@ -5836,7 +5836,7 @@ bool static DisconnectTip(CValidationState &state, const CChainParams& chainpara
             CValidationState stateDummy;
 
             // don't keep coinbase, staking, invalid transactions, or arbitrage only transfers
-            if (!(tx.IsCoinBase() || ((i == (block.vtx.size() - 1)) && block.IsVerusPOSBlock())))
+            if (!(tx.IsCoinBase() || ((i == (block.vtx.size() - 1)) && block.IsLuckyPOSBlock())))
             {
                 bool isArbitrageOnly = false;
                 for (auto &oneOut : tx.vout)
@@ -5860,7 +5860,7 @@ bool static DisconnectTip(CValidationState &state, const CChainParams& chainpara
             }
             // if this is a staking tx, and we are on Verus Sapling with nothing at stake solution,
             // save staking tx as a possible cheat
-            else if (((i == (block.vtx.size() - 1)) && block.IsVerusPOSBlock()) && chainparams.GetConsensus().NetworkUpgradeActive(pindexDelete->GetHeight(), Consensus::UPGRADE_SAPLING))
+            else if (((i == (block.vtx.size() - 1)) && block.IsLuckyPOSBlock()) && chainparams.GetConsensus().NetworkUpgradeActive(pindexDelete->GetHeight(), Consensus::UPGRADE_SAPLING))
             {
                 CTxHolder txh = CTxHolder(block.vtx[i], pindexDelete->GetHeight());
                 cheatList.Add(txh);
@@ -5891,7 +5891,7 @@ bool static DisconnectTip(CValidationState &state, const CChainParams& chainpara
     for (int i = 0; i < block.vtx.size(); i++)
     {
         CTransaction &tx = block.vtx[i];
-        //if ((i == (block.vtx.size() - 1)) && ((ASSETCHAINS_LWMAPOS && block.IsVerusPOSBlock()) || (ASSETCHAINS_STAKED != 0 && (komodo_isPoS((CBlock *)&block) != 0))))
+        //if ((i == (block.vtx.size() - 1)) && ((ASSETCHAINS_LWMAPOS && block.IsLuckyPOSBlock()) || (ASSETCHAINS_STAKED != 0 && (komodo_isPoS((CBlock *)&block) != 0))))
         if ((i == (block.vtx.size() - 1)) && (ASSETCHAINS_STAKED != 0 && (komodo_isPoS((CBlock *)&block) != 0)))
         {
             EraseFromWallets(tx.GetHash());
@@ -6752,7 +6752,7 @@ bool CheckBlock(int32_t *futureblockp,int32_t height,CBlockIndex *pindex,const C
         }
     }
 
-    bool isPBaaS = CVerusSolutionVector::GetVersionByHeight(height) >= CActivationHeight::ACTIVATE_PBAAS;
+    bool isPBaaS = CLuckySolutionVector::GetVersionByHeight(height) >= CActivationHeight::ACTIVATE_PBAAS;
     if (isPBaaS)
     {
         uint256 entropyHash;
@@ -6933,7 +6933,7 @@ bool ContextualCheckBlockHeader(
     }
     // tolerate variable size solutions, but ensure that we have at least 16 bytes extra space to fit the clhash at the end
     int modSpace = GetSerializeSize(block, SER_NETWORK, PROTOCOL_VERSION) % 32;
-    int solutionVer = CConstVerusSolutionVector::GetVersionByHeight(nHeight);
+    int solutionVer = CConstLuckySolutionVector::GetVersionByHeight(nHeight);
     if (!(solutionVer < CActivationHeight::ACTIVATE_VERUSHASH2_1 || (modSpace >= 1 && modSpace <= 16)))
     {
         return state.DoS(100, error("%s: invalid header format", __func__), REJECT_INVALID, "insufficient-extraspace");
@@ -6944,30 +6944,30 @@ bool ContextualCheckBlockHeader(
     // deliberately does not require the exact reserved tail that IsDescriptorValid does,
     // as consensus permits serialized remainders of 1 - 16
     if (solutionVer >= CActivationHeight::ACTIVATE_PBAAS &&
-        CConstVerusSolutionVector::IsAdvancedSolution(block.nSolution))
+        CConstLuckySolutionVector::IsAdvancedSolution(block.nSolution))
     {
-        CPBaaSSolutionDescriptor d = CConstVerusSolutionVector::GetDescriptor(block.nSolution);
-        uint32_t reservedTail = CConstVerusSolutionVector::ReservedTail(block.nSolution);
+        CPBaaSSolutionDescriptor d = CConstLuckySolutionVector::GetDescriptor(block.nSolution);
+        uint32_t reservedTail = CConstLuckySolutionVector::ReservedTail(block.nSolution);
         uint64_t headerBytes = (uint64_t)d.numPBaaSHeaders * sizeof(CPBaaSBlockHeader);
-        if ((uint64_t)CConstVerusSolutionVector::OVERHEAD_SIZE + headerBytes + reservedTail > block.nSolution.size() ||
-            d.extraDataSize > CConstVerusSolutionVector::ExtraDataLen(block.nSolution, true))
+        if ((uint64_t)CConstLuckySolutionVector::OVERHEAD_SIZE + headerBytes + reservedTail > block.nSolution.size() ||
+            d.extraDataSize > CConstLuckySolutionVector::ExtraDataLen(block.nSolution, true))
         {
             return state.DoS(100, error("%s: invalid solution descriptor", __func__), REJECT_INVALID, "invalid-solution-descriptor");
         }
     }
 
-    if (block.IsVerusPOSBlock())
+    if (block.IsLuckyPOSBlock())
     {
         uint32_t calcPOSTarget = lwmaGetNextPOSRequired(pindexPrev, Params().GetConsensus());
         if (!(IsVerusMainnetActive() &&
               nHeight >= VERUS_STAKE_EXPLOIT_START_HEIGHT &&
               nHeight <= VERUS_STAKE_EXPLOIT_FULL_CHECK_HEIGHT) &&
-            (block.GetVerusPOSTarget() != calcPOSTarget ||
+            (block.GetLuckyPOSTarget() != calcPOSTarget ||
             calcPOSTarget == 0))
         {
             arith_uint256 calcPOS, blockPOS;
             calcPOS.SetCompact(calcPOSTarget);
-            blockPOS.SetCompact(block.GetVerusPOSTarget());
+            blockPOS.SetCompact(block.GetLuckyPOSTarget());
             // if either the header has an invalid POS difficulty or we cannot have a POS block here, return error
             LogPrint("stakeheadercheck","Block for height %u\nBlock's POS target: %s\nCalc'ed POS target: %s\n",
                                                             nHeight, ArithToUint256(blockPOS).GetHex().c_str(), ArithToUint256(calcPOS).GetHex().c_str());
@@ -6999,37 +6999,37 @@ bool ContextualCheckBlock(
         return state.DoS(10, error("%s: block header has incorrect version", __func__), REJECT_INVALID, "incorrect-block-version");
     }
 
-    if (block.nVersion >= CBlockHeader::VERUS_V2 && ASSETCHAINS_ALGO == ASSETCHAINS_VERUSHASH)
+    if (block.nVersion >= CBlockHeader::LUCKY_V2 && ASSETCHAINS_ALGO == ASSETCHAINS_VERUSHASH)
     {
         std::vector<unsigned char> vch = block.nSolution;
-        uint32_t ver = CVerusSolutionVector(vch).Version();
+        uint32_t ver = CLuckySolutionVector(vch).Version();
 
         // we let some V3's slip by, so enforce correct version for all versions after V3
-        int solutionVersion = CConstVerusSolutionVector::GetVersionByHeight(nHeight);
+        int solutionVersion = CConstLuckySolutionVector::GetVersionByHeight(nHeight);
         bool isSol8HeightExplicit = false;
-        (void)CConstVerusSolutionVector::activationHeight.GetVersionActivationHeight(CActivationHeight::SOLUTION_VERUSV8, &isSol8HeightExplicit);
+        (void)CConstLuckySolutionVector::activationHeight.GetVersionActivationHeight(CActivationHeight::SOLUTION_V8, &isSol8HeightExplicit);
 
         // version 8 can upgrade based on time, so if height says it should be version 7, but it should be version 8,
         // or height says it should be V8, but it is legitimately V7, let it pass if the time allows the version and adjust
         // the height to account for reorgs and time differences. If this block passes all checks, the height will be properly set in ConnectBlock
         if (!isSol8HeightExplicit &&
-            (ver == CActivationHeight::SOLUTION_VERUSV7 || ver == CActivationHeight::SOLUTION_VERUSV8) &&
+            (ver == CActivationHeight::SOLUTION_V7 || ver == CActivationHeight::SOLUTION_V8) &&
             ver != solutionVersion)
         {
-            if (!((ver == CActivationHeight::SOLUTION_VERUSV7 &&
+            if (!((ver == CActivationHeight::SOLUTION_V7 &&
                    block.nTime < PBAAS_VERSION8_SOLUTION_TIME_START) ||
-                  (ver == CActivationHeight::SOLUTION_VERUSV8 &&
+                  (ver == CActivationHeight::SOLUTION_V8 &&
                    block.nTime >= PBAAS_VERSION8_SOLUTION_TIME_START)))
             {
                 return state.DoS(10, error("%s: block header with incorrect version %d, should be %d", __func__, ver, solutionVersion), REJECT_INVALID, "incorrect-block-version");
             }
         }
-        else if (ver < CActivationHeight::SOLUTION_VERUSV2 || (solutionVersion > CActivationHeight::SOLUTION_VERUSV3 && ver != solutionVersion))
+        else if (ver < CActivationHeight::SOLUTION_V2 || (solutionVersion > CActivationHeight::SOLUTION_V3 && ver != solutionVersion))
         {
             return state.DoS(10, error("%s: block header has incorrect version %d, should be %d", __func__, ver, solutionVersion), REJECT_INVALID, "incorrect-block-version");
         }
 
-        if (block.IsVerusPOSBlock() && !verusCheckPOSBlock(false, &block, nHeight))
+        if (block.IsLuckyPOSBlock() && !verusCheckPOSBlock(false, &block, nHeight))
         {
             if (IsVerusMainnetActive() && nHeight < 1564700)
             {
@@ -9097,7 +9097,7 @@ bool static ProcessMessage(CNode* pfrom, string strCommand, CDataStream& vRecv, 
 
         // Change version
         pfrom->PushMessage("verack");
-        pfrom->ssSend.SetVersion(min(pfrom->nVersion, CConstVerusSolutionVector::activationHeight.ActiveVersion(nHeight) >= CConstVerusSolutionVector::activationHeight.ACTIVATE_PBAAS ?
+        pfrom->ssSend.SetVersion(min(pfrom->nVersion, CConstLuckySolutionVector::activationHeight.ActiveVersion(nHeight) >= CConstLuckySolutionVector::activationHeight.ACTIVATE_PBAAS ?
                                                                                  MIN_PBAAS_VERSION :
                                                                                  MIN_PEER_PROTO_VERSION));
 
@@ -9175,7 +9175,7 @@ bool static ProcessMessage(CNode* pfrom, string strCommand, CDataStream& vRecv, 
 
     else if (strCommand == "verack")
     {
-        pfrom->SetRecvVersion(min(pfrom->nVersion, CConstVerusSolutionVector::activationHeight.ActiveVersion(nHeight) >= CConstVerusSolutionVector::activationHeight.ACTIVATE_PBAAS ?
+        pfrom->SetRecvVersion(min(pfrom->nVersion, CConstLuckySolutionVector::activationHeight.ActiveVersion(nHeight) >= CConstLuckySolutionVector::activationHeight.ACTIVATE_PBAAS ?
                                                                                  MIN_PBAAS_VERSION :
                                                                                  MIN_PEER_PROTO_VERSION));
 

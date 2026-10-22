@@ -84,7 +84,7 @@ int main()
 
     for (int v = 0; v < 2; v++)
     {
-        uint32_t ver = v ? CPOSNonce::VERUS_V2 : CPOSNonce::VERUS_V1;
+        uint32_t ver = v ? CPOSNonce::LUCKY_V2 : CPOSNonce::LUCKY_V1;
         CPOSNonce n;
         n.SetPOSTarget(nBits, ver);
         CHECK(n.GetHex() == legacyTarget[v]);
@@ -104,7 +104,7 @@ int main()
     // under the new rule differs from legacy on purpose).
     for (int v = 0; v < 2; v++)
     {
-        uint32_t ver = v ? CPOSNonce::VERUS_V2 : CPOSNonce::VERUS_V1;
+        uint32_t ver = v ? CPOSNonce::LUCKY_V2 : CPOSNonce::LUCKY_V1;
         CPOSNonce base;
         base.SetPOSTarget(nBits, ver);
         base.SetPOSEntropy(pastHash, txid, 3, ver, true); // attempt defaults 0

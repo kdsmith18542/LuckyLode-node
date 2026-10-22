@@ -62,7 +62,7 @@ isminetype IsMine(const CKeyStore &keystore, const CScript& _scriptPubKey, uint3
         p.IsValid() &&
         ExtractDestinations(scriptPubKey, whichType, dests, minSigs, &keystore, &canSign, &canSpend, height))
     {
-        bool isAdvancedIdentity = CConstVerusSolutionVector::GetVersionByHeight(height) >= CActivationHeight::ACTIVATE_VERUSVAULT;
+        bool isAdvancedIdentity = CConstLuckySolutionVector::GetVersionByHeight(height) >= CActivationHeight::ACTIVATE_LUCKYVAULT;
         if (canSpend)
         {
             std::set<CTxDestination> unknownRecipients;

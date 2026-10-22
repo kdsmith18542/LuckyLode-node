@@ -70,7 +70,7 @@ enum {
     // Any excess over a power of 2 will not get mutated, and any excess over
     // power of 2 + Haraka sized key will not be used
     VERUSKEYSIZE=1024 * 8 + (40 * 16),
-    SOLUTION_VERUSHHASH_V2 = 1,          // this must be in sync with CScript::SOLUTION_VERUSV2
+    SOLUTION_VERUSHHASH_V2 = 1,          // this must be in sync with CScript::SOLUTION_V2
     SOLUTION_VERUSHHASH_V2_1 = 3,        // this must be in sync with CScript::ACTIVATE_VERUSHASH2_1
     SOLUTION_VERUSHHASH_V2_2 = 4         // this must be in sync with CScript::ACTIVATE_VERUSHASH2_2
 };

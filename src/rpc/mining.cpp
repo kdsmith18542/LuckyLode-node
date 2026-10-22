@@ -44,10 +44,10 @@ using namespace std;
 
 extern uint32_t ASSETCHAINS_ALGO;
 extern int32_t ASSETCHAINS_EQUIHASH, ASSETCHAINS_LWMAPOS;
-extern int32_t VERUS_MIN_STAKEAGE;
+extern int32_t LUCKY_MIN_STAKEAGE;
 extern uint64_t ASSETCHAINS_STAKED;
 extern int32_t KOMODO_MININGTHREADS;
-extern bool VERUS_MINTBLOCKS;
+extern bool LUCKY_MINTBLOCKS;
 extern char ASSETCHAINS_SYMBOL[KOMODO_ASSETCHAIN_MAXLEN];
 arith_uint256 komodo_PoWtarget(int32_t *percPoSp,arith_uint256 target,int32_t height,int32_t goalperc);
 int32_t komodo_blockload(CBlock& block,CBlockIndex *pindex);
@@ -158,7 +158,7 @@ UniValue getnetworkhashps(const UniValue& params, bool fHelp)
 }
 
 #ifdef ENABLE_MINING
-extern bool VERUS_MINTBLOCKS;
+extern bool LUCKY_MINTBLOCKS;
 UniValue getgenerate(const UniValue& params, bool fHelp)
 {
     if (fHelp || params.size() != 0)
@@ -180,7 +180,7 @@ UniValue getgenerate(const UniValue& params, bool fHelp)
 
     LOCK(cs_main);
     UniValue obj(UniValue::VOBJ);
-    obj.push_back(Pair("staking",          VERUS_MINTBLOCKS));
+    obj.push_back(Pair("staking",          LUCKY_MINTBLOCKS));
     obj.push_back(Pair("generate",         GetBoolArg("-gen", false)));
     obj.push_back(Pair("numthreads",       (int64_t)KOMODO_MININGTHREADS));
     return obj;
@@ -317,8 +317,8 @@ UniValue generate(const UniValue& params, bool fHelp)
                     [&pblock](std::vector<unsigned char> soln)
             {
                 LOCK(cs_main);
-                if (CConstVerusSolutionVector::IsAdvancedSolution(soln) &&
-                    !CConstVerusSolutionVector::IsDescriptorValid(soln))
+                if (CConstLuckySolutionVector::IsAdvancedSolution(soln) &&
+                    !CConstLuckySolutionVector::IsDescriptorValid(soln))
                 {
                     return false;
                 }
@@ -401,17 +401,17 @@ UniValue setgenerate(const UniValue& params, bool fHelp)
     }
     else
     {
-        VERUS_MINTBLOCKS = 1;
+        LUCKY_MINTBLOCKS = 1;
         KOMODO_MININGTHREADS = -1;
     }
 
     if (fGenerate && !gpl && params.size() > 1)
     {
-        VERUS_MINTBLOCKS = 1;
+        LUCKY_MINTBLOCKS = 1;
     }
     else if (!fGenerate)
     {
-        VERUS_MINTBLOCKS = 0;
+        LUCKY_MINTBLOCKS = 0;
         KOMODO_MININGTHREADS = 0;
     }
     else
@@ -523,7 +523,7 @@ UniValue getmininginfo(const UniValue& params, bool fHelp)
                     // or ~bnTarget / (nTarget+1) + 1.
                     totalChainStake = totalChainStake + (~bnStakeTarget / (bnStakeTarget + 1)) + 1;
                     blockCount++;
-                    if (index.IsVerusPOSBlock())
+                    if (index.IsLuckyPOSBlock())
                     {
                         posCount++;
                     }
@@ -584,7 +584,7 @@ UniValue getmininginfo(const UniValue& params, bool fHelp)
 #ifdef ENABLE_MINING
     bool mining = GetBoolArg("-gen", false);
     obj.push_back(Pair("generate",         mining));
-    obj.push_back(Pair("staking",          VERUS_MINTBLOCKS));
+    obj.push_back(Pair("staking",          LUCKY_MINTBLOCKS));
 
     auto chains = ConnectedChains.GetMergeMinedChains();
     bool mergeMining = mining && (!IsVerusActive() || (IsVerusActive() && chains.size()));
@@ -1086,7 +1086,7 @@ UniValue getblocktemplate(const UniValue& params, bool fHelp)
     result.push_back(Pair("previousblockhash", pblock->hashPrevBlock.GetHex()));
     result.push_back(Pair("finalsaplingroothash", pblock->hashFinalSaplingRoot.GetHex()));
 
-    if (CConstVerusSolutionVector::Version(pblock->nSolution) >= CActivationHeight::ACTIVATE_VERUSHASH2_1)
+    if (CConstLuckySolutionVector::Version(pblock->nSolution) >= CActivationHeight::ACTIVATE_VERUSHASH2_1)
     {
         result.push_back(Pair("solution", HexBytes(pblock->nSolution.data(), pblock->nSolution.size())));
     }

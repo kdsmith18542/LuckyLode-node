@@ -531,24 +531,24 @@ public:
     CBlockIndex* GetAncestor(int height);
     const CBlockIndex* GetAncestor(int height) const;
 
-    int32_t GetVerusPOSTarget() const
+    int32_t GetLuckyPOSTarget() const
     {
-        return GetBlockHeader().GetVerusPOSTarget();
+        return GetBlockHeader().GetLuckyPOSTarget();
     }
 
-    bool IsVerusPOSBlock() const
+    bool IsLuckyPOSBlock() const
     {
-        return GetBlockHeader().IsVerusPOSBlock();
+        return GetBlockHeader().IsLuckyPOSBlock();
     }
 
-    bool GetRawVerusPOSHash(uint256 &ret) const;
-    uint256 GetVerusEntropyHashComponent() const;
+    bool GetRawLuckyPOSHash(uint256 &ret) const;
+    uint256 GetLuckyEntropyHashComponent() const;
 
     uint256 BlockMMRRoot() const
     {
-        if (nVersion == CBlockHeader::VERUS_V2)
+        if (nVersion == CBlockHeader::LUCKY_V2)
         {
-            CPBaaSSolutionDescriptor descr = CConstVerusSolutionVector::GetDescriptor((nSolution.nSolution()));
+            CPBaaSSolutionDescriptor descr = CConstLuckySolutionVector::GetDescriptor((nSolution.nSolution()));
             if (descr.version >= CActivationHeight::ACTIVATE_PBAAS)
             {
                 return descr.hashBlockMMRRoot;
@@ -559,9 +559,9 @@ public:
 
     uint256 PrevMMRRoot()
     {
-        if (nVersion == CBlockHeader::VERUS_V2)
+        if (nVersion == CBlockHeader::LUCKY_V2)
         {
-            CPBaaSSolutionDescriptor descr = CConstVerusSolutionVector::GetDescriptor(nSolution.nSolution());
+            CPBaaSSolutionDescriptor descr = CConstLuckySolutionVector::GetDescriptor(nSolution.nSolution());
             if (descr.version >= CActivationHeight::ACTIVATE_PBAAS)
             {
                 return descr.hashPrevMMRRoot;
@@ -595,9 +595,9 @@ public:
 
     bool HasCappedTransactionMap() const
     {
-        if (nVersion == CBlockHeader::VERUS_V2)
+        if (nVersion == CBlockHeader::LUCKY_V2)
         {
-            return CConstVerusSolutionVector::Version(nSolution.nSolution()) >= CActivationHeight::ACTIVATE_PBAAS_HARDEN1;
+            return CConstLuckySolutionVector::Version(nSolution.nSolution()) >= CActivationHeight::ACTIVATE_PBAAS_HARDEN1;
         }
         return 0;
     }

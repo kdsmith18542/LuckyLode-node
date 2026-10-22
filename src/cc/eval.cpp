@@ -54,9 +54,9 @@ bool RunCCEval(const CC *cond, const CTransaction &tx, unsigned int nIn, bool fu
 bool DefaultCCContextualPreCheck(const CTransaction &tx, int32_t outNum, CValidationState &state, uint32_t height)
 {
     // make sure that if the destinations include identities that those identities are valid on this blockchain
-    auto upgradeVersion = CConstVerusSolutionVector::GetVersionByHeight(height);
+    auto upgradeVersion = CConstLuckySolutionVector::GetVersionByHeight(height);
 
-    if (upgradeVersion < CActivationHeight::ACTIVATE_VERUSVAULT)
+    if (upgradeVersion < CActivationHeight::ACTIVATE_LUCKYVAULT)
     {
         return true;
     }
@@ -107,7 +107,7 @@ bool Eval::Dispatch(const CC *cond, const CTransaction &txTo, unsigned int nIn, 
         case EVAL_CROSSCHAIN_IMPORT:
         case EVAL_FINALIZE_EXPORT:
         case EVAL_FEE_POOL:
-            if (!chainActive.LastTip() || CConstVerusSolutionVector::activationHeight.ActiveVersion(chainActive.LastTip()->GetHeight() + 1) < CActivationHeight::ACTIVATE_PBAAS)
+            if (!chainActive.LastTip() || CConstLuckySolutionVector::activationHeight.ActiveVersion(chainActive.LastTip()->GetHeight() + 1) < CActivationHeight::ACTIVATE_PBAAS)
             {
                 // if chain is not able to process this yet, don't drop through to do so
                 break;
@@ -118,7 +118,7 @@ bool Eval::Dispatch(const CC *cond, const CTransaction &txTo, unsigned int nIn, 
         case EVAL_IDENTITY_RECOVER:
         case EVAL_IDENTITY_COMMITMENT:
         case EVAL_IDENTITY_RESERVATION:
-            if (!chainActive.LastTip() || CConstVerusSolutionVector::activationHeight.ActiveVersion(chainActive.LastTip()->GetHeight() + 1) < CActivationHeight::ACTIVATE_IDENTITY)
+            if (!chainActive.LastTip() || CConstLuckySolutionVector::activationHeight.ActiveVersion(chainActive.LastTip()->GetHeight() + 1) < CActivationHeight::ACTIVATE_IDENTITY)
             {
                 break;
             }

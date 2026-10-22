@@ -50,7 +50,7 @@ CAmount GetIdentityFeeFactor(const CTransaction &tx, CReserveTransactionDescript
 CAmount GetMinRelayFeeForOutputs(const std::vector<SendManyRecipient> &tOutputs, const std::vector<SendManyRecipient> &zOutputs, CAmount identityFeeFactor, bool isIdentity);
 
 extern char ASSETCHAINS_SYMBOL[KOMODO_ASSETCHAIN_MAXLEN];
-extern int32_t VERUS_MIN_STAKEAGE;
+extern int32_t LUCKY_MIN_STAKEAGE;
 const std::string ADDR_TYPE_SPROUT = "sprout";
 const std::string ADDR_TYPE_SAPLING = "sapling";
 
@@ -3076,7 +3076,7 @@ void ListTransactions(const CWalletTx& wtx, const string& strAccount, int nMinDe
     bool bIsStake = false;
     bool bIsCoinbase = false;
     bool bIsMint = false;
-    bool isPBaaS = CConstVerusSolutionVector::GetVersionByHeight(chainActive.Height()) >= CActivationHeight::ACTIVATE_PBAAS;
+    bool isPBaaS = CConstLuckySolutionVector::GetVersionByHeight(chainActive.Height()) >= CActivationHeight::ACTIVATE_PBAAS;
     CCoinsViewCache view(pcoinsTip);
     uint32_t nHeight = chainActive.Height();
 
@@ -3091,7 +3091,7 @@ void ListTransactions(const CWalletTx& wtx, const string& strAccount, int nMinDe
     else
     {
         bIsCoinbase = wtx.IsCoinBase();
-        bIsMint = pIndex && pIndex->IsVerusPOSBlock();
+        bIsMint = pIndex && pIndex->IsLuckyPOSBlock();
     }
 
     if (bIsCoinbase)
@@ -4761,8 +4761,8 @@ UniValue getwalletinfo(const UniValue& params, bool fHelp)
     LOCK2(cs_main, pwalletMain->cs_wallet);
 
     uint32_t nHeight = chainActive.Height();
-    uint32_t solutionVer = CConstVerusSolutionVector::GetVersionByHeight(nHeight);
-    bool checkunlockedIDs = solutionVer >= CActivationHeight::ACTIVATE_VERUSVAULT;
+    uint32_t solutionVer = CConstLuckySolutionVector::GetVersionByHeight(nHeight);
+    bool checkunlockedIDs = solutionVer >= CActivationHeight::ACTIVATE_LUCKYVAULT;
     bool extendedStake = solutionVer >= CActivationHeight::ACTIVATE_EXTENDEDSTAKE;
 
     UniValue obj(UniValue::VOBJ);
@@ -8266,7 +8266,7 @@ int32_t verus_staked(CBlock *pBlock, CMutableTransaction &txNew, uint32_t &nBits
 {
     try
     {
-        return pwalletMain->VerusStakeTransaction(pBlock, txNew, nBits, hashResult, utxosig, rewardDest);
+        return pwalletMain->LuckyStakeTransaction(pBlock, txNew, nBits, hashResult, utxosig, rewardDest);
     }
     catch(const std::exception& e)
     {

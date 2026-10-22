@@ -1226,7 +1226,7 @@ int32_t komodo_checkPOW(int32_t slowflag,CBlock *pblock,int32_t height)
     bnTarget.SetCompact(pblock->nBits,&fNegative,&fOverflow);
     bhash = UintToArith256(hash);
 
-    if (ASSETCHAINS_LWMAPOS != 0 && pblock->IsVerusPOSBlock())
+    if (ASSETCHAINS_LWMAPOS != 0 && pblock->IsLuckyPOSBlock())
     {
         return 0;
     }
@@ -1234,7 +1234,7 @@ int32_t komodo_checkPOW(int32_t slowflag,CBlock *pblock,int32_t height)
     {
         // tolerate variable size solutions, but ensure that we have at least 16 bytes extra space to fit the clhash at the end
         int modSpace = GetSerializeSize(*(CBlockHeader *)pblock, SER_NETWORK, PROTOCOL_VERSION) % 32;
-        int solutionVer = CConstVerusSolutionVector::GetVersionByHeight(height);
+        int solutionVer = CConstLuckySolutionVector::GetVersionByHeight(height);
         if (solutionVer < CActivationHeight::ACTIVATE_VERUSHASH2_1 || (modSpace >= 1 && modSpace <= 16))
         {
             return 0;

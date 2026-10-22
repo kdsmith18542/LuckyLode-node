@@ -169,7 +169,7 @@ bool ValidateCrossChainExport(struct CCcontract_info *cp, Eval* eval, const CTra
 
     if (thisExport.IsValid())
     {
-        if (CConstVerusSolutionVector::GetVersionByHeight(spendingFromHeight) < CActivationHeight::ACTIVATE_PBAAS)
+        if (CConstLuckySolutionVector::GetVersionByHeight(spendingFromHeight) < CActivationHeight::ACTIVATE_PBAAS)
         {
             return eval->Error("Multi-currency operation before LuckyBridge activation");
         }
@@ -267,7 +267,7 @@ bool ValidateCrossChainImport(struct CCcontract_info *cp, Eval* eval, const CTra
 
     if (thisImport.IsValid())
     {
-        if (CConstVerusSolutionVector::GetVersionByHeight(spendingFromHeight) < CActivationHeight::ACTIVATE_PBAAS)
+        if (CConstLuckySolutionVector::GetVersionByHeight(spendingFromHeight) < CActivationHeight::ACTIVATE_PBAAS)
         {
             return eval->Error("Multi-currency operation before LuckyBridge activation");
         }
@@ -493,7 +493,7 @@ bool PrecheckCrossChainImport(const CTransaction &tx, int32_t outNum, CValidatio
     // price in a window that may have been used to calculate fee conversion and using that to accept or reject every
     // reserve transfer. It also ensures that the fee payout is properly split between miners/stakers, exporters,
     // importers, and notaries.
-    if (CConstVerusSolutionVector::GetVersionByHeight(height) < CActivationHeight::ACTIVATE_PBAAS)
+    if (CConstLuckySolutionVector::GetVersionByHeight(height) < CActivationHeight::ACTIVATE_PBAAS)
     {
         return state.Error("Multi-currency operation before LuckyBridge activation");
     }
@@ -1412,7 +1412,7 @@ bool PrecheckCrossChainImport(const CTransaction &tx, int32_t outNum, CValidatio
 bool PrecheckCrossChainExport(const CTransaction &tx, int32_t outNum, CValidationState &state, uint32_t height)
 {
     // ensure that all reserve transfers spent are properly accounted for
-    if (CConstVerusSolutionVector::GetVersionByHeight(height) < CActivationHeight::ACTIVATE_PBAAS)
+    if (CConstLuckySolutionVector::GetVersionByHeight(height) < CActivationHeight::ACTIVATE_PBAAS)
     {
         return state.Error("Multi-currency operation before LuckyBridge activation");
     }
@@ -1578,7 +1578,7 @@ bool PrecheckCrossChainExport(const CTransaction &tx, int32_t outNum, CValidatio
     // ensure that start height is after currency launch, if not definition
     if (!ccx.IsChainDefinition() && ccx.sourceSystemID == ASSETCHAINS_CHAINID)
     {
-        if (CConstVerusSolutionVector::GetVersionByHeight(ccx.sourceHeightStart) < CActivationHeight::ACTIVATE_PBAAS)
+        if (CConstLuckySolutionVector::GetVersionByHeight(ccx.sourceHeightStart) < CActivationHeight::ACTIVATE_PBAAS)
         {
             return state.Error("Export source height is too low");
         }
@@ -2416,7 +2416,7 @@ bool verusCheckPOSBlock(int32_t slowflag, const CBlock *pblock, int32_t height)
     arith_uint256 target, hash;
     CTransaction tx;
 
-    if (!pblock->IsVerusPOSBlock())
+    if (!pblock->IsLuckyPOSBlock())
     {
         printf("%s, height %d not POS block\n", pblock->nNonce.GetHex().c_str(), height);
         return false;
@@ -2426,7 +2426,7 @@ bool verusCheckPOSBlock(int32_t slowflag, const CBlock *pblock, int32_t height)
 
     if ( txn_count > 1 )
     {
-        target.SetCompact(pblock->GetVerusPOSTarget());
+        target.SetCompact(pblock->GetLuckyPOSTarget());
         txid = pblock->vtx[txn_count-1].vin[0].prevout.hash;
         voutNum = pblock->vtx[txn_count-1].vin[0].prevout.n;
         value = pblock->vtx[txn_count-1].vout[0].nValue;
@@ -2440,8 +2440,8 @@ bool verusCheckPOSBlock(int32_t slowflag, const CBlock *pblock, int32_t height)
             bool newPOSEnforcement = enablePOSNonce &&
                 (ASSETCHAINS_ALGO == ASSETCHAINS_LUCKYHASH ||
                  Params().GetConsensus().vUpgrades[Consensus::UPGRADE_SAPLING].nActivationHeight <= height);
-            bool isPBaaS = CConstVerusSolutionVector::activationHeight.ActiveVersion(height) >= CActivationHeight::ACTIVATE_PBAAS;
-            bool extendedStake = CConstVerusSolutionVector::activationHeight.ActiveVersion(height) >= CActivationHeight::ACTIVATE_EXTENDEDSTAKE;
+            bool isPBaaS = CConstLuckySolutionVector::activationHeight.ActiveVersion(height) >= CActivationHeight::ACTIVATE_PBAAS;
+            bool extendedStake = CConstLuckySolutionVector::activationHeight.ActiveVersion(height) >= CActivationHeight::ACTIVATE_EXTENDEDSTAKE;
             uint256 rawHash;
             arith_uint256 posHash;
 
@@ -2471,7 +2471,7 @@ bool verusCheckPOSBlock(int32_t slowflag, const CBlock *pblock, int32_t height)
 
             if (validHash && newPOSEnforcement)
             {
-                validHash = pblock->GetRawVerusPOSHash(rawHash, height);
+                validHash = pblock->GetRawLuckyPOSHash(rawHash, height);
                 posHash = UintToArith256(rawHash) / value;
 
                 if (!validHash)
@@ -2555,16 +2555,16 @@ bool verusCheckPOSBlock(int32_t slowflag, const CBlock *pblock, int32_t height)
                 const bool fRetryRules = (height >= Params().GetConsensus().nStakeRetryActivationHeight);
 
                 //printf("before nNonce: %s, height: %d\n", pblock->nNonce.GetHex().c_str(), height);
-                validHash = pblock->GetRawVerusPOSHash(rawHash, height);
+                validHash = pblock->GetRawLuckyPOSHash(rawHash, height);
 
-                hash = UintToArith256(tx.GetVerusPOSHash(&nonce, voutNum, height, pastHash, fRetryRules));
+                hash = UintToArith256(tx.GetLuckyPOSHash(&nonce, voutNum, height, pastHash, fRetryRules));
 
                     if ((!newPOSEnforcement || posHash == hash) && hash <= target)
                     {
                         BlockMap::const_iterator it = mapBlockIndex.find(blkHash);
                         if ((it == mapBlockIndex.end()) ||
                             !(pastBlockIndex = it->second) ||
-                            (height - pastBlockIndex->GetHeight()) < VERUS_MIN_STAKEAGE)
+                            (height - pastBlockIndex->GetHeight()) < LUCKY_MIN_STAKEAGE)
                         {
                             fprintf(stderr,"ERROR: invalid PoS block %s - stake source too new or not found\n",blkHash.ToString().c_str());
                         }
@@ -2605,7 +2605,7 @@ bool verusCheckPOSBlock(int32_t slowflag, const CBlock *pblock, int32_t height)
                                 {
                                     if (cTarget != target)
                                     {
-                                        LogPrintf("ERROR: invalid PoS block %s - invalid diff target, actual: %u, correct: %u\n", blkHash.ToString().c_str(), pblock->GetVerusPOSTarget(), nBits);
+                                        LogPrintf("ERROR: invalid PoS block %s - invalid diff target, actual: %u, correct: %u\n", blkHash.ToString().c_str(), pblock->GetLuckyPOSTarget(), nBits);
                                         if (IsVerusMainnetActive() && height < fullCheckHeight)
                                         {
                                             return true;
@@ -2852,7 +2852,7 @@ bool verusCheckPOSBlock(int32_t slowflag, const CBlock *pblock, int32_t height)
                         // improved logging
                         if ((newPOSEnforcement && posHash != hash))
                         {
-                            LogPrint("pos", "%s: conflicting hash values between GetRawVerusPOSHash (%s/%s) and GetVerusPOSHash (%s)\n",
+                            LogPrint("pos", "%s: conflicting hash values between GetRawLuckyPOSHash (%s/%s) and GetLuckyPOSHash (%s)\n",
                                         __func__,
                                         rawHash.GetHex().c_str(),
                                         ArithToUint256(posHash).GetHex().c_str(),
@@ -4097,16 +4097,16 @@ bool PrecheckCurrencyDefinition(const CTransaction &tx, int32_t outNum, CValidat
 {
     if (IsVerusMainnetActive())
     {
-        if (CConstVerusSolutionVector::GetVersionByHeight(height) < CActivationHeight::ACTIVATE_VERUSVAULT)
+        if (CConstLuckySolutionVector::GetVersionByHeight(height) < CActivationHeight::ACTIVATE_LUCKYVAULT)
         {
             return true;
         }
-        else if (CConstVerusSolutionVector::GetVersionByHeight(height) < CActivationHeight::ACTIVATE_PBAAS)
+        else if (CConstLuckySolutionVector::GetVersionByHeight(height) < CActivationHeight::ACTIVATE_PBAAS)
         {
             return false;
         }
     }
-    else if (CConstVerusSolutionVector::GetVersionByHeight(height) < CActivationHeight::ACTIVATE_PBAAS)
+    else if (CConstLuckySolutionVector::GetVersionByHeight(height) < CActivationHeight::ACTIVATE_PBAAS)
     {
         return false;
     }
@@ -6478,7 +6478,7 @@ uint32_t CConnectedChains::CombineBlocks(CBlockHeader &bh, int32_t height)
     {
         LOCK(cs_mergemining);
 
-        CPBaaSSolutionDescriptor descr = CVerusSolutionVector::solutionTools.GetDescriptor(bh.nSolution);
+        CPBaaSSolutionDescriptor descr = CLuckySolutionVector::solutionTools.GetDescriptor(bh.nSolution);
 
         for (uint32_t i = 0; i < descr.numPBaaSHeaders; i++)
         {
@@ -6570,7 +6570,7 @@ uint32_t CConnectedChains::ParseVersion(const std::string &versionStr) const
 
 uint32_t CConnectedChains::GetVerusVersion() const
 {
-    return ParseVersion(VERUS_VERSION);
+    return ParseVersion(LUCKYD_VERSION);
 }
 
 extern string PBAAS_HOST, PBAAS_USERPASS;
@@ -6788,7 +6788,7 @@ void CConnectedChains::CheckOracleUpgrades(uint32_t atHeight)
     }
 
     std::vector<std::tuple<std::vector<unsigned char>, uint256, uint32_t, CUTXORef, CPartialTransactionProof>> upgradeData;
-    if (CConstVerusSolutionVector::GetVersionByHeight(height) >= CActivationHeight::ACTIVATE_PBAAS)
+    if (CConstLuckySolutionVector::GetVersionByHeight(height) >= CActivationHeight::ACTIVATE_PBAAS)
     {
         upgradeData = CIdentity::GetIdentityContentByKey(oracleToUse,
                                                          UpgradeDataKey(ASSETCHAINS_CHAINID),
@@ -8021,9 +8021,9 @@ CPartialTransactionProof::CPartialTransactionProof(const CTransaction tx,
         return;
     }
 
-    bool posEntropyInfo = CVerusSolutionVector(block.nSolution).Version() >= CActivationHeight::ACTIVATE_PBAAS;
+    bool posEntropyInfo = CLuckySolutionVector(block.nSolution).Version() >= CActivationHeight::ACTIVATE_PBAAS;
 
-    BlockMMRange blockMMR(block.GetBlockMMRTree(posEntropyInfo ? pIndex->GetVerusEntropyHashComponent() : uint256()));
+    BlockMMRange blockMMR(block.GetBlockMMRTree(posEntropyInfo ? pIndex->GetLuckyEntropyHashComponent() : uint256()));
     BlockMMView blockView(blockMMR);
 
     if (blockView.GetRoot() != block.GetBlockMMRRoot())
@@ -10229,7 +10229,7 @@ uint256 EntropyHashFromHeight(const uint160 &conditionID, uint32_t nHeight, cons
 {
     auto hw = CMMRNode<>::GetHashWriter();
     hw << conditionID;
-    hw << (chainActive.Height() >= nHeight ? chainActive[nHeight]->GetVerusEntropyHashComponent() : uint256());
+    hw << (chainActive.Height() >= nHeight ? chainActive[nHeight]->GetLuckyEntropyHashComponent() : uint256());
     if (!extraEntropy.IsNull())
     {
         hw << extraEntropy;
@@ -10241,7 +10241,7 @@ bool EntropyCoinFlip(const uint160 &conditionID, uint32_t nHeight)
 {
     auto hw = CMMRNode<>::GetHashWriter();
     hw << conditionID;
-    hw << (chainActive.Height() >= nHeight ? chainActive[nHeight]->GetVerusEntropyHashComponent() : uint256());
+    hw << (chainActive.Height() >= nHeight ? chainActive[nHeight]->GetLuckyEntropyHashComponent() : uint256());
     return UintToArith256(hw.GetHash()).GetLow64() & 1;
 }
 

@@ -126,10 +126,10 @@ void UpdateTime(CBlockHeader* pblock, const Consensus::Params& consensusParams, 
 extern CCriticalSection cs_metrics;
 extern int32_t KOMODO_MININGTHREADS,KOMODO_LONGESTCHAIN,IS_KOMODO_NOTARY,USE_EXTERNAL_PUBKEY,KOMODO_CHOSEN_ONE,ASSETCHAIN_INIT,KOMODO_INITDONE,KOMODO_INITDONE,KOMODO_PASSPORT_INITDONE;
 extern uint64_t ASSETCHAINS_COMMISSION, ASSETCHAINS_STAKED;
-extern bool VERUS_MINTBLOCKS;
+extern bool LUCKY_MINTBLOCKS;
 extern uint64_t ASSETCHAINS_REWARD[ASSETCHAINS_MAX_ERAS], ASSETCHAINS_TIMELOCKGTE, ASSETCHAINS_NONCEMASK[];
 extern const char *ASSETCHAINS_ALGORITHMS[];
-extern int32_t VERUS_MIN_STAKEAGE, ASSETCHAINS_EQUIHASH, ASSETCHAINS_VERUSHASH, ASSETCHAINS_LASTERA, ASSETCHAINS_LWMAPOS, ASSETCHAINS_NONCESHIFT[], ASSETCHAINS_HASHESPERROUND[];
+extern int32_t LUCKY_MIN_STAKEAGE, ASSETCHAINS_EQUIHASH, ASSETCHAINS_VERUSHASH, ASSETCHAINS_LASTERA, ASSETCHAINS_LWMAPOS, ASSETCHAINS_NONCESHIFT[], ASSETCHAINS_HASHESPERROUND[];
 extern uint32_t ASSETCHAINS_LUCKYHASH;
 extern uint32_t ASSETCHAINS_ALGO;
 extern char ASSETCHAINS_SYMBOL[KOMODO_ASSETCHAIN_MAXLEN];
@@ -162,8 +162,8 @@ LRUCache<std::tuple<uint256, uint256, uint256>, uint256> posBlockMMRLRU(200);
 void IncrementExtraNonce(CBlock* pblock, CBlockIndex* pindexPrev, unsigned int &nExtraNonce, bool buildMerkle, uint32_t *pSaveBits)
 {
     uint32_t nHeight = pindexPrev->GetHeight() + 1;
-    bool isPBaaS = CConstVerusSolutionVector::GetVersionByHeight(nHeight) >= CActivationHeight::ACTIVATE_PBAAS;
-    bool isPoS = pblock->IsVerusPOSBlock();
+    bool isPBaaS = CConstLuckySolutionVector::GetVersionByHeight(nHeight) >= CActivationHeight::ACTIVATE_PBAAS;
+    bool isPoS = pblock->IsLuckyPOSBlock();
     bool posSourceInfo = isPBaaS;
 
     // Update nExtraNonce
@@ -180,21 +180,21 @@ void IncrementExtraNonce(CBlock* pblock, CBlockIndex* pindexPrev, unsigned int &
         *pSaveBits = pblock->nBits;
     }
 
-    int solutionVersion = CConstVerusSolutionVector::activationHeight.ActiveVersion(nHeight);
+    int solutionVersion = CConstLuckySolutionVector::activationHeight.ActiveVersion(nHeight);
 
-    if (solutionVersion >= CConstVerusSolutionVector::activationHeight.ACTIVATE_PBAAS_HEADER)
+    if (solutionVersion >= CConstLuckySolutionVector::activationHeight.ACTIVATE_PBAAS_HEADER)
     {
         UpdateTime(pblock, Params().GetConsensus(), pindexPrev);
 
         uint256 entropyHash;
-        if (posSourceInfo && pblock->IsVerusPOSBlock())
+        if (posSourceInfo && pblock->IsLuckyPOSBlock())
         {
             LOCK(cs_main);
             // POS entropy hash doesn't depend on block hash
-            entropyHash = pblock->GetVerusEntropyHashComponent(pindexPrev->GetHeight() + 1);
+            entropyHash = pblock->GetLuckyEntropyHashComponent(pindexPrev->GetHeight() + 1);
         }
 
-        if (!pblock->IsVerusPOSBlock())
+        if (!pblock->IsLuckyPOSBlock())
         {
             if (isPBaaS)
             {
@@ -277,7 +277,7 @@ void IncrementExtraNonce(CBlock* pblock, CBlockIndex* pindexPrev, unsigned int &
                         mmv.resize(nHeight);                                 // we want it pointing right before us, nHeight is our new height
 
                         std::vector<unsigned char> extraSolutionData = CreatePoSBlockProof(mmv, *pblock, tx, pblock->vtx.back().vin[0].prevout.n, mapBlockIndex[txBlockHash]->GetHeight(), nHeight);
-                        CVerusSolutionVector(pblock->nSolution).ResizeExtraData(extraSolutionData.size());
+                        CLuckySolutionVector(pblock->nSolution).ResizeExtraData(extraSolutionData.size());
                         pblock->SetExtraData(extraSolutionData.data(), extraSolutionData.size());
                     }
                 }
@@ -388,8 +388,8 @@ CPubKey GetScriptPublicKey(const CScript &scriptPubKey)
 // provable with the available notarization on the specified chain.
 void ProcessNewImports(const uint160 &sourceChainID, CPBaaSNotarization &lastConfirmed, CUTXORef &lastConfirmedUTXO, uint32_t nHeight)
 {
-    if (CConstVerusSolutionVector::GetVersionByHeight(nHeight) < CActivationHeight::ACTIVATE_PBAAS ||
-        CConstVerusSolutionVector::activationHeight.IsActivationHeight(CActivationHeight::ACTIVATE_PBAAS, nHeight))
+    if (CConstLuckySolutionVector::GetVersionByHeight(nHeight) < CActivationHeight::ACTIVATE_PBAAS ||
+        CConstLuckySolutionVector::activationHeight.IsActivationHeight(CActivationHeight::ACTIVATE_PBAAS, nHeight))
     {
         return;
     }
@@ -1290,11 +1290,11 @@ bool BlockOneCoinbaseOutputs(std::vector<CTxOut> &outputs,
 
     if (launchExportProof.second.IsCapped())
     {
-        minSolutionVersion = CActivationHeight::SOLUTION_VERUSV8;
+        minSolutionVersion = CActivationHeight::SOLUTION_V8;
     }
     else
     {
-        minSolutionVersion = CActivationHeight::SOLUTION_VERUSV7;
+        minSolutionVersion = CActivationHeight::SOLUTION_V7;
     }
 
     // we need to have a launch decision to be able to mine any blocks, prior to launch being clear,
@@ -1549,7 +1549,7 @@ bool IsValidBlockOneCoinbase(const std::vector<CTxOut> &_outputs,
     {
         int32_t minSolutionVersion = 0;
         bool validOutputs = BlockOneCoinbaseOutputs(checkOutputs, launchNotarization, additionalFees, launchChain, newChainCurrency, minSolutionVersion);
-        if (minSolutionVersion >= CActivationHeight::SOLUTION_VERUSV8)
+        if (minSolutionVersion >= CActivationHeight::SOLUTION_V8)
         {
             knownCapped = true;
         }
@@ -2181,15 +2181,15 @@ CBlockTemplate* CreateNewBlock(const CChainParams& chainparams, const std::vecto
         }
 
         bool isExplicitSol8Height = false;
-        if (CConstVerusSolutionVector::Version(pblock->nSolution) == CActivationHeight::SOLUTION_VERUSV7 &&
-            (CConstVerusSolutionVector::activationHeight.GetVersionActivationHeight(CActivationHeight::SOLUTION_VERUSV8, &isExplicitSol8Height) ==
+        if (CConstLuckySolutionVector::Version(pblock->nSolution) == CActivationHeight::SOLUTION_V7 &&
+            (CConstLuckySolutionVector::activationHeight.GetVersionActivationHeight(CActivationHeight::SOLUTION_V8, &isExplicitSol8Height) ==
                     CActivationHeight::DEFAULT_UPGRADE_HEIGHT ||
              !isExplicitSol8Height) &&
             pblock->nTime >= PBAAS_VERSION8_SOLUTION_TIME_START &&
             (chainActive.LastTip()->nTime < PBAAS_VERSION8_SOLUTION_TIME_START ||
-             CConstVerusSolutionVector::Version(chainActive.LastTip()->nSolution.nSolution()) < CActivationHeight::SOLUTION_VERUSV7))
+             CConstLuckySolutionVector::Version(chainActive.LastTip()->nSolution.nSolution()) < CActivationHeight::SOLUTION_V7))
         {
-            CConstVerusSolutionVector::activationHeight.SetActivationHeight(CActivationHeight::SOLUTION_VERUSV8, nHeight, false);
+            CConstLuckySolutionVector::activationHeight.SetActivationHeight(CActivationHeight::SOLUTION_V8, nHeight, false);
             pblock->SetVersionByHeight(nHeight);
         }
 
@@ -2213,7 +2213,7 @@ CBlockTemplate* CreateNewBlock(const CChainParams& chainparams, const std::vecto
             if (defaultSaplingDest &&
                 chainActive.Height() > 100 &&
                 (ppast = chainActive[cheatHeight]) &&
-                ppast->IsVerusPOSBlock() &&
+                ppast->IsLuckyPOSBlock() &&
                 cheatList.IsHeightOrGreaterInList(cheatHeight))
             {
                 // get the block and see if there is a cheat candidate for the stake tx
@@ -2424,7 +2424,7 @@ CBlockTemplate* CreateNewBlock(const CChainParams& chainparams, const std::vecto
         // if we don't have a connected root PBaaS chain, we can't properly check
         // and notarize the start block, so we have to pass the notarization and cross chain steps
         bool notaryConnected = ConnectedChains.IsNotaryAvailable();
-        uint32_t solutionVersion = CConstVerusSolutionVector::GetVersionByHeight(nHeight);
+        uint32_t solutionVersion = CConstLuckySolutionVector::GetVersionByHeight(nHeight);
 
         if (isVerusActive &&
             solutionVersion >= CActivationHeight::ACTIVATE_PBAAS &&
@@ -2466,18 +2466,18 @@ CBlockTemplate* CreateNewBlock(const CChainParams& chainparams, const std::vecto
             }
 
             bool isExplicitHeight = false;
-            if (minSolutionVersion == CActivationHeight::SOLUTION_VERUSV7 &&
-                (CConstVerusSolutionVector::activationHeight.GetVersionActivationHeight(CActivationHeight::SOLUTION_VERUSV8, &isExplicitHeight) ==
+            if (minSolutionVersion == CActivationHeight::SOLUTION_V7 &&
+                (CConstLuckySolutionVector::activationHeight.GetVersionActivationHeight(CActivationHeight::SOLUTION_V8, &isExplicitHeight) ==
                         CActivationHeight::DEFAULT_UPGRADE_HEIGHT ||
                  !isExplicitHeight) &&
                 pblock->nTime >= PBAAS_VERSION8_SOLUTION_TIME_START)
             {
-                minSolutionVersion = CActivationHeight::SOLUTION_VERUSV8;
+                minSolutionVersion = CActivationHeight::SOLUTION_V8;
             }
 
-            if (minSolutionVersion > CConstVerusSolutionVector::Version(pblock->nSolution))
+            if (minSolutionVersion > CConstLuckySolutionVector::Version(pblock->nSolution))
             {
-                CConstVerusSolutionVector::activationHeight.SetActivationHeight(minSolutionVersion, 1, true);
+                CConstLuckySolutionVector::activationHeight.SetActivationHeight(minSolutionVersion, 1, true);
                 pblock->SetVersionByHeight(nHeight);
             }
             currencyState = launchNotarization.currencyState;
@@ -2711,7 +2711,7 @@ CBlockTemplate* CreateNewBlock(const CChainParams& chainparams, const std::vecto
         }
 
         // we will update amounts and fees later, but convert the guarded output now for validity checking and size estimate
-        // VerusPoP staking transaction data
+        // LuckyPoP staking transaction data
         CMutableTransaction txStaked;           // if this is a stake operation, the staking transaction that goes at the end
         uint32_t nStakeTxSize = 0;              // serialized size of the stake transaction
 
@@ -2875,7 +2875,7 @@ CBlockTemplate* CreateNewBlock(const CChainParams& chainparams, const std::vecto
 
         CFeePool feePool;
         if (!CFeePool::GetCoinbaseFeePool(feePool, nHeight - 1) ||
-            (!feePool.IsValid() && CConstVerusSolutionVector::GetVersionByHeight(nHeight - 1) >= CActivationHeight::ACTIVATE_PBAAS))
+            (!feePool.IsValid() && CConstLuckySolutionVector::GetVersionByHeight(nHeight - 1) >= CActivationHeight::ACTIVATE_PBAAS))
         {
             // we should be able to get a valid currency state, if not, fail
             LogPrintf("Failure to get fee pool information for blockchain height #%d\n", nHeight - 1);
@@ -3721,10 +3721,10 @@ CBlockTemplate* CreateNewBlock(const CChainParams& chainparams, const std::vecto
             additionalFees.valueMap.erase(thisChainID);
         }
 
-        CAmount verusFees = 0;
+        CAmount notaryFees = 0;
         if (VERUS_CHAINID != ASSETCHAINS_CHAINID && additionalFees.valueMap.count(VERUS_CHAINID))
         {
-            verusFees += additionalFees.valueMap[VERUS_CHAINID];
+            notaryFees += additionalFees.valueMap[VERUS_CHAINID];
             additionalFees.valueMap.erase(VERUS_CHAINID);
         }
 
@@ -3737,9 +3737,9 @@ CBlockTemplate* CreateNewBlock(const CChainParams& chainparams, const std::vecto
         {
             // we support only the current native currency or VRSC on PBaaS chains in the fee pool for now
             feePool.reserveValues.valueMap[thisChainID] += rewardFees;
-            if (verusFees)
+            if (notaryFees)
             {
-                feePool.reserveValues.valueMap[VERUS_CHAINID] += verusFees;
+                feePool.reserveValues.valueMap[VERUS_CHAINID] += notaryFees;
             }
             CFeePool oneFeeShare = feePool.OneFeeShare();
             rewardFees = oneFeeShare.reserveValues.valueMap[thisChainID];
@@ -3747,8 +3747,8 @@ CBlockTemplate* CreateNewBlock(const CChainParams& chainparams, const std::vecto
 
             if (VERUS_CHAINID != ASSETCHAINS_CHAINID && oneFeeShare.reserveValues.valueMap.count(VERUS_CHAINID))
             {
-                verusFees = oneFeeShare.reserveValues.valueMap[VERUS_CHAINID];
-                feePool.reserveValues.valueMap[VERUS_CHAINID] -= verusFees;
+                notaryFees = oneFeeShare.reserveValues.valueMap[VERUS_CHAINID];
+                feePool.reserveValues.valueMap[VERUS_CHAINID] -= notaryFees;
             }
 
             cp = CCinit(&CC, EVAL_FEE_POOL);
@@ -3756,7 +3756,7 @@ CBlockTemplate* CreateNewBlock(const CChainParams& chainparams, const std::vecto
             coinbaseTx.vout.push_back(CTxOut(0,MakeMofNCCScript(CConditionObj<CFeePool>(EVAL_FEE_POOL,{pkCC.GetID()},1,&feePool))));
         }
 
-        // printf("%s: rewardfees: %ld, verusfees: %ld\n", __func__, rewardFees, verusFees);
+        // printf("%s: rewardfees: %ld, notaryfees: %ld\n", __func__, rewardFees, notaryFees);
 
         CAmount rewardTotal = blockSubsidy + rewardFees;
         // Lucky Lode: the normal coinbase carries R + F - levy (doc 06 §6.2).
@@ -3774,12 +3774,12 @@ CBlockTemplate* CreateNewBlock(const CChainParams& chainparams, const std::vecto
             coinbaseTx.vout[0].nValue = rewardTotal;
             COptCCParams stakeP;
             if (!IsVerusActive() &&
-                verusFees &&
+                notaryFees &&
                 coinbaseTx.vout[0].scriptPubKey.IsPayToCryptoCondition(stakeP) &&
                 stakeP.IsValid())
             {
                 std::vector<CTxDestination> outDests = stakeP.vKeys;
-                CTokenOutput to = CTokenOutput(VERUS_CHAINID, verusFees);
+                CTokenOutput to = CTokenOutput(VERUS_CHAINID, notaryFees);
                 coinbaseTx.vout.insert(coinbaseTx.vout.end() - 1, CTxOut(0, MakeMofNCCScript(CConditionObj<CTokenOutput>(EVAL_RESERVE_OUTPUT, stakeP.vKeys, stakeP.m, &to))));
             }
         }
@@ -3792,7 +3792,7 @@ CBlockTemplate* CreateNewBlock(const CChainParams& chainparams, const std::vecto
 
             int cbOutIdx;
             CAmount rewardLeft = rewardTotal;
-            CAmount verusFeeLeft = verusFees;
+            CAmount notaryFeeLeft = notaryFees;
             for (cbOutIdx = 0; cbOutIdx < minerOutputs.size(); cbOutIdx++)
             {
                 CAmount amount = (arith_uint256(rewardTotal) * arith_uint256(minerOutputs[cbOutIdx].nValue) / arith_uint256(rewardTotalShareAmount)).GetLow64();
@@ -3803,23 +3803,23 @@ CBlockTemplate* CreateNewBlock(const CChainParams& chainparams, const std::vecto
                 rewardLeft -= amount;
 
                 // now make outputs for non-native, VRSC fees
-                if (verusFeeLeft)
+                if (notaryFeeLeft)
                 {
-                    CAmount verusFee = (arith_uint256(verusFees) * arith_uint256(minerOutputs[cbOutIdx].nValue) / arith_uint256(rewardTotalShareAmount)).GetLow64();
-                    if (verusFeeLeft <= verusFee || (cbOutIdx + 1) == minerOutputs.size())
+                    CAmount notaryFee = (arith_uint256(notaryFees) * arith_uint256(minerOutputs[cbOutIdx].nValue) / arith_uint256(rewardTotalShareAmount)).GetLow64();
+                    if (notaryFeeLeft <= notaryFee || (cbOutIdx + 1) == minerOutputs.size())
                     {
-                        verusFee = verusFeeLeft;
+                        notaryFee = notaryFeeLeft;
                     }
                     CTxDestination minerDestination;
-                    if (verusFee >= CFeePool::MIN_SHARE_SIZE && ExtractDestination(coinbaseTx.vout[cbOutIdx].scriptPubKey, minerDestination))
+                    if (notaryFee >= CFeePool::MIN_SHARE_SIZE && ExtractDestination(coinbaseTx.vout[cbOutIdx].scriptPubKey, minerDestination))
                     {
-                        CTokenOutput to = CTokenOutput(VERUS_CHAINID, verusFee);
+                        CTokenOutput to = CTokenOutput(VERUS_CHAINID, notaryFee);
                         coinbaseTx.vout[cbOutIdx].scriptPubKey = MakeMofNCCScript(CConditionObj<CTokenOutput>(EVAL_RESERVE_OUTPUT,
                                                                                   std::vector<CTxDestination>({minerDestination}),
                                                                                   1,
                                                                                   &to));
                     }
-                    verusFeeLeft -= verusFee;
+                    notaryFeeLeft -= notaryFee;
                 }
 
                 // we had to wait to update this here to ensure it represented a correct distribution ratio
@@ -4227,7 +4227,7 @@ static int ReadPackageTempC()
 static int ReadPackageTempC() { return -1; }
 #endif
 
-void static VerusStaker(CWallet *pwallet)
+void static LuckyStaker(CWallet *pwallet)
 {
     LogPrintf("Lucky Lode staker thread started\n");
     RenameThread("lucky-staker");
@@ -4326,7 +4326,7 @@ void static VerusStaker(CWallet *pwallet)
             // get height locally for consistent reporting
             int32_t newHeight = Mining_height;
 
-            if (newHeight > VERUS_MIN_STAKEAGE)
+            if (newHeight > LUCKY_MIN_STAKEAGE)
                 ptr = CreateNewBlockWithKey(reservekey, newHeight, true);
 
             // TODO - putting this output here tends to help mitigate announcing a staking height earlier than
@@ -4419,11 +4419,11 @@ void static VerusStaker(CWallet *pwallet)
                 printf("Found block %d \n", newHeight);
                 printf("staking reward %.8f %s!\n", (double)subsidy / (double)COIN, ASSETCHAINS_SYMBOL);
                 arith_uint256 post;
-                post.SetCompact(pblock->GetVerusPOSTarget());
+                post.SetCompact(pblock->GetLuckyPOSTarget());
 
                 CTransaction &sTx = pblock->vtx[pblock->vtx.size()-1];
                 printf("POS hash: %s  \ntarget:   %s\n\n",
-                    CTransaction::_GetVerusPOSHash(&(pblock->nNonce),
+                    CTransaction::_GetLuckyPOSHash(&(pblock->nNonce),
                                                      sTx.vin[0].prevout.hash,
                                                      sTx.vin[0].prevout.n,
                                                      newHeight,
@@ -4710,8 +4710,8 @@ void static BitcoinMiner_noeq()
             uint32_t savebits;
             savebits = pblock->nBits;
 
-            uint32_t solutionVersion = CConstVerusSolutionVector::Version(pblock->nSolution);
-            if (pblock->nVersion != CBlockHeader::VERUS_V2)
+            uint32_t solutionVersion = CConstLuckySolutionVector::Version(pblock->nSolution);
+            if (pblock->nVersion != CBlockHeader::LUCKY_V2)
             {
                 // Lucky Lode: on a fresh chain, ContextualCheckBlock wants
                 // GetVersionByHeight(height) — V1 when no VerusHash-era
@@ -5102,19 +5102,19 @@ void static BitcoinMiner_noeq()
             return;
         }
 
-        VERUS_MINTBLOCKS = (VERUS_MINTBLOCKS && ASSETCHAINS_LWMAPOS != 0);
+        LUCKY_MINTBLOCKS = (LUCKY_MINTBLOCKS && ASSETCHAINS_LWMAPOS != 0);
 
         if (fGenerate == true)
         {
             // Record that PoW mining is on (read back by getgenerate/
             // getmininginfo and by the post-op mining-restart calls).
-            // Staking-only (VERUS_MINTBLOCKS without fGenerate) must NOT
+            // Staking-only (LUCKY_MINTBLOCKS without fGenerate) must NOT
             // set this: a stake-only box reports generate:false and never
             // resumes PoW threads after wallet ops.
             OverrideSetArg("-gen", "1");
         }
 
-        if (fGenerate == true || VERUS_MINTBLOCKS)
+        if (fGenerate == true || LUCKY_MINTBLOCKS)
         {            if (VERUS_DEFAULT_ZADDR.size() > 0)
             {
                 if (defaultSaplingDest == boost::none)
@@ -5150,7 +5150,7 @@ void static BitcoinMiner_noeq()
         // add the PBaaS thread when mining or staking (the early return
         // above preserves this: staking starts its threads with
         // fGenerate == false).
-        if (!fGenerate && !VERUS_MINTBLOCKS)
+        if (!fGenerate && !LUCKY_MINTBLOCKS)
             return;
 
         minerThreads = new boost::thread_group();
@@ -5159,9 +5159,9 @@ void static BitcoinMiner_noeq()
         minerThreads->create_thread(boost::bind(&CConnectedChains::SubmissionThreadStub));
 
 #ifdef ENABLE_WALLET
-        if (VERUS_MINTBLOCKS && pwallet != NULL)
+        if (LUCKY_MINTBLOCKS && pwallet != NULL)
         {
-            minerThreads->create_thread(boost::bind(&VerusStaker, pwallet));
+            minerThreads->create_thread(boost::bind(&LuckyStaker, pwallet));
         }
 #endif
 

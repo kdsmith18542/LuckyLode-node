@@ -172,11 +172,11 @@ void AsyncRPCOperation_sendmany::main() {
     bool success = false;
 
 #ifdef ENABLE_MINING
-    // Pause everything including staking: save/clear VERUS_MINTBLOCKS so
+    // Pause everything including staking: save/clear LUCKY_MINTBLOCKS so
     // the stake-aware early return in GenerateBitcoins performs a full
     // teardown; restored below before resuming.
-    bool fWasMinting = VERUS_MINTBLOCKS;
-    VERUS_MINTBLOCKS = 0;
+    bool fWasMinting = LUCKY_MINTBLOCKS;
+    LUCKY_MINTBLOCKS = 0;
 #ifdef ENABLE_WALLET
     GenerateBitcoins(false, NULL, 0);
 #else
@@ -207,7 +207,7 @@ void AsyncRPCOperation_sendmany::main() {
 
 #ifdef ENABLE_MINING
   #ifdef ENABLE_WALLET
-    VERUS_MINTBLOCKS = fWasMinting;
+    LUCKY_MINTBLOCKS = fWasMinting;
     GenerateBitcoins(GetBoolArg("-gen",false), pwalletMain, GetArg("-genproclimit", 0));
   #else
     GenerateBitcoins(GetBoolArg("-gen",false), GetArg("-genproclimit", 0));
@@ -261,7 +261,7 @@ bool AsyncRPCOperation_sendmany::main_impl() {
 
     bool isFromSpecificID = false;
 
-    uint32_t solutionVersion = CConstVerusSolutionVector::GetVersionByHeight(chainActive.Height() + 1);
+    uint32_t solutionVersion = CConstLuckySolutionVector::GetVersionByHeight(chainActive.Height() + 1);
 
     // figure out just how much we need before getting inputs
     CAmount t_outputs_total = 0;

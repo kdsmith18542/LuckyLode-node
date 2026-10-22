@@ -68,11 +68,11 @@ CIdentity::CIdentity(const CTransaction &tx, int *voutNum, const uint160 &onlyTh
 
 bool CIdentity::IsInvalidMutation(const CIdentity &newIdentity, uint32_t height, uint32_t expiryHeight) const
 {
-    auto nSolVersion = CConstVerusSolutionVector::GetVersionByHeight(height);
+    auto nSolVersion = CConstLuckySolutionVector::GetVersionByHeight(height);
     if (parent != newIdentity.parent ||
         (nSolVersion < CActivationHeight::ACTIVATE_IDCONSENSUS2 && name != newIdentity.name) ||
-        (nSolVersion < CActivationHeight::ACTIVATE_VERUSVAULT && (newIdentity.IsLocked() || newIdentity.nVersion >= VERSION_VAULT)) ||
-        (nSolVersion >= CActivationHeight::ACTIVATE_VERUSVAULT && (newIdentity.nVersion < VERSION_VAULT ||
+        (nSolVersion < CActivationHeight::ACTIVATE_LUCKYVAULT && (newIdentity.IsLocked() || newIdentity.nVersion >= VERSION_VAULT)) ||
+        (nSolVersion >= CActivationHeight::ACTIVATE_LUCKYVAULT && (newIdentity.nVersion < VERSION_VAULT ||
                                                                   (newIdentity.systemID != (nVersion < VERSION_VAULT ? parent : systemID)))) ||
         (nSolVersion < CActivationHeight::ACTIVATE_PBAAS &&
          (newIdentity.HasActiveCurrency() || newIdentity.contentMultiMap.size() || newIdentity.nVersion >= VERSION_PBAAS)) ||
@@ -1076,8 +1076,8 @@ bool ValidateSpendingIdentityReservation(const CTransaction &tx, int32_t outNum,
     std::vector<CTxDestination> referrers;
     bool valid = true;
 
-    bool isVault = CConstVerusSolutionVector::GetVersionByHeight(height) >= CActivationHeight::ACTIVATE_VERUSVAULT;
-    bool isPBaaS = CConstVerusSolutionVector::GetVersionByHeight(height) >= CActivationHeight::ACTIVATE_PBAAS;
+    bool isVault = CConstLuckySolutionVector::GetVersionByHeight(height) >= CActivationHeight::ACTIVATE_LUCKYVAULT;
+    bool isPBaaS = CConstLuckySolutionVector::GetVersionByHeight(height) >= CActivationHeight::ACTIVATE_PBAAS;
 
     // get the primary currency to price in and apply any conversion rates
     CCurrencyDefinition issuingCurrency = issuingParent;
@@ -1867,9 +1867,9 @@ bool PrecheckIdentityReservation(const CTransaction &tx, int32_t outNum, CValida
     std::vector<CTxDestination> referrers;
     bool valid = true;
 
-    uint32_t networkVersion = CConstVerusSolutionVector::GetVersionByHeight(height);
+    uint32_t networkVersion = CConstLuckySolutionVector::GetVersionByHeight(height);
     bool isPBaaS = networkVersion >= CActivationHeight::ACTIVATE_PBAAS; // this is only Lucky Chains differences, not Lucky Vault
-    bool advancedIdentity = networkVersion >= CActivationHeight::ACTIVATE_VERUSVAULT;
+    bool advancedIdentity = networkVersion >= CActivationHeight::ACTIVATE_LUCKYVAULT;
 
     static const std::set<uint160> burnSet = {GetDestinationID(DecodeDestination("i5oFhZ8Bby47KHbnvomVDtrfd71HQFL7vN")),
                                               GetDestinationID(DecodeDestination("iBvu9M4kEzLYQmT2rB57rwQqfWUVUA9qub")),
@@ -2284,9 +2284,9 @@ bool PrecheckIdentityCommitment(const CTransaction &tx, int32_t outNum, CValidat
 {
     AssertLockHeld(cs_main);
 
-    uint32_t networkVersion = CConstVerusSolutionVector::GetVersionByHeight(height);
+    uint32_t networkVersion = CConstLuckySolutionVector::GetVersionByHeight(height);
     bool isPBaaS = networkVersion >= CActivationHeight::ACTIVATE_PBAAS; // this is only Lucky Chains differences, not Lucky Vault
-    bool advancedIdentity = networkVersion >= CActivationHeight::ACTIVATE_VERUSVAULT;
+    bool advancedIdentity = networkVersion >= CActivationHeight::ACTIVATE_LUCKYVAULT;
 
     COptCCParams p;
 
@@ -2469,9 +2469,9 @@ bool PrecheckIdentityPrimary(const CTransaction &tx, int32_t outNum, CValidation
 
     COptCCParams p, identityP;
 
-    uint32_t networkVersion = CConstVerusSolutionVector::GetVersionByHeight(height);
+    uint32_t networkVersion = CConstLuckySolutionVector::GetVersionByHeight(height);
     bool isPBaaS = networkVersion >= CActivationHeight::ACTIVATE_PBAAS; // this is only Lucky Chains differences, not Lucky Vault
-    bool advancedIdentity = networkVersion >= CActivationHeight::ACTIVATE_VERUSVAULT;
+    bool advancedIdentity = networkVersion >= CActivationHeight::ACTIVATE_LUCKYVAULT;
     bool isCoinbase = tx.IsCoinBase();
     bool isInSync = chainActive.Height() >= (height - 1);
 
@@ -3034,7 +3034,7 @@ bool ValidateIdentityPrimary(struct CCcontract_info *cp, Eval* eval, const CTran
         return eval->Error("unable to find chain tip");
     }
     uint32_t height = chainActive.LastTip()->GetHeight() + 1;
-    bool advancedIdentity = CVerusSolutionVector::GetVersionByHeight(height) >= CActivationHeight::ACTIVATE_VERUSVAULT;
+    bool advancedIdentity = CLuckySolutionVector::GetVersionByHeight(height) >= CActivationHeight::ACTIVATE_LUCKYVAULT;
 
     int idIndex;
     uint160 idID = oldIdentity.GetID();
@@ -3103,7 +3103,7 @@ bool ValidateIdentityRevoke(struct CCcontract_info *cp, Eval* eval, const CTrans
     }
     uint32_t height = chainActive.LastTip()->GetHeight() + 1;
 
-    bool advancedIdentity = CVerusSolutionVector::GetVersionByHeight(height) >= CActivationHeight::ACTIVATE_VERUSVAULT;
+    bool advancedIdentity = CLuckySolutionVector::GetVersionByHeight(height) >= CActivationHeight::ACTIVATE_LUCKYVAULT;
 
     int idIndex;
     CIdentity newIdentity(spendingTx, &idIndex, advancedIdentity ? oldIdentity.GetID() : uint160());
@@ -3257,7 +3257,7 @@ bool ValidateIdentityRecover(struct CCcontract_info *cp, Eval* eval, const CTran
     }
     uint32_t height = chainActive.LastTip()->GetHeight() + 1;
 
-    bool advancedIdentity = CVerusSolutionVector::GetVersionByHeight(height) >= CActivationHeight::ACTIVATE_VERUSVAULT;
+    bool advancedIdentity = CLuckySolutionVector::GetVersionByHeight(height) >= CActivationHeight::ACTIVATE_LUCKYVAULT;
 
     int idIndex;
     CIdentity newIdentity(spendingTx, &idIndex, advancedIdentity ? oldIdentity.GetID() : uint160());

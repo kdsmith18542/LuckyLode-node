@@ -69,7 +69,7 @@ using namespace std;
 extern void ThreadSendAlert();
 extern int32_t KOMODO_LOADINGBLOCKS;
 extern int32_t KOMODO_MININGTHREADS;
-extern bool VERUS_MINTBLOCKS;
+extern bool LUCKY_MINTBLOCKS;
 extern CTxDestination VERUS_DEFAULT_ARBADDRESS;
 extern std::vector<uint160> VERUS_ARBITRAGE_CURRENCIES;
 extern int64_t STORAGE_FEE_FACTOR;
@@ -206,7 +206,7 @@ void Shutdown()
     // Clear staking first (same reason as the `stop` RPC): with the
     // stake-aware early return, GenerateBitcoins(false) would otherwise
     // restart stake threads during shutdown.
-    VERUS_MINTBLOCKS = 0;
+    LUCKY_MINTBLOCKS = 0;
     GenerateBitcoins(false, NULL, 0);
 #else
     GenerateBitcoins(false, 0);
@@ -1277,34 +1277,34 @@ bool AppInit2(boost::thread_group& threadGroup, CScheduler& scheduler)
         CBlockHeader::SetVerusV2Hash();
         if (IsVerusMainnetActive())
         {
-            CConstVerusSolutionVector::activationHeight.SetActivationHeight(CActivationHeight::SOLUTION_VERUSV2, 310000, true);
-            CConstVerusSolutionVector::activationHeight.SetActivationHeight(CActivationHeight::SOLUTION_VERUSV3, 800200, true);
-            CConstVerusSolutionVector::activationHeight.SetActivationHeight(CActivationHeight::SOLUTION_VERUSV4, 800200, true);
-            CConstVerusSolutionVector::activationHeight.SetActivationHeight(CActivationHeight::SOLUTION_VERUSV5, 1053660, true);
-            CConstVerusSolutionVector::activationHeight.SetActivationHeight(CActivationHeight::SOLUTION_VERUSV5_1, 1053660, true);
-            CConstVerusSolutionVector::activationHeight.SetActivationHeight(CActivationHeight::SOLUTION_VERUSV6, 1796400, true);
-            CConstVerusSolutionVector::activationHeight.SetActivationHeight(CActivationHeight::SOLUTION_VERUSV7, 2549420, true);
-            CConstVerusSolutionVector::activationHeight.SetActivationHeight(CActivationHeight::SOLUTION_VERUSV8, 4141448, true);
+            CConstLuckySolutionVector::activationHeight.SetActivationHeight(CActivationHeight::SOLUTION_V2, 310000, true);
+            CConstLuckySolutionVector::activationHeight.SetActivationHeight(CActivationHeight::SOLUTION_V3, 800200, true);
+            CConstLuckySolutionVector::activationHeight.SetActivationHeight(CActivationHeight::SOLUTION_V4, 800200, true);
+            CConstLuckySolutionVector::activationHeight.SetActivationHeight(CActivationHeight::SOLUTION_V5, 1053660, true);
+            CConstLuckySolutionVector::activationHeight.SetActivationHeight(CActivationHeight::SOLUTION_V5_1, 1053660, true);
+            CConstLuckySolutionVector::activationHeight.SetActivationHeight(CActivationHeight::SOLUTION_V6, 1796400, true);
+            CConstLuckySolutionVector::activationHeight.SetActivationHeight(CActivationHeight::SOLUTION_V7, 2549420, true);
+            CConstLuckySolutionVector::activationHeight.SetActivationHeight(CActivationHeight::SOLUTION_V8, 4141448, true);
         }
         else if (IsVerusActive())
         {
-            CConstVerusSolutionVector::activationHeight.SetActivationHeight(CActivationHeight::SOLUTION_VERUSV2, 1, true);
-            CConstVerusSolutionVector::activationHeight.SetActivationHeight(CActivationHeight::SOLUTION_VERUSV3, 1, true);
-            CConstVerusSolutionVector::activationHeight.SetActivationHeight(CActivationHeight::SOLUTION_VERUSV4, 1, true);
-            CConstVerusSolutionVector::activationHeight.SetActivationHeight(CActivationHeight::SOLUTION_VERUSV5, 1, true);
-            CConstVerusSolutionVector::activationHeight.SetActivationHeight(CActivationHeight::SOLUTION_VERUSV5_1, 1, true);
-            CConstVerusSolutionVector::activationHeight.SetActivationHeight(CActivationHeight::SOLUTION_VERUSV6, 50, true);
-            CConstVerusSolutionVector::activationHeight.SetActivationHeight(CActivationHeight::SOLUTION_VERUSV7, 100, true);
+            CConstLuckySolutionVector::activationHeight.SetActivationHeight(CActivationHeight::SOLUTION_V2, 1, true);
+            CConstLuckySolutionVector::activationHeight.SetActivationHeight(CActivationHeight::SOLUTION_V3, 1, true);
+            CConstLuckySolutionVector::activationHeight.SetActivationHeight(CActivationHeight::SOLUTION_V4, 1, true);
+            CConstLuckySolutionVector::activationHeight.SetActivationHeight(CActivationHeight::SOLUTION_V5, 1, true);
+            CConstLuckySolutionVector::activationHeight.SetActivationHeight(CActivationHeight::SOLUTION_V5_1, 1, true);
+            CConstLuckySolutionVector::activationHeight.SetActivationHeight(CActivationHeight::SOLUTION_V6, 50, true);
+            CConstLuckySolutionVector::activationHeight.SetActivationHeight(CActivationHeight::SOLUTION_V7, 100, true);
         }
         else
         {
-            CConstVerusSolutionVector::activationHeight.SetActivationHeight(CActivationHeight::SOLUTION_VERUSV2, 1, true);
-            CConstVerusSolutionVector::activationHeight.SetActivationHeight(CActivationHeight::SOLUTION_VERUSV3, 1, true);
-            CConstVerusSolutionVector::activationHeight.SetActivationHeight(CActivationHeight::SOLUTION_VERUSV4, 1, true);
-            CConstVerusSolutionVector::activationHeight.SetActivationHeight(CActivationHeight::SOLUTION_VERUSV5, 1, true);
-            CConstVerusSolutionVector::activationHeight.SetActivationHeight(CActivationHeight::SOLUTION_VERUSV5_1, 1, true);
-            CConstVerusSolutionVector::activationHeight.SetActivationHeight(CActivationHeight::SOLUTION_VERUSV6, 1, true);
-            CConstVerusSolutionVector::activationHeight.SetActivationHeight(CActivationHeight::SOLUTION_VERUSV7, 1, true);
+            CConstLuckySolutionVector::activationHeight.SetActivationHeight(CActivationHeight::SOLUTION_V2, 1, true);
+            CConstLuckySolutionVector::activationHeight.SetActivationHeight(CActivationHeight::SOLUTION_V3, 1, true);
+            CConstLuckySolutionVector::activationHeight.SetActivationHeight(CActivationHeight::SOLUTION_V4, 1, true);
+            CConstLuckySolutionVector::activationHeight.SetActivationHeight(CActivationHeight::SOLUTION_V5, 1, true);
+            CConstLuckySolutionVector::activationHeight.SetActivationHeight(CActivationHeight::SOLUTION_V5_1, 1, true);
+            CConstLuckySolutionVector::activationHeight.SetActivationHeight(CActivationHeight::SOLUTION_V6, 1, true);
+            CConstLuckySolutionVector::activationHeight.SetActivationHeight(CActivationHeight::SOLUTION_V7, 1, true);
         }
     }
 
@@ -1939,7 +1939,7 @@ bool AppInit2(boost::thread_group& threadGroup, CScheduler& scheduler)
                     }
                 }
 
-                if (CConstVerusSolutionVector::GetVersionByHeight(chainActive.Height()) >= CActivationHeight::ACTIVATE_PBAAS)
+                if (CConstLuckySolutionVector::GetVersionByHeight(chainActive.Height()) >= CActivationHeight::ACTIVATE_PBAAS)
                 {
                     if (_IsVerusActive())
                     {
@@ -1951,8 +1951,8 @@ bool AppInit2(boost::thread_group& threadGroup, CScheduler& scheduler)
                     bool isHeightExplicit = false;
 
                     // check and verify solution version, if we are at or past version 8 and it isn't already set
-                    if (CConstVerusSolutionVector::Version(chainActive.LastTip()->nSolution.nSolution()) >= CActivationHeight::SOLUTION_VERUSV8 &&
-                        CConstVerusSolutionVector::activationHeight.GetVersionActivationHeight(CActivationHeight::SOLUTION_VERUSV8, &isHeightExplicit) >
+                    if (CConstLuckySolutionVector::Version(chainActive.LastTip()->nSolution.nSolution()) >= CActivationHeight::SOLUTION_V8 &&
+                        CConstLuckySolutionVector::activationHeight.GetVersionActivationHeight(CActivationHeight::SOLUTION_V8, &isHeightExplicit) >
                             chainActive.LastTip()->GetHeight())
                     {
                         if (isHeightExplicit)
@@ -1961,10 +1961,10 @@ bool AppInit2(boost::thread_group& threadGroup, CScheduler& scheduler)
                         }
                         // if block 1 is v8, set activation to block 1
                         if (chainActive.Height() > 0 &&
-                            chainActive[1]->nVersion == CBlock::VERUS_V2 &&
-                            CConstVerusSolutionVector::Version(chainActive[1]->nSolution.nSolution()) >= CActivationHeight::SOLUTION_VERUSV8)
+                            chainActive[1]->nVersion == CBlock::LUCKY_V2 &&
+                            CConstLuckySolutionVector::Version(chainActive[1]->nSolution.nSolution()) >= CActivationHeight::SOLUTION_V8)
                         {
-                            CConstVerusSolutionVector::activationHeight.SetActivationHeight(CConstVerusSolutionVector::Version(chainActive[1]->nSolution.nSolution()), 1, true);
+                            CConstLuckySolutionVector::activationHeight.SetActivationHeight(CConstLuckySolutionVector::Version(chainActive[1]->nSolution.nSolution()), 1, true);
                         }
                         else
                         {
@@ -2005,11 +2005,11 @@ bool AppInit2(boost::thread_group& threadGroup, CScheduler& scheduler)
                                 return InitError("Invalid blockchain - incorrect switchover to LuckyBridge solution version 8");
                             }
 
-                            if (CConstVerusSolutionVector::Version(pCheckIndex->nSolution.nSolution()) != CActivationHeight::SOLUTION_VERUSV8 ||
-                                CConstVerusSolutionVector::Version(pCheckIndex->pprev->nSolution.nSolution()) == CActivationHeight::SOLUTION_VERUSV8)
+                            if (CConstLuckySolutionVector::Version(pCheckIndex->nSolution.nSolution()) != CActivationHeight::SOLUTION_V8 ||
+                                CConstLuckySolutionVector::Version(pCheckIndex->pprev->nSolution.nSolution()) == CActivationHeight::SOLUTION_V8)
                             {
                                 // if we haven't switched because of not yet being at v7 solution, bisect to find the switch point
-                                if (CConstVerusSolutionVector::Version(pCheckIndex->nSolution.nSolution()) < CActivationHeight::SOLUTION_VERUSV7)
+                                if (CConstLuckySolutionVector::Version(pCheckIndex->nSolution.nSolution()) < CActivationHeight::SOLUTION_V7)
                                 {
                                     lowerBound = pCheckIndex->GetHeight();
                                     bracketLow = lowerBound;
@@ -2019,11 +2019,11 @@ bool AppInit2(boost::thread_group& threadGroup, CScheduler& scheduler)
                                     {
                                         midBlock = bracketLow + (((bracketHigh - bracketLow) == 1 && midBlock != bracketHigh) ? 1 : ((bracketHigh - bracketLow) >> 1));
                                         pCheckIndex = chainActive[midBlock];
-                                        if (CConstVerusSolutionVector::Version(pCheckIndex->nSolution.nSolution()) < CActivationHeight::SOLUTION_VERUSV8)
+                                        if (CConstLuckySolutionVector::Version(pCheckIndex->nSolution.nSolution()) < CActivationHeight::SOLUTION_V8)
                                         {
                                             bracketLow = midBlock;
                                         }
-                                        else if (CConstVerusSolutionVector::Version(pCheckIndex->pprev->nSolution.nSolution()) < CActivationHeight::SOLUTION_VERUSV8)
+                                        else if (CConstLuckySolutionVector::Version(pCheckIndex->pprev->nSolution.nSolution()) < CActivationHeight::SOLUTION_V8)
                                         {
                                             // found it
                                             break;
@@ -2035,10 +2035,10 @@ bool AppInit2(boost::thread_group& threadGroup, CScheduler& scheduler)
                                     } while (bracketHigh != bracketLow &&
                                              midBlock != lowerBound &&
                                              midBlock != upperBound &&
-                                             !(CConstVerusSolutionVector::Version(pCheckIndex->nSolution.nSolution()) >= CActivationHeight::SOLUTION_VERUSV8 &&
-                                               CConstVerusSolutionVector::Version(pCheckIndex->pprev->nSolution.nSolution()) < CActivationHeight::SOLUTION_VERUSV8));
+                                             !(CConstLuckySolutionVector::Version(pCheckIndex->nSolution.nSolution()) >= CActivationHeight::SOLUTION_V8 &&
+                                               CConstLuckySolutionVector::Version(pCheckIndex->pprev->nSolution.nSolution()) < CActivationHeight::SOLUTION_V8));
 
-                                    if (CConstVerusSolutionVector::Version(pCheckIndex->pprev->nSolution.nSolution()) >= CActivationHeight::SOLUTION_VERUSV7)
+                                    if (CConstLuckySolutionVector::Version(pCheckIndex->pprev->nSolution.nSolution()) >= CActivationHeight::SOLUTION_V7)
                                     {
                                         return InitError("Invalid blockchain, incorrect switchover to LuckyBridge solution version 8 from version 7");
                                     }
@@ -2049,7 +2049,7 @@ bool AppInit2(boost::thread_group& threadGroup, CScheduler& scheduler)
                                 }
                             }
 
-                            CConstVerusSolutionVector::activationHeight.SetActivationHeight(CActivationHeight::SOLUTION_VERUSV8, midBlock, false);
+                            CConstLuckySolutionVector::activationHeight.SetActivationHeight(CActivationHeight::SOLUTION_V8, midBlock, false);
                         }
                     }
                     ConnectedChains.CheckOracleUpgrades();
@@ -2466,7 +2466,7 @@ bool AppInit2(boost::thread_group& threadGroup, CScheduler& scheduler)
     // Generate coins in the background
  #ifdef ENABLE_WALLET
     // Lucky Lode: regtest-only stake-maturity override for staking tests.
-    // VERUS_MIN_STAKEAGE is read as a global by the wallet (which UTXOs
+    // LUCKY_MIN_STAKEAGE is read as a global by the wallet (which UTXOs
     // are stakeable) and by validation; assigning it here keeps every
     // reader consistent. Hard-gated to regtest and logged loudly — a
     // consensus-affecting test knob, never for shared chains.
@@ -2474,11 +2474,11 @@ bool AppInit2(boost::thread_group& threadGroup, CScheduler& scheduler)
     // -verus-* spellings stay readable so existing regtest recipes keep
     // working (both are hard-gated to regtest either way).
     if (Params().NetworkIDString() == "regtest" && (IsArgSet("-lucky-min-stakeage") || IsArgSet("-verus-min-stakeage"))) {
-        extern int32_t VERUS_MIN_STAKEAGE;
-        VERUS_MIN_STAKEAGE = GetArg(IsArgSet("-lucky-min-stakeage") ? "-lucky-min-stakeage" : "-verus-min-stakeage", 150);
-        if (VERUS_MIN_STAKEAGE < 1)
-            VERUS_MIN_STAKEAGE = 1;
-        LogPrintf("regtest: VERUS_MIN_STAKEAGE overridden to %d\n", VERUS_MIN_STAKEAGE);
+        extern int32_t LUCKY_MIN_STAKEAGE;
+        LUCKY_MIN_STAKEAGE = GetArg(IsArgSet("-lucky-min-stakeage") ? "-lucky-min-stakeage" : "-verus-min-stakeage", 150);
+        if (LUCKY_MIN_STAKEAGE < 1)
+            LUCKY_MIN_STAKEAGE = 1;
+        LogPrintf("regtest: LUCKY_MIN_STAKEAGE overridden to %d\n", LUCKY_MIN_STAKEAGE);
     }
     if (Params().NetworkIDString() == "regtest" && (IsArgSet("-lucky-coinbase-maturity") || IsArgSet("-verus-coinbase-maturity"))) {
         extern int COINBASE_MATURITY;
@@ -2487,7 +2487,7 @@ bool AppInit2(boost::thread_group& threadGroup, CScheduler& scheduler)
             COINBASE_MATURITY = 1;
         LogPrintf("regtest: COINBASE_MATURITY overridden to %d\n", COINBASE_MATURITY);
     }
-    VERUS_MINTBLOCKS = GetBoolArg("-mint", false);
+    LUCKY_MINTBLOCKS = GetBoolArg("-mint", false);
     // Staking (-mint) and PoW mining (-gen) are independent switches, the
     // same model as the setgenerate RPC (`true 0` = stake-only). -mint no
     // longer implies -gen: a staking box must not silently burn hashpower.
@@ -2525,7 +2525,7 @@ bool AppInit2(boost::thread_group& threadGroup, CScheduler& scheduler)
     // This prevents potential hangs from mining threads waiting for initialization
  #ifdef ENABLE_WALLET
     if (pwalletMain || !GetArg("-mineraddress", "").empty())
-        // NOTE: pass `gen` only — staking rides on VERUS_MINTBLOCKS inside
+        // NOTE: pass `gen` only — staking rides on LUCKY_MINTBLOCKS inside
         // GenerateBitcoins (staker + submission threads start without
         // fGenerate). Passing `gen || MINTBLOCKS` here used to re-arm -gen
         // and misreport generate:true on stake-only boxes.

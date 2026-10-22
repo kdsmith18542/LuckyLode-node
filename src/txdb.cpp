@@ -1050,7 +1050,7 @@ UniValue CBlockTreeDB::GenerateAdjustmentTransactions(const CCurrencyValueMap &c
     std::set<CUTXORef> utxosRead;
 
     // adjustment transactions relate to PBaaS currencies
-    int64_t startingHeight = CConstVerusSolutionVector::activationHeight.GetVersionActivationHeight(CActivationHeight::ACTIVATE_PBAAS);
+    int64_t startingHeight = CConstLuckySolutionVector::activationHeight.GetVersionActivationHeight(CActivationHeight::ACTIVATE_PBAAS);
 
     if (startingHeight > chainActive.Height())
     {
@@ -2566,7 +2566,7 @@ bool CBlockTreeDB::LoadBlockIndexGuts(std::function<CBlockIndex*(const uint256&)
             if (pcursor->GetValue(diskindex)) {
                 // Construct block index object
 #ifdef VERUSHASHDEBUG
-                if (diskindex.nVersion == CBlockHeader::VERUS_V2)
+                if (diskindex.nVersion == CBlockHeader::LUCKY_V2)
                 {
                     printf("legacy PoW block header: %s\n", diskindex.ToString().c_str());
                 }

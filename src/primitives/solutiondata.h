@@ -22,27 +22,27 @@ class CActivationHeight
             MAX_HEIGHT = INT_MAX,
             DEFAULT_UPGRADE_HEIGHT = MAX_HEIGHT,
             NUM_VERSIONS = 9,   // NEVER ADD A NEW VERSION WITHOUT UPDATING THE ARRAY BELOW WITH ALL ENTRIES PRESENT
-            SOLUTION_VERUSV1 = 0,
-            SOLUTION_VERUSV2 = 1,
-            SOLUTION_VERUSV3 = 2,
-            SOLUTION_VERUSV4 = 3,
-            SOLUTION_VERUSV5 = 4,
-            SOLUTION_VERUSV5_1 = 5,
-            SOLUTION_VERUSV6 = 6,
-            SOLUTION_VERUSV7 = 7,
-            SOLUTION_VERUSV8 = 8,
-            ACTIVATE_VERUSHASH2 = SOLUTION_VERUSV2,
-            ACTIVATE_EXTENDEDSOLUTION = SOLUTION_VERUSV3,
-            ACTIVATE_IDENTITY = SOLUTION_VERUSV4,
-            ACTIVATE_VERUSHASH2_1 = SOLUTION_VERUSV4,
-            ACTIVATE_EXTENDEDSTAKE = SOLUTION_VERUSV5,
-            ACTIVATE_IDCONSENSUS2 = SOLUTION_VERUSV5,
-            ACTIVATE_VERUSHASH2_2 = SOLUTION_VERUSV5,
-            ACTIVATE_PBAAS_HEADER = SOLUTION_VERUSV5_1,
-            ACTIVATE_STAKEHEADER = SOLUTION_VERUSV6,
-            ACTIVATE_VERUSVAULT = SOLUTION_VERUSV6,
-            ACTIVATE_PBAAS = SOLUTION_VERUSV7,
-            ACTIVATE_PBAAS_HARDEN1 = SOLUTION_VERUSV8
+            SOLUTION_V1 = 0,
+            SOLUTION_V2 = 1,
+            SOLUTION_V3 = 2,
+            SOLUTION_V4 = 3,
+            SOLUTION_V5 = 4,
+            SOLUTION_V5_1 = 5,
+            SOLUTION_V6 = 6,
+            SOLUTION_V7 = 7,
+            SOLUTION_V8 = 8,
+            ACTIVATE_VERUSHASH2 = SOLUTION_V2,
+            ACTIVATE_EXTENDEDSOLUTION = SOLUTION_V3,
+            ACTIVATE_IDENTITY = SOLUTION_V4,
+            ACTIVATE_VERUSHASH2_1 = SOLUTION_V4,
+            ACTIVATE_EXTENDEDSTAKE = SOLUTION_V5,
+            ACTIVATE_IDCONSENSUS2 = SOLUTION_V5,
+            ACTIVATE_VERUSHASH2_2 = SOLUTION_V5,
+            ACTIVATE_PBAAS_HEADER = SOLUTION_V5_1,
+            ACTIVATE_STAKEHEADER = SOLUTION_V6,
+            ACTIVATE_LUCKYVAULT = SOLUTION_V6,
+            ACTIVATE_PBAAS = SOLUTION_V7,
+            ACTIVATE_PBAAS_HARDEN1 = SOLUTION_V8
         };
         bool active;
         int32_t heights[NUM_VERSIONS];
@@ -171,7 +171,7 @@ public:
 
     // header
     static const size_t ID_OFFSET = 0;                              // offset of 32 byte ID in serialized stream
-    static const int32_t CURRENT_VERSION = CPOSNonce::VERUS_V2;
+    static const int32_t CURRENT_VERSION = CPOSNonce::LUCKY_V2;
     static const int32_t CURRENT_VERSION_MASK = 0x0000ffff;         // for compatibility
 
     CPBaaSBlockHeader()
@@ -302,7 +302,7 @@ class CPBaaSSolutionDescriptor
         }
 };
 
-class CConstVerusSolutionVector
+class CConstLuckySolutionVector
 {
     public:
         static const bool SOLUTION_SIZE_FIXED = true;
@@ -312,7 +312,7 @@ class CConstVerusSolutionVector
 
         static CActivationHeight activationHeight;
 
-        CConstVerusSolutionVector() {}
+        CConstLuckySolutionVector() {}
 
         static uint32_t GetVersionByHeight(uint32_t height)
         {
@@ -499,15 +499,15 @@ class CConstVerusSolutionVector
         }
 };
 
-class CVerusSolutionVector
+class CLuckySolutionVector
 {
     private:
         std::vector<unsigned char> &vch;
 
     public:
-        static CConstVerusSolutionVector solutionTools;
+        static CConstLuckySolutionVector solutionTools;
 
-        CVerusSolutionVector(std::vector<unsigned char> &_vch) : vch(_vch) { }
+        CLuckySolutionVector(std::vector<unsigned char> &_vch) : vch(_vch) { }
 
         static uint32_t GetVersionByHeight(uint32_t height)
         {
@@ -595,7 +595,7 @@ class CVerusSolutionVector
             else
             {
                 // calculate number of bytes, minus the OVERHEAD_SIZE byte version and extra nonce at the end of the solution
-                len = (vch.size() - (CConstVerusSolutionVector::ReservedTail(vch) + HeadersOverheadSize()));
+                len = (vch.size() - (CConstLuckySolutionVector::ReservedTail(vch) + HeadersOverheadSize()));
             }
 
             return len < 0 ? 0 : (uint32_t)len;

@@ -97,7 +97,7 @@ static int AppInitRPC(int argc, char* argv[])
     ParseParameters(argc, argv);
     komodo_args(argv[0]);
     if (argc<2 || IsArgSet("-?") || IsArgSet("-h") || IsArgSet("-help") || IsArgSet("-version")) {
-        std::string strUsage = _("Lucky Lode RPC client version") + " " + _(VERUS_VERSION) + "\n" + PrivacyInfo();
+        std::string strUsage = _("Lucky Lode RPC client version") + " " + _(LUCKYD_VERSION) + "\n" + PrivacyInfo();
         if (!IsArgSet("-version")) {      strUsage += "\n" + _("Usage:") + "\n" +
                   "  lucky [options] <command> [params]  " + _("Send command to the node") + "\n" +
                   "  lucky [options] help                " + _("List commands") + "\n" +

@@ -48,7 +48,7 @@ extern char ASSETCHAINS_SYMBOL[KOMODO_ASSETCHAIN_MAXLEN];
 extern uint32_t ASSETCHAINS_STARTING_DIFF;
 extern uint64_t ASSETCHAINS_STAKED;
 extern int32_t KOMODO_MININGTHREADS;
-extern bool VERUS_MINTBLOCKS;
+extern bool LUCKY_MINTBLOCKS;
 extern uint8_t NOTARY_PUBKEY33[33];
 extern uint160 ASSETCHAINS_CHAINID;
 extern uint160 VERUS_CHAINID;
@@ -2000,9 +2000,9 @@ bool CConnectedChains::GetLastSourceImport(const uint160 &sourceSystemID,
 
 void CheckPBaaSAPIsValid()
 {
-    //printf("Solution version running: %d\n\n", CConstVerusSolutionVector::activationHeight.ActiveVersion(chainActive.LastTip()->GetHeight()));
+    //printf("Solution version running: %d\n\n", CConstLuckySolutionVector::activationHeight.ActiveVersion(chainActive.LastTip()->GetHeight()));
     if (!chainActive.LastTip() ||
-        CConstVerusSolutionVector::activationHeight.ActiveVersion(chainActive.LastTip()->GetHeight() + 1) < CConstVerusSolutionVector::activationHeight.ACTIVATE_PBAAS)
+        CConstLuckySolutionVector::activationHeight.ActiveVersion(chainActive.LastTip()->GetHeight() + 1) < CConstLuckySolutionVector::activationHeight.ACTIVATE_PBAAS)
     {
         throw JSONRPCError(RPC_INVALID_REQUEST, "LuckyBridge not activated on blockchain.");
     }
@@ -2010,9 +2010,9 @@ void CheckPBaaSAPIsValid()
 
 void CheckVerusVaultAPIsValid()
 {
-    //printf("Solution version running: %d\n\n", CConstVerusSolutionVector::activationHeight.ActiveVersion(chainActive.LastTip()->GetHeight()));
+    //printf("Solution version running: %d\n\n", CConstLuckySolutionVector::activationHeight.ActiveVersion(chainActive.LastTip()->GetHeight()));
     if (!chainActive.LastTip() ||
-        CConstVerusSolutionVector::activationHeight.ActiveVersion(chainActive.LastTip()->GetHeight()) < CConstVerusSolutionVector::activationHeight.ACTIVATE_VERUSVAULT)
+        CConstLuckySolutionVector::activationHeight.ActiveVersion(chainActive.LastTip()->GetHeight()) < CConstLuckySolutionVector::activationHeight.ACTIVATE_LUCKYVAULT)
     {
         throw JSONRPCError(RPC_INVALID_REQUEST, "Lucky Vault and LuckyID Marketplace not activated on blockchain.");
     }
@@ -2021,7 +2021,7 @@ void CheckVerusVaultAPIsValid()
 void CheckIdentityAPIsValid()
 {
     if (!chainActive.LastTip() ||
-        CConstVerusSolutionVector::activationHeight.ActiveVersion(chainActive.LastTip()->GetHeight()) < CConstVerusSolutionVector::activationHeight.ACTIVATE_IDENTITY)
+        CConstLuckySolutionVector::activationHeight.ActiveVersion(chainActive.LastTip()->GetHeight()) < CConstLuckySolutionVector::activationHeight.ACTIVATE_IDENTITY)
     {
         throw JSONRPCError(RPC_INVALID_REQUEST, "Identity APIs not activated on blockchain.");
     }
@@ -5971,7 +5971,7 @@ UniValue getnotarizationproofs(const UniValue& params, bool fHelp)
                             CDataStream ds(SER_DISK, PROTOCOL_VERSION);
                             headerProofsSize += GetSerializeSize(ds, *(CChainObject<CBlockHeaderAndProof> *)evidence.evidence.chainObjects.back());
 
-                            if (blockHeaderProof.blockHeader.IsVerusPOSBlock())
+                            if (blockHeaderProof.blockHeader.IsLuckyPOSBlock())
                             {
                                 CValidationState state;
                                 if (!ProvePosBlock(rangeStart, chainActive[blockToProve], evidence, state, &headerProofsSize))
@@ -8685,9 +8685,9 @@ UniValue makeoffer(const UniValue& params, bool fHelp)
                 uniOldID[oneEl.first] = oneEl.second;
             }
 
-            uint32_t solVersion = CConstVerusSolutionVector::GetVersionByHeight(height + 1);
+            uint32_t solVersion = CConstLuckySolutionVector::GetVersionByHeight(height + 1);
 
-            if (solVersion >= CActivationHeight::ACTIVATE_VERUSVAULT)
+            if (solVersion >= CActivationHeight::ACTIVATE_LUCKYVAULT)
             {
                 uniOldID["version"] = solVersion < CActivationHeight::ACTIVATE_PBAAS ? (int64_t)CIdentity::VERSION_VAULT : (int64_t)CIdentity::VERSION_PBAAS;
                 if (oldID.nVersion < CIdentity::VERSION_VAULT)
@@ -9106,9 +9106,9 @@ UniValue takeoffer(const UniValue& params, bool fHelp)
             uniOldID[oneEl.first] = oneEl.second;
         }
 
-        uint32_t solVersion = CConstVerusSolutionVector::GetVersionByHeight(height + 1);
+        uint32_t solVersion = CConstLuckySolutionVector::GetVersionByHeight(height + 1);
 
-        if (solVersion >= CActivationHeight::ACTIVATE_VERUSVAULT)
+        if (solVersion >= CActivationHeight::ACTIVATE_LUCKYVAULT)
         {
             uniOldID["version"] = solVersion < CActivationHeight::ACTIVATE_PBAAS ? (int64_t)CIdentity::VERSION_VAULT : (int64_t)CIdentity::VERSION_PBAAS;
             if (oldID.nVersion < CIdentity::VERSION_VAULT)
@@ -14547,7 +14547,7 @@ UniValue registernamecommitment(const UniValue& params, bool fHelp)
     LOCK2(cs_main, pwalletMain->cs_wallet);
 
     uint32_t height = chainActive.Height();
-    bool isPBaaS = CConstVerusSolutionVector::GetVersionByHeight(height) >= CActivationHeight::ACTIVATE_PBAAS;
+    bool isPBaaS = CConstLuckySolutionVector::GetVersionByHeight(height) >= CActivationHeight::ACTIVATE_PBAAS;
 
     CCurrencyDefinition parentCurrency = ConnectedChains.ThisChain();
     uint160 parentID = parentCurrency.GetID();
@@ -14983,7 +14983,7 @@ UniValue registeridentity(const UniValue& params, bool fHelp)
     LOCK2(cs_main, pwalletMain->cs_wallet);
 
     uint32_t height = chainActive.Height();
-    uint32_t solVersion = CConstVerusSolutionVector::GetVersionByHeight(height + 1);
+    uint32_t solVersion = CConstLuckySolutionVector::GetVersionByHeight(height + 1);
     bool isPBaaS = solVersion >= CActivationHeight::ACTIVATE_PBAAS;
 
     CNameReservation reservation;
@@ -15010,7 +15010,7 @@ UniValue registeridentity(const UniValue& params, bool fHelp)
     {
         idVersion = CIdentity::VERSION_PBAAS;
     }
-    else if (solVersion >= CActivationHeight::ACTIVATE_VERUSVAULT)
+    else if (solVersion >= CActivationHeight::ACTIVATE_LUCKYVAULT)
     {
         idVersion = CIdentity::VERSION_VAULT;
     }
@@ -15863,7 +15863,7 @@ UniValue updateidentity(const UniValue& params, bool fHelp)
 
     uint32_t nHeight = chainActive.Height();
 
-    bool isPBaaS = CConstVerusSolutionVector::GetVersionByHeight(nHeight) >= CActivationHeight::ACTIVATE_PBAAS;
+    bool isPBaaS = CConstLuckySolutionVector::GetVersionByHeight(nHeight) >= CActivationHeight::ACTIVATE_PBAAS;
     if (isPBaaS && params.size() > 2)
     {
         tokenizedIDControl = uni_get_bool(params[2], false);
@@ -15892,9 +15892,9 @@ UniValue updateidentity(const UniValue& params, bool fHelp)
         uniOldID[oneEl.first] = oneEl.second;
     }
 
-    uint32_t solVersion = CConstVerusSolutionVector::GetVersionByHeight(nHeight + 1);
+    uint32_t solVersion = CConstLuckySolutionVector::GetVersionByHeight(nHeight + 1);
 
-    if (solVersion >= CActivationHeight::ACTIVATE_VERUSVAULT)
+    if (solVersion >= CActivationHeight::ACTIVATE_LUCKYVAULT)
     {
         uniOldID["version"] = solVersion < CActivationHeight::ACTIVATE_PBAAS ? (int64_t)CIdentity::VERSION_VAULT : (int64_t)CIdentity::VERSION_PBAAS;
         if (oldID.nVersion < CIdentity::VERSION_VAULT)
@@ -16695,7 +16695,7 @@ UniValue revokeidentity(const UniValue& params, bool fHelp)
     }
 
     uint32_t nHeight = chainActive.Height();
-    bool isPBaaS = CConstVerusSolutionVector::GetVersionByHeight(nHeight) >= CActivationHeight::ACTIVATE_PBAAS;
+    bool isPBaaS = CConstLuckySolutionVector::GetVersionByHeight(nHeight) >= CActivationHeight::ACTIVATE_PBAAS;
     if (isPBaaS && params.size() > 2)
     {
         tokenizedIDControl = uni_get_bool(params[2], false);
@@ -16770,13 +16770,13 @@ UniValue recoveridentity(const UniValue& params, bool fHelp)
     LOCK2(cs_main, pwalletMain->cs_wallet);
 
     uint32_t nHeight = chainActive.Height();
-    bool isPBaaS = CConstVerusSolutionVector::GetVersionByHeight(nHeight) >= CActivationHeight::ACTIVATE_PBAAS;
+    bool isPBaaS = CConstLuckySolutionVector::GetVersionByHeight(nHeight) >= CActivationHeight::ACTIVATE_PBAAS;
 
     UniValue newUniIdentity = params[0];
     if (uni_get_int(find_value(newUniIdentity,"version")) == 0)
     {
         newUniIdentity.pushKV("version",
-                              CConstVerusSolutionVector::GetVersionByHeight(nHeight + 1) >= CActivationHeight::ACTIVATE_VERUSVAULT ?
+                              CConstLuckySolutionVector::GetVersionByHeight(nHeight + 1) >= CActivationHeight::ACTIVATE_LUCKYVAULT ?
                                 CIdentity::VERSION_VAULT :
                                 CIdentity::VERSION_VERUSID);
     }
@@ -16922,7 +16922,7 @@ UniValue getidentity(const UniValue& params, bool fHelp)
         std::vector<std::pair<uint160, uint256>> contentmap;
         std::multimap<uint160, std::vector<unsigned char>> contentmultimap;
 
-        identity = CIdentity(CConstVerusSolutionVector::GetVersionByHeight(height) >= CActivationHeight::ACTIVATE_PBAAS ? CIdentity::VERSION_PBAAS : CIdentity::VERSION_VAULT,
+        identity = CIdentity(CConstLuckySolutionVector::GetVersionByHeight(height) >= CActivationHeight::ACTIVATE_PBAAS ? CIdentity::VERSION_PBAAS : CIdentity::VERSION_VAULT,
                              CIdentity::FLAG_ACTIVECURRENCY,
                              primary,
                              1,
@@ -17281,7 +17281,7 @@ UniValue getidentityhistory(const UniValue& params, bool fHelp)
         std::vector<std::pair<uint160, uint256>> contentmap;
         std::multimap<uint160, std::vector<unsigned char>> contentmultimap;
 
-        identity = CIdentity(CConstVerusSolutionVector::GetVersionByHeight(height) >= CActivationHeight::ACTIVATE_PBAAS ? CIdentity::VERSION_PBAAS : CIdentity::VERSION_VAULT,
+        identity = CIdentity(CConstLuckySolutionVector::GetVersionByHeight(height) >= CActivationHeight::ACTIVATE_PBAAS ? CIdentity::VERSION_PBAAS : CIdentity::VERSION_VAULT,
                              CIdentity::FLAG_ACTIVECURRENCY,
                              primary,
                              1,
@@ -17451,7 +17451,7 @@ UniValue getidentitycontent(const UniValue& params, bool fHelp)
         std::vector<std::pair<uint160, uint256>> contentmap;
         std::multimap<uint160, std::vector<unsigned char>> contentmultimap;
 
-        identity = CIdentity(CConstVerusSolutionVector::GetVersionByHeight(height) >= CActivationHeight::ACTIVATE_PBAAS ? CIdentity::VERSION_PBAAS : CIdentity::VERSION_VAULT,
+        identity = CIdentity(CConstLuckySolutionVector::GetVersionByHeight(height) >= CActivationHeight::ACTIVATE_PBAAS ? CIdentity::VERSION_PBAAS : CIdentity::VERSION_VAULT,
                              CIdentity::FLAG_ACTIVECURRENCY,
                              primary,
                              1,
@@ -17582,7 +17582,7 @@ UniValue listidentities(const UniValue& params, bool fHelp)
                         std::vector<CTxDestination> primary({CTxDestination(CKeyID(uint160()))});
                         std::vector<std::pair<uint160, uint256>> contentmap;
                         std::multimap<uint160, std::vector<unsigned char>> contentmultimap;
-                        oneIdentity = CIdentity(CConstVerusSolutionVector::GetVersionByHeight(oneIdentityHeight) >= CActivationHeight::ACTIVATE_PBAAS ?
+                        oneIdentity = CIdentity(CConstLuckySolutionVector::GetVersionByHeight(oneIdentityHeight) >= CActivationHeight::ACTIVATE_PBAAS ?
                                                                                                         CIdentity::VERSION_PBAAS :
                                                                                                         CIdentity::VERSION_VAULT,
                                                 CIdentity::FLAG_ACTIVECURRENCY,
@@ -17621,7 +17621,7 @@ UniValue listidentities(const UniValue& params, bool fHelp)
                         std::vector<CTxDestination> primary({CTxDestination(CKeyID(uint160()))});
                         std::vector<std::pair<uint160, uint256>> contentmap;
                         std::multimap<uint160, std::vector<unsigned char>> contentmultimap;
-                        oneIdentity = CIdentity(CConstVerusSolutionVector::GetVersionByHeight(oneIdentityHeight) >= CActivationHeight::ACTIVATE_PBAAS ?
+                        oneIdentity = CIdentity(CConstLuckySolutionVector::GetVersionByHeight(oneIdentityHeight) >= CActivationHeight::ACTIVATE_PBAAS ?
                                                                                                         CIdentity::VERSION_PBAAS :
                                                                                                         CIdentity::VERSION_VAULT,
                                                 CIdentity::FLAG_ACTIVECURRENCY,
@@ -17658,7 +17658,7 @@ UniValue listidentities(const UniValue& params, bool fHelp)
                         std::vector<CTxDestination> primary({CTxDestination(CKeyID(uint160()))});
                         std::vector<std::pair<uint160, uint256>> contentmap;
                         std::multimap<uint160, std::vector<unsigned char>> contentmultimap;
-                        oneIdentity = CIdentity(CConstVerusSolutionVector::GetVersionByHeight(oneIdentityHeight) >= CActivationHeight::ACTIVATE_PBAAS ?
+                        oneIdentity = CIdentity(CConstLuckySolutionVector::GetVersionByHeight(oneIdentityHeight) >= CActivationHeight::ACTIVATE_PBAAS ?
                                                                                                         CIdentity::VERSION_PBAAS :
                                                                                                         CIdentity::VERSION_VAULT,
                                                 CIdentity::FLAG_ACTIVECURRENCY,
@@ -18280,8 +18280,8 @@ UniValue addmergedblock(const UniValue& params, bool fHelp)
     if (!DecodeHexBlk(blk, params[0].get_str()))
         return "deserialize-invalid";
 
-    if (CConstVerusSolutionVector::IsAdvancedSolution(blk.nSolution) &&
-        !CConstVerusSolutionVector::IsDescriptorValid(blk.nSolution))
+    if (CConstLuckySolutionVector::IsAdvancedSolution(blk.nSolution) &&
+        !CConstLuckySolutionVector::IsDescriptorValid(blk.nSolution))
     {
         return "deserialize-invalid";
     }

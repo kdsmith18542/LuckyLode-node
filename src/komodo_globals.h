@@ -36,7 +36,7 @@ int32_t KOMODO_MININGTHREADS = 0,IS_KOMODO_NOTARY,USE_EXTERNAL_PUBKEY,KOMODO_CHO
 int32_t KOMODO_INSYNC,KOMODO_LASTMINED,prevKOMODO_LASTMINED,KOMODO_CCACTIVATE,JUMBLR_PAUSE = 1;
 std::string NOTARY_PUBKEY,ASSETCHAINS_NOTARIES,ASSETCHAINS_OVERRIDE_PUBKEY,DONATION_PUBKEY;
 uint8_t NOTARY_PUBKEY33[33],ASSETCHAINS_OVERRIDE_PUBKEY33[33],ASSETCHAINS_PUBLIC,ASSETCHAINS_PRIVATE;
-bool VERUS_MINTBLOCKS;
+bool LUCKY_MINTBLOCKS;
 
 char ASSETCHAINS_SYMBOL[KOMODO_ASSETCHAIN_MAXLEN], ASSETCHAINS_USERPASS[4096];
 
@@ -91,16 +91,16 @@ uint32_t ASSETCHAINS_STARTING_DIFF = 0;
 
 // Verus proof of stake controls
 int32_t ASSETCHAINS_LWMAPOS = 0;        // percentage of blocks should be PoS
-int32_t VERUS_BLOCK_POSUNITS = 1024;    // one block is 1000 units
-int32_t VERUS_MIN_STAKEAGE = 150;       // 2x this should also be a cap on the POS averaging window, or startup could be too easy
+int32_t LUCKY_BLOCK_POSUNITS = 1024;    // one block is 1000 units
+int32_t LUCKY_MIN_STAKEAGE = 150;       // 2x this should also be a cap on the POS averaging window, or startup could be too easy
 // Lucky Lode solo-PoS liveness (internal/22): bounded stake attempts per
 // height, carried in PoS nonce bits 32..39. Plain global like its
 // neighbors (single definition via main.o; extern decls at use sites).
 uint32_t MAX_STAKE_ATTEMPTS = 64;
-int32_t VERUS_CONSECUTIVE_POS_THRESHOLD = 7; // this gives us 9 in a row
-int32_t VERUS_PBAAS_CONSECUTIVE_POS_THRESHOLD = 3; // reduce to max 5 in a row
-int32_t VERUS_NOPOS_THRESHHOLD = 150;   // if we have no POS blocks in this many blocks, reset difficulty
-int32_t VERUS_PBAAS_NOPOS_THRESHHOLD = 150; // extend for PBaaS to enable more variability in staking supply
+int32_t LUCKY_CONSECUTIVE_POS_THRESHOLD = 7; // this gives us 9 in a row
+int32_t LUCKY_PBAAS_CONSECUTIVE_POS_THRESHOLD = 3; // reduce to max 5 in a row
+int32_t LUCKY_NOPOS_THRESHOLD = 150;   // if we have no POS blocks in this many blocks, reset difficulty
+int32_t LUCKY_PBAAS_NOPOS_THRESHOLD = 150; // extend for PBaaS to enable more variability in staking supply
 int32_t PBAAS_STARTBLOCK = 0;           // the parent blockchain must be notarized at this value in block 1 for it to be accepted
 int32_t PBAAS_ENDBLOCK = 0;             // end of life block for the PBaaS blockchain
 

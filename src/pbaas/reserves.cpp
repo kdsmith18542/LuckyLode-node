@@ -2824,10 +2824,10 @@ CReserveTransactionDescriptor::CReserveTransactionDescriptor(const CTransaction 
         return;
     }
 
-    int32_t solutionVersion = CConstVerusSolutionVector::activationHeight.ActiveVersion(nHeight);
+    int32_t solutionVersion = CConstLuckySolutionVector::activationHeight.ActiveVersion(nHeight);
 
     // reserve descriptor transactions cannot run until identity activates
-    if (!chainActive.LastTip() || solutionVersion < CConstVerusSolutionVector::activationHeight.ACTIVATE_IDENTITY)
+    if (!chainActive.LastTip() || solutionVersion < CConstLuckySolutionVector::activationHeight.ACTIVATE_IDENTITY)
     {
         return;
     }
@@ -2932,7 +2932,7 @@ CReserveTransactionDescriptor::CReserveTransactionDescriptor(const CTransaction 
 
                     if (p.version < p.VERSION_V3 ||
                         !p.vData.size() ||
-                        (solutionVersion < CActivationHeight::ACTIVATE_VERUSVAULT && identity.IsValid()) ||
+                        (solutionVersion < CActivationHeight::ACTIVATE_LUCKYVAULT && identity.IsValid()) ||
                         !(identity = CIdentity(p.vData[0])).IsValid())
                     {
                         flags &= ~IS_VALID;
@@ -4377,7 +4377,7 @@ bool CReserveTransactionDescriptor::AddReserveTransferImportOutputs(const CCurre
 
     CAmount currencyRegistrationFee = 0;
     CAmount totalNativeFee = 0;
-    CAmount totalVerusFee = 0;
+    CAmount totalNotaryFee = 0;
 
     bool updatedPostLaunch = ConnectedChains.CheckZeroViaOnlyPostLaunch(height);
     bool updatedPastTestFork4 = updatedPostLaunch && chainActive.Height() != -1 && chainActive.Height() >= (height - 1);
@@ -4693,7 +4693,7 @@ bool CReserveTransactionDescriptor::AddReserveTransferImportOutputs(const CCurre
                     }
                     auto nativeFeeIt = convertedFees.valueMap.find(systemDestID);
                     totalNativeFee = nativeFeeIt == convertedFees.valueMap.end() ? 0 : nativeFeeIt->second;
-                    totalVerusFee = !importCurrencyState.IsLaunchConfirmed() || systemDest.launchSystemID.IsNull() || !convertedFees.valueMap.count(systemDest.launchSystemID) ?
+                    totalNotaryFee = !importCurrencyState.IsLaunchConfirmed() || systemDest.launchSystemID.IsNull() || !convertedFees.valueMap.count(systemDest.launchSystemID) ?
                                         0 :
                                         convertedFees.valueMap[systemDest.launchSystemID];
                 }
@@ -4715,7 +4715,7 @@ bool CReserveTransactionDescriptor::AddReserveTransferImportOutputs(const CCurre
                             }
                             else if (importCurrencyState.IsLaunchConfirmed() && oneFee.first == VERUS_CHAINID)
                             {
-                                totalVerusFee += oneFee.second;
+                                totalNotaryFee += oneFee.second;
                             }
                         }
                     }
@@ -4760,18 +4760,18 @@ bool CReserveTransactionDescriptor::AddReserveTransferImportOutputs(const CCurre
                 static arith_uint256 bigSatoshi(SATOSHIDEN);
                 int64_t rewardRatio = (int64_t)((arith_uint256(exporterReward) * bigSatoshi) / exportFee).GetLow64();
                 CCurrencyValueMap exporterReserves;
-                if (totalVerusFee)
+                if (totalNotaryFee)
                 {
-                    exporterReserves.valueMap[systemDest.launchSystemID] = CCurrencyDefinition::CalculateRatioOfValue(totalVerusFee, rewardRatio);
+                    exporterReserves.valueMap[systemDest.launchSystemID] = CCurrencyDefinition::CalculateRatioOfValue(totalNotaryFee, rewardRatio);
                 }
 
                 if (notaryReward)
                 {
                     CCurrencyValueMap notaryReserves;
                     int64_t notaryRewardRatio = (int64_t)((arith_uint256(notaryReward) * bigSatoshi) / exportFee).GetLow64();
-                    if (totalVerusFee)
+                    if (totalNotaryFee)
                     {
-                        notaryReserves.valueMap[systemDest.launchSystemID] = CCurrencyDefinition::CalculateRatioOfValue(totalVerusFee, notaryRewardRatio);
+                        notaryReserves.valueMap[systemDest.launchSystemID] = CCurrencyDefinition::CalculateRatioOfValue(totalNotaryFee, notaryRewardRatio);
                     }
 
                     CTxDestination blockNotarizerDest = TransferDestinationToDestination(blockNotarizer);
@@ -6667,14 +6667,14 @@ bool CReserveTransactionDescriptor::AddReserveTransferImportOutputs(const CCurre
     {
         printf("importCurrencyState: %s\nnewCurrencyState: %s\n", importCurrencyState.ToUniValue().write(1,2).c_str(), newCurrencyState.ToUniValue().write(1,2).c_str());
         printf("newConvertedReservePool: %s\n", newConvertedReservePool.ToUniValue().write(1,2).c_str());
-        printf("ReserveInputs: %s\nspentCurrencyOut: %s\nReserveInputs - spentCurrencyOut: %s\ncheckAgainstInputs: %s\nreserveBalanceInMap: %s\ntotalNativeFee: %" PRId64 ", totalVerusFee: %" PRId64 "\n",
+        printf("ReserveInputs: %s\nspentCurrencyOut: %s\nReserveInputs - spentCurrencyOut: %s\ncheckAgainstInputs: %s\nreserveBalanceInMap: %s\ntotalNativeFee: %" PRId64 ", totalNotaryFee: %" PRId64 "\n",
             ReserveInputs.ToUniValue().write(1,2).c_str(),
             spentCurrencyOut.ToUniValue().write(1,2).c_str(),
             (ReserveInputs - spentCurrencyOut).ToUniValue().write(1,2).c_str(),
             checkAgainstInputs.ToUniValue().write(1,2).c_str(),
             reserveBalanceInMap.ToUniValue().write(1,2).c_str(),
             totalNativeFee,
-            totalVerusFee);
+            totalNotaryFee);
         //*/
 
         /*UniValue jsonTx(UniValue::VOBJ);

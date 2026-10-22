@@ -227,7 +227,7 @@ void GenerateBitcoins(bool b, CWallet *pw, int t);
 void GenerateBitcoins(bool b, int t);
 #endif
 
-extern bool VERUS_MINTBLOCKS;
+extern bool LUCKY_MINTBLOCKS;
 
 UniValue stop(const UniValue& params, bool fHelp)
 {
@@ -241,7 +241,7 @@ UniValue stop(const UniValue& params, bool fHelp)
     // Clear staking first: GenerateBitcoins(false) tears down, but with
     // the stake-aware early return it would otherwise restart stake
     // threads during shutdown.
-    VERUS_MINTBLOCKS = 0;
+    LUCKY_MINTBLOCKS = 0;
 #ifdef ENABLE_WALLET
     GenerateBitcoins(false, NULL, 0);
 #else

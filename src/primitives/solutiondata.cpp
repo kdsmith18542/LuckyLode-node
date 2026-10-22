@@ -6,12 +6,12 @@
 #include "primitives/block.h"
 
 const int32_t numVersions = 2;
-CActivationHeight CConstVerusSolutionVector::activationHeight = CActivationHeight();
-CConstVerusSolutionVector CVerusSolutionVector::solutionTools;
+CActivationHeight CConstLuckySolutionVector::activationHeight = CActivationHeight();
+CConstLuckySolutionVector CLuckySolutionVector::solutionTools;
 
 bool CCompactSolutionVector::useCompression = true;
 
-void CConstVerusSolutionVector::SetPBaaSHeader(std::vector<unsigned char> &vch, const CPBaaSBlockHeader &pbh, int32_t idx)
+void CConstLuckySolutionVector::SetPBaaSHeader(std::vector<unsigned char> &vch, const CPBaaSBlockHeader &pbh, int32_t idx)
 {
     if (idx < GetDescriptor(vch).numPBaaSHeaders)
     {
@@ -19,7 +19,7 @@ void CConstVerusSolutionVector::SetPBaaSHeader(std::vector<unsigned char> &vch, 
     }
 }
 
-bool CVerusSolutionVector::GetPBaaSHeader(CPBaaSBlockHeader &pbh, uint32_t idx) const
+bool CLuckySolutionVector::GetPBaaSHeader(CPBaaSBlockHeader &pbh, uint32_t idx) const
 {
     if (solutionTools.IsDescriptorValid(vch) && idx < GetNumPBaaSHeaders())
     {
@@ -36,8 +36,8 @@ CPBaaSPreHeader::CPBaaSPreHeader(const CBlockHeader &bh)
     hashFinalSaplingRoot = bh.hashFinalSaplingRoot;
     nNonce = bh.nNonce;
     nBits = bh.nBits;
-    CPBaaSSolutionDescriptor descr = CConstVerusSolutionVector::GetDescriptor(bh.nSolution);
-    if (descr.version >= CConstVerusSolutionVector::activationHeight.ACTIVATE_PBAAS_HEADER)
+    CPBaaSSolutionDescriptor descr = CConstLuckySolutionVector::GetDescriptor(bh.nSolution);
+    if (descr.version >= CConstLuckySolutionVector::activationHeight.ACTIVATE_PBAAS_HEADER)
     {
         hashPrevMMRRoot = descr.hashPrevMMRRoot;
         hashBlockMMRRoot = descr.hashBlockMMRRoot;
@@ -51,12 +51,12 @@ void CPBaaSPreHeader::SetBlockData(CBlockHeader &bh)
     bh.nBits = nBits;
     bh.nNonce = nNonce;
     bh.hashMerkleRoot = hashMerkleRoot;
-    CPBaaSSolutionDescriptor descr = CConstVerusSolutionVector::GetDescriptor(bh.nSolution);
-    if (descr.version >= CConstVerusSolutionVector::activationHeight.ACTIVATE_PBAAS)
+    CPBaaSSolutionDescriptor descr = CConstLuckySolutionVector::GetDescriptor(bh.nSolution);
+    if (descr.version >= CConstLuckySolutionVector::activationHeight.ACTIVATE_PBAAS)
     {
         descr.hashPrevMMRRoot = hashPrevMMRRoot;
         descr.hashBlockMMRRoot = hashBlockMMRRoot;
-        CConstVerusSolutionVector::SetDescriptor(bh.nSolution, descr);
+        CConstLuckySolutionVector::SetDescriptor(bh.nSolution, descr);
     }
 }
 

@@ -21,7 +21,7 @@
 
 #include "streams.h"
 
-extern int32_t VERUS_MIN_STAKEAGE;
+extern int32_t LUCKY_MIN_STAKEAGE;
 
 // this validates the format of the stake transaction and, optionally, whether or not it is
 // properly signed to spend the source stake.
@@ -109,11 +109,11 @@ bool ValidateStakeTransaction(const CCurrencyDefinition &sourceChain, const CTra
             if (it != mapBlockIndex.end() && (pindex = it->second) != NULL && chainActive.Contains(pindex))
             {
                 std::vector<std::vector<unsigned char>> vAddr = std::vector<std::vector<unsigned char>>();
-                bool extendedStake = CConstVerusSolutionVector::GetVersionByHeight(stakeParams.blkHeight) >= CActivationHeight::ACTIVATE_EXTENDEDSTAKE;
+                bool extendedStake = CConstLuckySolutionVector::GetVersionByHeight(stakeParams.blkHeight) >= CActivationHeight::ACTIVATE_EXTENDEDSTAKE;
                 COptCCParams p;
 
                 if (stakeParams.srcHeight == pindex->GetHeight() &&
-                    ((stakeParams.blkHeight - stakeParams.srcHeight) >= VERUS_MIN_STAKEAGE) &&
+                    ((stakeParams.blkHeight - stakeParams.srcHeight) >= LUCKY_MIN_STAKEAGE) &&
                     ((srcTx.vout[stakeTx.vin[0].prevout.n].scriptPubKey.IsPayToCryptoCondition(p) &&
                       extendedStake &&
                       p.IsValid() &&
@@ -363,7 +363,7 @@ bool RawPrecheckStakeGuardOutput(const CTransaction &tx, int32_t outNum, CValida
 
 bool PrecheckStakeGuardOutput(const CTransaction &tx, int32_t outNum, CValidationState &state, uint32_t height)
 {
-    if (CConstVerusSolutionVector::GetVersionByHeight(height) < CActivationHeight::ACTIVATE_EXTENDEDSTAKE)
+    if (CConstLuckySolutionVector::GetVersionByHeight(height) < CActivationHeight::ACTIVATE_EXTENDEDSTAKE)
     {
         return true;
     }

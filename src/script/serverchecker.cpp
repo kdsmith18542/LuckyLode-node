@@ -21,7 +21,7 @@
 #include <boost/tuple/tuple_comparison.hpp>
 
 extern uint32_t KOMODO_STOPAT;
-extern int32_t VERUS_MIN_STAKEAGE;
+extern int32_t LUCKY_MIN_STAKEAGE;
 extern CChain chainActive;
 
 static const uint32_t SC_PBAAS_NOTARIZATION_ORDER_HEIGHT = 3227685;
@@ -115,7 +115,7 @@ std::map<uint160, std::pair<int, std::vector<std::vector<unsigned char>>>> Serve
     COptCCParams p;
     std::map<uint160, std::pair<int, std::vector<std::vector<unsigned char>>>> idAddresses;
 
-    bool isPBaaS = CConstVerusSolutionVector::GetVersionByHeight(spendHeight) >= CActivationHeight::ACTIVATE_PBAAS;
+    bool isPBaaS = CConstLuckySolutionVector::GetVersionByHeight(spendHeight) >= CActivationHeight::ACTIVATE_PBAAS;
 
     uint32_t checkHeight = chainActive.Height() < spendHeight ? chainActive.Height() : spendHeight - 1;
     bool enforceIDStakeHeightLimit = isPBaaS;
@@ -166,7 +166,7 @@ std::map<uint160, std::pair<int, std::vector<std::vector<unsigned char>>>> Serve
                         // we won't enable a stake spend from an ID that isn't > min stakeage since
                         // its last modification
                         if (id.IsValidUnrevoked() &&
-                            ((isStake && (!enforceIDStakeHeightLimit || (idHeight && (spendHeight - idHeight) >= VERUS_MIN_STAKEAGE))) ||
+                            ((isStake && (!enforceIDStakeHeightLimit || (idHeight && (spendHeight - idHeight) >= LUCKY_MIN_STAKEAGE))) ||
                              sourceIsSelf ||
                              !id.IsLocked(spendHeight)))
                         {

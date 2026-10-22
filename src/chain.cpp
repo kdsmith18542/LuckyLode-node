@@ -32,15 +32,15 @@ void CChain::SetTip(CBlockIndex *pindex) {
     }
 }
 
-// returns false if unable to fast calculate the VerusPOSHash from the header.
+// returns false if unable to fast calculate the LuckyPOSHash from the header.
 // if it returns false, value is set to 0, but it can still be calculated from the full block
 // in that case. the only difference between this and the POS hash for the contest is that it is not divided by the value out
 // this is used as a source of entropy
-bool CBlockIndex::GetRawVerusPOSHash(uint256 &ret) const
+bool CBlockIndex::GetRawLuckyPOSHash(uint256 &ret) const
 {
     // if below the required height or no storage space in the solution, we can't get
     // a cached txid value to calculate the POSHash from the header
-    if (!(CPOSNonce::NewNonceActive(GetHeight()) && IsVerusPOSBlock()))
+    if (!(CPOSNonce::NewNonceActive(GetHeight()) && IsLuckyPOSBlock()))
     {
         ret = uint256();
         return false;
@@ -56,16 +56,16 @@ bool CBlockIndex::GetRawVerusPOSHash(uint256 &ret) const
     //                          )
     //    hashWriter << height;
     //    return hashWriter.GetHash();
-    ret = CBlockHeader::GetRawVerusPOSHash(nVersion, CConstVerusSolutionVector::Version(nSolution.nSolution()), ASSETCHAINS_MAGIC, nNonce, GetHeight());
+    ret = CBlockHeader::GetRawLuckyPOSHash(nVersion, CConstLuckySolutionVector::Version(nSolution.nSolution()), ASSETCHAINS_MAGIC, nNonce, GetHeight());
     return true;
 }
 
 // depending on the height of the block and its type, this returns the POS hash or the POW hash
-uint256 CBlockIndex::GetVerusEntropyHashComponent() const
+uint256 CBlockIndex::GetLuckyEntropyHashComponent() const
 {
     uint256 retVal;
     // if we qualify as PoW, use PoW hash, regardless of PoS state
-    if (GetRawVerusPOSHash(retVal))
+    if (GetRawLuckyPOSHash(retVal))
     {
         // POS hash
         return retVal;
@@ -109,9 +109,9 @@ uint256 CChain::GetVerusEntropyHash(int forHeight, int *pPOSheight, int *pPOWhei
         LogPrint("notarization", "%s: invalid height for entropy hash %d, chain height is %d\n", __func__, height, vChain.size() - 1);
         return retVal;
     }
-    if (CConstVerusSolutionVector::GetVersionByHeight(forHeight) < CActivationHeight::ACTIVATE_EXTENDEDSTAKE || height < 11)
+    if (CConstLuckySolutionVector::GetVersionByHeight(forHeight) < CActivationHeight::ACTIVATE_EXTENDEDSTAKE || height < 11)
     {
-        if (vChain[height]->IsVerusPOSBlock())
+        if (vChain[height]->IsLuckyPOSBlock())
         {
             posh = height;
         }
@@ -135,13 +135,13 @@ uint256 CChain::GetVerusEntropyHash(int forHeight, int *pPOSheight, int *pPOWhei
         {
             *pSecondHeight = -1;
         }
-        return vChain[height]->GetVerusEntropyHashComponent();
+        return vChain[height]->GetLuckyEntropyHashComponent();
     }
 
     int i;
     for (i = 0; i < 10; i++)
     {
-        if (posh == -1 && vChain[height - i]->IsVerusPOSBlock())
+        if (posh == -1 && vChain[height - i]->IsLuckyPOSBlock())
         {
             posh = height - i;
         }
@@ -164,15 +164,15 @@ uint256 CChain::GetVerusEntropyHash(int forHeight, int *pPOSheight, int *pPOWhei
     CVerusHashV2Writer hashWriter = CVerusHashV2Writer(SER_GETHASH, 0);
     if (posh != -1)
     {
-        hashWriter << vChain[posh]->GetVerusEntropyHashComponent();
+        hashWriter << vChain[posh]->GetLuckyEntropyHashComponent();
     }
     if (powh != -1)
     {
-        hashWriter << vChain[powh]->GetVerusEntropyHashComponent();
+        hashWriter << vChain[powh]->GetLuckyEntropyHashComponent();
     }
     if (alth != -1)
     {
-        hashWriter << vChain[alth]->GetVerusEntropyHashComponent();
+        hashWriter << vChain[alth]->GetLuckyEntropyHashComponent();
     }
 
     // secondBlockHeight is either less than first or -1 if there isn't one
@@ -274,11 +274,11 @@ CPartialTransactionProof CChain::GetPreHeaderProof(const CBlock &block, uint32_t
     if (block.IsAdvancedHeader() != 0)
     {
         std::vector<unsigned char> nSol((*this)[blockHeight]->nSolution.nSolution());
-        bool posEntropyInfo = CVerusSolutionVector(nSol).Version() >= CActivationHeight::ACTIVATE_PBAAS;
+        bool posEntropyInfo = CLuckySolutionVector(nSol).Version() >= CActivationHeight::ACTIVATE_PBAAS;
 
         if (posEntropyInfo)
         {
-            entropyHash = (*this)[blockHeight]->GetVerusEntropyHashComponent();
+            entropyHash = (*this)[blockHeight]->GetLuckyEntropyHashComponent();
         }
         BlockMMRange blockMMR(block.GetBlockMMRTree(entropyHash));
         BlockMMView blockMMV(blockMMR);

@@ -15,8 +15,8 @@
 #include "mmr.h"
 #include <curl/curl.h>
 // does not check for height / sapling upgrade, etc. this should not be used to get block proofs
-// on a pre-VerusPoP chain
-arith_uint256 GetCompactPower(const uint256 &nNonce, uint32_t nBits, int32_t version=CPOSNonce::VERUS_V2);
+// on a pre-LuckyPoP chain
+arith_uint256 GetCompactPower(const uint256 &nNonce, uint32_t nBits, int32_t version=CPOSNonce::LUCKY_V2);
 class CBlockHeader;
 
 // nodes for the entire chain MMR
@@ -34,9 +34,9 @@ class CBlockHeader
 public:
     // header
     static const size_t HEADER_SIZE = 4+32+32+32+4+4+32;  // excluding Equihash solution
-    static const int32_t CURRENT_VERSION = CPOSNonce::VERUS_V1;
+    static const int32_t CURRENT_VERSION = CPOSNonce::LUCKY_V1;
     static const int32_t CURRENT_VERSION_MASK = 0x0000ffff; // for compatibility
-    static const int32_t VERUS_V2 = CPOSNonce::VERUS_V2;
+    static const int32_t LUCKY_V2 = CPOSNonce::LUCKY_V2;
 
     static uint256 (CBlockHeader::*hashFunction)(int32_t height) const;
 
@@ -88,18 +88,18 @@ public:
     // returns 0 if pre-advanced header, 1 if post & PoW, -1 if post & PoS
     int32_t IsAdvancedHeader() const
     {
-        if (nVersion == VERUS_V2)
+        if (nVersion == LUCKY_V2)
         {
-            return CConstVerusSolutionVector::IsAdvancedSolution(nSolution);
+            return CConstLuckySolutionVector::IsAdvancedSolution(nSolution);
         }
         return 0;
     }
 
     bool HasCappedTransactionMap() const
     {
-        if (nVersion == VERUS_V2)
+        if (nVersion == LUCKY_V2)
         {
-            return CConstVerusSolutionVector::Version(nSolution) >= CActivationHeight::ACTIVATE_PBAAS_HARDEN1;
+            return CConstLuckySolutionVector::Version(nSolution) >= CActivationHeight::ACTIVATE_PBAAS_HARDEN1;
         }
         return 0;
     }
@@ -111,9 +111,9 @@ public:
 
     int32_t HasPBaaSHeader() const
     {
-        if (nVersion == VERUS_V2)
+        if (nVersion == LUCKY_V2)
         {
-            return CConstVerusSolutionVector::HasPBaaSHeader(nSolution);
+            return CConstLuckySolutionVector::HasPBaaSHeader(nSolution);
         }
         return 0;
     }
@@ -122,23 +122,23 @@ public:
     void GetExtraData(std::vector<unsigned char> &dataVec) const
     {
         std::vector<unsigned char> writeSolution = nSolution;
-        CVerusSolutionVector(writeSolution).GetExtraData(dataVec);
+        CLuckySolutionVector(writeSolution).GetExtraData(dataVec);
     }
 
     // set the extra data with a pointer to bytes and length
     bool SetExtraData(const unsigned char *pbegin, uint32_t len)
     {
-        return CVerusSolutionVector(nSolution).SetExtraData(pbegin, len);
+        return CLuckySolutionVector(nSolution).SetExtraData(pbegin, len);
     }
 
     void ResizeExtraData(uint32_t newSize)
     {
-        CVerusSolutionVector(nSolution).ResizeExtraData(newSize);
+        CLuckySolutionVector(nSolution).ResizeExtraData(newSize);
     }
 
     uint32_t ExtraDataLen()
     {
-        return CVerusSolutionVector(nSolution).ExtraDataLen();
+        return CLuckySolutionVector(nSolution).ExtraDataLen();
     }
 
     // returns -1 on failure, upon failure, pbbh is undefined and likely corrupted
@@ -148,14 +148,14 @@ public:
     bool GetPBaaSHeader(CPBaaSBlockHeader &pbh, uint32_t idx) const
     {
         // search in the solution for this header index and return it if found
-        if (nVersion == VERUS_V2 &&
-            CConstVerusSolutionVector::IsDescriptorValid(nSolution) &&
-            CConstVerusSolutionVector::HasPBaaSHeader(nSolution) != 0)
+        if (nVersion == LUCKY_V2 &&
+            CConstLuckySolutionVector::IsDescriptorValid(nSolution) &&
+            CConstLuckySolutionVector::HasPBaaSHeader(nSolution) != 0)
         {
-            CPBaaSSolutionDescriptor descr = CConstVerusSolutionVector::GetDescriptor(nSolution);
+            CPBaaSSolutionDescriptor descr = CConstLuckySolutionVector::GetDescriptor(nSolution);
             if (idx < descr.numPBaaSHeaders)
             {
-                pbh = *(CConstVerusSolutionVector::GetFirstPBaaSHeader(nSolution) + idx);
+                pbh = *(CConstLuckySolutionVector::GetFirstPBaaSHeader(nSolution) + idx);
                 return true;
             }
         }
@@ -166,7 +166,7 @@ public:
     int32_t NumPBaaSHeaders() const
     {
         // search in the solution for this header index and return it if found
-        CPBaaSSolutionDescriptor descr = CConstVerusSolutionVector::GetDescriptor(nSolution);
+        CPBaaSSolutionDescriptor descr = CConstLuckySolutionVector::GetDescriptor(nSolution);
         return descr.numPBaaSHeaders;
     }
 
@@ -176,7 +176,7 @@ public:
         CPBaaSBlockHeader pbbh = CPBaaSBlockHeader();
         int ix;
 
-        CVerusSolutionVector sv = CVerusSolutionVector(nSolution);
+        CLuckySolutionVector sv = CLuckySolutionVector(nSolution);
 
         if (sv.HasPBaaSHeader() && !pbh.IsNull() && idx < sv.GetNumPBaaSHeaders() && (((ix = GetPBaaSHeader(pbbh, pbh.chainID)) == -1) || ix == idx))
         {
@@ -194,7 +194,7 @@ public:
         // what we are updating, must be present
         if (!pbh.IsNull() && (idx = GetPBaaSHeader(pbbh, pbh.chainID)) != -1)
         {
-            CVerusSolutionVector(nSolution).SetPBaaSHeader(pbh, idx);
+            CLuckySolutionVector(nSolution).SetPBaaSHeader(pbh, idx);
             return true;
         }
         return false;
@@ -202,7 +202,7 @@ public:
 
     void DeletePBaaSHeader(uint32_t idx)
     {
-        CVerusSolutionVector sv = CVerusSolutionVector(nSolution);
+        CLuckySolutionVector sv = CLuckySolutionVector(nSolution);
         CPBaaSSolutionDescriptor descr = sv.Descriptor();
         if (idx < descr.numPBaaSHeaders)
         {
@@ -240,11 +240,11 @@ public:
         hashFinalSaplingRoot = uint256();
         nBits = 0;
         nNonce = uint256();
-        CPBaaSSolutionDescriptor descr = CConstVerusSolutionVector::GetDescriptor(nSolution);
-        if (descr.version >= CConstVerusSolutionVector::activationHeight.ACTIVATE_PBAAS_HEADER)
+        CPBaaSSolutionDescriptor descr = CConstLuckySolutionVector::GetDescriptor(nSolution);
+        if (descr.version >= CConstLuckySolutionVector::activationHeight.ACTIVATE_PBAAS_HEADER)
         {
             descr.hashPrevMMRRoot = descr.hashBlockMMRRoot = uint256();
-            CConstVerusSolutionVector::SetDescriptor(nSolution, descr);
+            CConstLuckySolutionVector::SetDescriptor(nSolution, descr);
         }
     }
 
@@ -283,21 +283,21 @@ public:
     uint256 GetLuckyHash(int32_t height) const;
     static void SetLuckyHash();
 
-    static uint256 GetRawVerusPOSHash(int32_t blockVersion, uint32_t solVersion, uint32_t magic, const uint256 &nonce, int32_t height, bool isVerusMainnet=true);
+    static uint256 GetRawLuckyPOSHash(int32_t blockVersion, uint32_t solVersion, uint32_t magic, const uint256 &nonce, int32_t height, bool isVerusMainnet=true);
 
     // returns the preheader for this block with another hash substituted for hashBlockMMRRoot, since this goes in the block MMR
     CPBaaSPreHeader GetSubstitutedPreHeader(const uint256 &pastHash) const;
 
-    bool GetRawVerusPOSHash(uint256 &ret, int32_t nHeight) const;
-    bool GetVerusPOSHash(arith_uint256 &ret, int32_t nHeight, CAmount value) const; // value is amount of stake tx
-    uint256 GetVerusEntropyHashComponent(uint32_t magic, int32_t height, bool isVerusMainnet) const;
-    uint256 GetVerusEntropyHashComponent(int32_t nHeight) const;
+    bool GetRawLuckyPOSHash(uint256 &ret, int32_t nHeight) const;
+    bool GetLuckyPOSHash(arith_uint256 &ret, int32_t nHeight, CAmount value) const; // value is amount of stake tx
+    uint256 GetLuckyEntropyHashComponent(uint32_t magic, int32_t height, bool isVerusMainnet) const;
+    uint256 GetLuckyEntropyHashComponent(int32_t nHeight) const;
     int64_t GetBlockTime() const
     {
         return (int64_t)nTime;
     }
 
-    uint32_t GetVerusPOSTarget() const
+    uint32_t GetLuckyPOSTarget() const
     {
         uint32_t nBits = 0;
 
@@ -309,14 +309,14 @@ public:
         return nBits;
     }
 
-    bool IsVerusPOSBlock() const
+    bool IsLuckyPOSBlock() const
     {
-        return nNonce.IsPOSNonce(nVersion) && GetVerusPOSTarget() != 0;
+        return nNonce.IsPOSNonce(nVersion) && GetLuckyPOSTarget() != 0;
     }
 
-    void SetVerusPOSTarget(uint32_t nBits)
+    void SetLuckyPOSTarget(uint32_t nBits)
     {
-        if (nVersion == VERUS_V2)
+        if (nVersion == LUCKY_V2)
         {
             CVerusHashV2Writer hashWriter = CVerusHashV2Writer(SER_GETHASH, PROTOCOL_VERSION);
 
@@ -354,18 +354,18 @@ public:
 
     void SetVersionByHeight(uint32_t height)
     {
-        CVerusSolutionVector vsv = CVerusSolutionVector(nSolution);
+        CLuckySolutionVector vsv = CLuckySolutionVector(nSolution);
         if (vsv.SetVersionByHeight(height) && vsv.Version() > 0)
         {
-            nVersion = VERUS_V2;
+            nVersion = LUCKY_V2;
         }
     }
 
     static uint32_t GetVersionByHeight(uint32_t height)
     {
-        if (CVerusSolutionVector::GetVersionByHeight(height) > 0)
+        if (CLuckySolutionVector::GetVersionByHeight(height) > 0)
         {
-            return VERUS_V2;
+            return LUCKY_V2;
         }
         else
         {

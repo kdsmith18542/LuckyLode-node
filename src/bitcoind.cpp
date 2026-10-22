@@ -106,7 +106,7 @@ bool AppInit(int argc, char* argv[])
     // Process help and version before taking care about datadir
     if (IsArgSet("-?") || IsArgSet("-h") ||  IsArgSet("-help") || IsArgSet("-version"))
     {
-        std::string strUsage = _("Lucky Lode Daemon") + " " + _("version") + " " + _(VERUS_VERSION) + "\n" + PrivacyInfo();
+        std::string strUsage = _("Lucky Lode Daemon") + " " + _("version") + " " + _(LUCKYD_VERSION) + "\n" + PrivacyInfo();
         if (IsArgSet("-version"))
         {
             strUsage += LicenseInfo();

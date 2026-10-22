@@ -26,7 +26,7 @@ int64_t komodo_current_supply(uint32_t nHeight);
 
 extern uint32_t ASSETCHAINS_ALGO, ASSETCHAINS_EQUIHASH, ASSETCHAINS_VERUSHASH, ASSETCHAINS_LUCKYHASH, ASSETCHAINS_STAKED, ASSETCHAINS_LWMAPOS, ASSETCHAINS_STARTING_DIFF;
 extern char ASSETCHAINS_SYMBOL[65];
-extern int32_t VERUS_BLOCK_POSUNITS, VERUS_CONSECUTIVE_POS_THRESHOLD, VERUS_PBAAS_CONSECUTIVE_POS_THRESHOLD, VERUS_NOPOS_THRESHHOLD, VERUS_PBAAS_NOPOS_THRESHHOLD;
+extern int32_t LUCKY_BLOCK_POSUNITS, LUCKY_CONSECUTIVE_POS_THRESHOLD, LUCKY_PBAAS_CONSECUTIVE_POS_THRESHOLD, LUCKY_NOPOS_THRESHOLD, LUCKY_PBAAS_NOPOS_THRESHOLD;
 unsigned int lwmaGetNextWorkRequired(const CBlockIndex* pindexLast, const CBlockHeader *pblock, const Consensus::Params& params);
 unsigned int lwmaCalculateNextWorkRequired(const CBlockIndex* pindexLast, const Consensus::Params& params);
 
@@ -177,7 +177,7 @@ unsigned int lwmaCalculateNextWorkRequired(const CBlockIndex* pindexLast, const 
     }
 
     int32_t nHeight = pindexLast ? pindexLast->GetHeight() : 0;
-    bool isPBaaS = CConstVerusSolutionVector::activationHeight.ActiveVersion(nHeight + 1) >= CActivationHeight::ACTIVATE_PBAAS;
+    bool isPBaaS = CConstLuckySolutionVector::activationHeight.ActiveVersion(nHeight + 1) >= CActivationHeight::ACTIVATE_PBAAS;
 
     if (ASSETCHAINS_ALGO == ASSETCHAINS_EQUIHASH)
     {
@@ -207,7 +207,7 @@ unsigned int lwmaCalculateNextWorkRequired(const CBlockIndex* pindexLast, const 
     int targetShift = 0;
     uint32_t height = pindexLast->GetHeight() + 1;
 
-    if (_IsVerusMainnetActive() && CConstVerusSolutionVector::activationHeight.ActiveVersion(height) >= CConstVerusSolutionVector::activationHeight.SOLUTION_VERUSV2)
+    if (_IsVerusMainnetActive() && CConstLuckySolutionVector::activationHeight.ActiveVersion(height) >= CConstLuckySolutionVector::activationHeight.SOLUTION_V2)
     {
         targetShift = VERUSHASH2_SHIFT;
         bnLimit <<= targetShift;
@@ -228,7 +228,7 @@ unsigned int lwmaCalculateNextWorkRequired(const CBlockIndex* pindexLast, const 
         // The factor is a part of the final equation. However we divide
         // here to avoid potential overflow.
         bnTmp.SetCompact(pindexNext->nBits);
-        if (targetShift && !(CConstVerusSolutionVector::activationHeight.ActiveVersion(pindexNext->GetHeight()) > CConstVerusSolutionVector::activationHeight.SOLUTION_VERUSV1))
+        if (targetShift && !(CConstLuckySolutionVector::activationHeight.ActiveVersion(pindexNext->GetHeight()) > CConstLuckySolutionVector::activationHeight.SOLUTION_V1))
         {
             bnTmp <<= targetShift;
         }
@@ -263,26 +263,26 @@ unsigned int lwmaCalculateNextWorkRequired(const CBlockIndex* pindexLast, const 
 //    return {maxConsecutivePos, maxConsecutiveNoPos, nProofOfWorkBlockPOSUnits, bnLimit, nProofOfStakeDefault};
 std::tuple<int32_t, int32_t, int32_t, arith_uint256, uint32_t> GetPoSCheckParams(uint32_t nHeight, uint32_t lastTime, const Consensus::Params& params)
 {
-    int32_t maxConsecutivePos = VERUS_CONSECUTIVE_POS_THRESHOLD;
-    int32_t maxConsecutiveNoPos = VERUS_NOPOS_THRESHHOLD;
-    int32_t nProofOfWorkBlockPOSUnits = VERUS_BLOCK_POSUNITS;
+    int32_t maxConsecutivePos = LUCKY_CONSECUTIVE_POS_THRESHOLD;
+    int32_t maxConsecutiveNoPos = LUCKY_NOPOS_THRESHOLD;
+    int32_t nProofOfWorkBlockPOSUnits = LUCKY_BLOCK_POSUNITS;
 
     arith_uint256 bnLimit = UintToArith256(params.posLimit);
     uint32_t nProofOfStakeDefault = bnLimit.GetCompact();
 
-    if (CConstVerusSolutionVector::activationHeight.ActiveVersion(nHeight + 1) >= CActivationHeight::ACTIVATE_PBAAS)
+    if (CConstLuckySolutionVector::activationHeight.ActiveVersion(nHeight + 1) >= CActivationHeight::ACTIVATE_PBAAS)
     {
-        maxConsecutivePos = VERUS_PBAAS_CONSECUTIVE_POS_THRESHOLD;
-        maxConsecutiveNoPos = VERUS_PBAAS_NOPOS_THRESHHOLD;
+        maxConsecutivePos = LUCKY_PBAAS_CONSECUTIVE_POS_THRESHOLD;
+        maxConsecutiveNoPos = LUCKY_PBAAS_NOPOS_THRESHOLD;
 
         // due to constraining maximum consecutive PoS blocks, we use this bias to adjust to 50%
         if (PBAAS_TESTMODE && lastTime < PBAAS_TESTFORK_TIME)
         {
-            nProofOfWorkBlockPOSUnits += (VERUS_BLOCK_POSUNITS / 20);
+            nProofOfWorkBlockPOSUnits += (LUCKY_BLOCK_POSUNITS / 20);
         }
         else
         {
-            nProofOfWorkBlockPOSUnits += (VERUS_BLOCK_POSUNITS / 10);
+            nProofOfWorkBlockPOSUnits += (LUCKY_BLOCK_POSUNITS / 10);
         }
 
         // the default staking difficulty is based on an expectation of 25% of the supply staking, which if facing 100%, will not be catastrophic
@@ -371,9 +371,9 @@ uint32_t lwmaGetNextPOSRequired(const CBlockIndex* pindexLast, const Consensus::
 
         CBlockHeader hdr = pindexFirst->GetBlockHeader();
 
-        if (hdr.IsVerusPOSBlock())
+        if (hdr.IsLuckyPOSBlock())
         {
-            nBits = hdr.GetVerusPOSTarget();
+            nBits = hdr.GetLuckyPOSTarget();
             break;
         }
         pindexFirst = pindexFirst->pprev;
@@ -385,7 +385,7 @@ uint32_t lwmaGetNextPOSRequired(const CBlockIndex* pindexLast, const Consensus::
 
     for (int64_t i = N - 1; i >= 0; i--)
     {
-        // we measure our solve time in passing of blocks, where one bock == VERUS_BLOCK_POSUNITS units
+        // we measure our solve time in passing of blocks, where one bock == LUCKY_BLOCK_POSUNITS units
         // consecutive blocks in either direction have their solve times exponentially multiplied or divided by power of 2
         int x;
         for (x = 0; x < maxConsecutivePos; x++)
@@ -398,9 +398,9 @@ uint32_t lwmaGetNextPOSRequired(const CBlockIndex* pindexLast, const Consensus::
             }
 
             CBlockHeader hdr = pindexFirst->GetBlockHeader();
-            if (hdr.IsVerusPOSBlock())
+            if (hdr.IsLuckyPOSBlock())
             {
-                nBits = hdr.GetVerusPOSTarget();
+                nBits = hdr.GetLuckyPOSTarget();
                 break;
             }
         }
@@ -430,7 +430,7 @@ uint32_t lwmaGetNextPOSRequired(const CBlockIndex* pindexLast, const Consensus::
             idx[i].nBits = nBits;
             // go forward and halve the minimum solve time for all consecutive blocks in this run, to get here, our last block is POS,
             // and if there is no POS block in front of it, it gets the normal solve time of one block
-            uint32_t st = VERUS_BLOCK_POSUNITS;
+            uint32_t st = LUCKY_BLOCK_POSUNITS;
             for (int64_t j = i; j < N; j++)
             {
                 if (idx[j].consecutive == true)
@@ -528,7 +528,7 @@ bool CheckProofOfWork(const CBlockHeader &blkHeader, int32_t height, const Conse
     // reference miner only ever writes a u64; reject the rest. PoS
     // blocks are exempt (the staker owns the nonce semantics), and the
     // genesis (height 0) uses the SHA256D path.
-    if (ASSETCHAINS_ALGO == ASSETCHAINS_LUCKYHASH && height > 0 && !blkHeader.IsVerusPOSBlock())
+    if (ASSETCHAINS_ALGO == ASSETCHAINS_LUCKYHASH && height > 0 && !blkHeader.IsLuckyPOSBlock())
     {
         const CPOSNonce &n = blkHeader.nNonce;
         for (int i = 8; i < 32; i++)
@@ -558,8 +558,8 @@ bool CheckProofOfWork(const CBlockHeader &blkHeader, int32_t height, const Conse
     }
     else if (ASSETCHAINS_ALGO == ASSETCHAINS_VERUSHASH)
     {
-        int32_t verusVersion = CConstVerusSolutionVector::activationHeight.ActiveVersion(height);
-        if (verusVersion >= CConstVerusSolutionVector::activationHeight.SOLUTION_VERUSV2)
+        int32_t verusVersion = CConstLuckySolutionVector::activationHeight.ActiveVersion(height);
+        if (verusVersion >= CConstLuckySolutionVector::activationHeight.SOLUTION_V2)
         {
             int32_t pbaasAdjust = !_IsVerusActive() && height < params.nPowAveragingWindow ? 4 : 0;
             bnLimit = UintToArith256(params.powAlternate) << (VERUSHASH2_SHIFT - pbaasAdjust);
@@ -580,7 +580,7 @@ bool CheckProofOfWork(const CBlockHeader &blkHeader, int32_t height, const Conse
     }
 
     // Check proof of work matches claimed amount
-    if ( UintToArith256(hash = blkHeader.GetHash(height)) > bnTarget && !blkHeader.IsVerusPOSBlock() )
+    if ( UintToArith256(hash = blkHeader.GetHash(height)) > bnTarget && !blkHeader.IsLuckyPOSBlock() )
     {
         if ( KOMODO_LOADINGBLOCKS != 0 )
             return true;
@@ -615,13 +615,13 @@ CChainPower GetBlockProof(const CBlockIndex& block)
     CBlockHeader header = block.GetBlockHeader();
 
     // if POS block, add stake
-    if (!Params().GetConsensus().NetworkUpgradeActive(block.GetHeight(), Consensus::UPGRADE_SAPLING) || !header.IsVerusPOSBlock())
+    if (!Params().GetConsensus().NetworkUpgradeActive(block.GetHeight(), Consensus::UPGRADE_SAPLING) || !header.IsLuckyPOSBlock())
     {
         return CChainPower(0, bnStakeTarget, (~bnWorkTarget / (bnWorkTarget + 1)) + 1);
     }
     else
     {
-        bnStakeTarget.SetCompact(header.GetVerusPOSTarget(), &fNegative, &fOverflow);
+        bnStakeTarget.SetCompact(header.GetLuckyPOSTarget(), &fNegative, &fOverflow);
         if (fNegative || fOverflow || bnStakeTarget == 0)
             return CChainPower(0);
         // as the nonce has a fixed definition for a POS block, add the random amount of "work" from the nonce, so there will

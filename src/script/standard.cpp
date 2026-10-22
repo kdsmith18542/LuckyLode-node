@@ -819,7 +819,7 @@ bool ExtractDestinations(const CScript& scriptPubKey,
             {
                 *pCanSpend = false;
             }
-            return CConstVerusSolutionVector::GetVersionByHeight(nHeight) < CActivationHeight::ACTIVATE_PBAAS;
+            return CConstLuckySolutionVector::GetVersionByHeight(nHeight) < CActivationHeight::ACTIVATE_PBAAS;
         }
     }
     else
