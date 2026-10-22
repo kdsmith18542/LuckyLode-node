@@ -1182,6 +1182,36 @@ UniValue getblocktemplate(const UniValue& params, bool fHelp)
             // the pool must claim on exactly the heights the node pays.
             result.push_back(Pair("devepoch", nextHeight % LuckyDevEpoch() == 0));
         }
+        // Luckynode Draw advisories (doc 06 §6.7): the epoch's
+        // consensus winner + remaining budget, so any block builder
+        // (pool, solo miner, wallet) can splice the claim.
+        {
+            uint32_t prizeEpochLen = LuckyPrizeEpoch();
+            uint32_t nextHeight = (uint32_t)(pindexPrev->GetHeight() + 1);
+            uint32_t prizeEpochNum = nextHeight / prizeEpochLen;
+            result.push_back(Pair("prizedrawepoch", (int64_t)prizeEpochNum));
+            if (prizeEpochNum >= 1)
+            {
+                CLuckyPrizeDraw prizeDraw = ComputeLuckyPrizeDraw(prizeEpochNum, pindexPrev);
+                result.push_back(Pair("prizedrawvalid", prizeDraw.valid));
+                result.push_back(Pair("prizedrawbudget", (int64_t)prizeDraw.budget));
+                if (prizeDraw.valid)
+                {
+                    uint64_t claimedSoFar = 0;
+                    for (CBlockIndex *pwalk = pindexPrev;
+                         pwalk && (uint32_t)pwalk->GetHeight() >= prizeEpochNum * prizeEpochLen;
+                         pwalk = pwalk->pprev)
+                    {
+                        if (pwalk->nPrizeClaimEpoch == prizeEpochNum)
+                            claimedSoFar += pwalk->nPrizeClaimAmount;
+                    }
+                    uint64_t remaining = prizeDraw.budget > claimedSoFar ? prizeDraw.budget - claimedSoFar : 0;
+                    result.push_back(Pair("prizedrawremaining", (int64_t)remaining));
+                    result.push_back(Pair("prizedrawwinner", prizeDraw.winnerAddress));
+                    result.push_back(Pair("prizedrawscript", HexStr(prizeDraw.winnerScript.begin(), prizeDraw.winnerScript.end())));
+                }
+            }
+        }
         // Draw class of the next height (spectacle + pool sanity checks).
         result.push_back(Pair("drawjackpot", nextJackpot));
         result.push_back(Pair("drawpot", nextPot));

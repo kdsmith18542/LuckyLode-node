@@ -15702,6 +15702,10 @@ UniValue registeridentity(const UniValue& params, bool fHelp)
     }
     if (!success)
     {
+        printf("registeridentity: insufficient funds — needed native %ld (%s), selected %d coins\n",
+               (long)(reservesOut.valueMap.count(ASSETCHAINS_CHAINID) ? reservesOut.valueMap[ASSETCHAINS_CHAINID] : 0),
+               reservesOut.ToUniValue().write().c_str(),
+               (int)setCoinsRet.size());
         throw JSONRPCError(RPC_INVALID_PARAMETER, "Insufficient funds for identity registration");
     }
 

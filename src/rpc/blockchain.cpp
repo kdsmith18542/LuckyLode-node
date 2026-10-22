@@ -1997,6 +1997,13 @@ UniValue getjackpotinfo(const UniValue& params, bool fHelp)
     // capital + dev starter fund, seeded at genesis, debited only by
     // capped per-block claims to the pinned addresses.
     ret.push_back(Pair("faucet", (int64_t)pindex->nFaucetReserve));
+    // Prize Fund (doc 06 §6.7): balance + this block's draw claim, if any.
+    ret.push_back(Pair("prize", (int64_t)pindex->nPrizeReserve));
+    if (pindex->nPrizeClaimEpoch)
+    {
+        ret.push_back(Pair("prizeclaimepoch", (int64_t)pindex->nPrizeClaimEpoch));
+        ret.push_back(Pair("prizeclaimamount", (int64_t)pindex->nPrizeClaimAmount));
+    }
     ret.push_back(Pair("dev", (int64_t)pindex->nDevReserve));
     return ret;
 }

@@ -523,6 +523,25 @@ uint64_t LuckyJackpotDrawDivisor();
  * returns the frozen spec value). */
 uint64_t LuckyDevEpoch();
 
+/** Lucky Lode: Luckynode Draw epoch length in blocks (doc 06 §6.7;
+ * 2880 mainnet, 3 testnet; regtest may override via
+ * -lucky-prize-epoch). */
+uint32_t LuckyPrizeEpoch();
+
+/** Lucky Lode: the Luckynode Draw for one epoch (doc 06 §6.7) —
+ * the winner over the `ln-` identity namespace and the epoch budget,
+ * both fixed at the epoch boundary from the boundary's parent state so
+ * they cannot drift with in-epoch reorgs. */
+struct CLuckyPrizeDraw
+{
+    bool valid = false;          // a live winner exists for the epoch
+    uint160 winnerId;            // the winning identity's ID
+    CScript winnerScript;       // its primary address script (claim target)
+    std::string winnerAddress;  // display form
+    uint64_t budget = 0;         // epoch budget (slice of trailing inflow, capped)
+};
+CLuckyPrizeDraw ComputeLuckyPrizeDraw(uint32_t epochNum, CBlockIndex *pindexPrev);
+
 /** Context-independent validity checks */
 bool CheckBlockHeader(int32_t *futureblockp,int32_t height,CBlockIndex *pindex,const CBlockHeader& block, CValidationState& state, const CChainParams& chainparams, bool fCheckPOW = true);
 bool CheckBlock(int32_t *futureblockp,int32_t height,CBlockIndex *pindex,const CBlock& block, CValidationState& state, const CChainParams& chainparams,

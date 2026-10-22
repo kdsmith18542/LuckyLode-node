@@ -3957,6 +3957,156 @@ uint64_t LuckyDevEpoch()
     return cached;
 }
 
+uint32_t LuckyPrizeEpoch()
+{
+    static uint32_t cached = 0;
+    if (cached == 0)
+    {
+        // 2880 mainnet (~48 h at 60 s blocks), 3 testnet; regtest may
+        // override for fast draw proofs (doc 06 §6.7).
+        int64_t v = GetArg("-lucky-prize-epoch", 0);
+        cached = Params().NetworkIDString() == "regtest" && v >= 1
+                     ? (uint32_t)v
+                     : (Params().NetworkIDString() == "main" ? 2880 : 3);
+        if (Params().NetworkIDString() == "regtest" && v >= 1 && (uint32_t)v != cached)
+            LogPrintf("regtest: lucky prize epoch overridden to %u\n", cached);
+    }
+    return cached;
+}
+
+// The Luckynode Draw for one epoch (doc 06 §6.7): the winner over the
+// `ln-` identity namespace and the epoch budget, both fixed at the
+// boundary from the boundary's parent state. `pindexPrev` is the parent
+// of the block being built or validated — any block inside the epoch;
+// the boundary state is reached by walking back, so the result is
+// identical for every block of the epoch.
+CLuckyPrizeDraw ComputeLuckyPrizeDraw(uint32_t epochNum, CBlockIndex *pindexPrev)
+{
+    CLuckyPrizeDraw draw;
+    uint32_t epochLen = LuckyPrizeEpoch();
+    if (epochNum < 1 || !pindexPrev)
+        return draw;
+    uint32_t boundary = epochNum * epochLen;
+    if ((uint32_t)pindexPrev->GetHeight() < boundary - 1)
+        return draw;
+
+    // Boundary parent: the state the draw is fixed from.
+    CBlockIndex *boundaryParent = pindexPrev;
+    while (boundaryParent && (uint32_t)boundaryParent->GetHeight() > boundary - 1)
+        boundaryParent = boundaryParent->pprev;
+    if (!boundaryParent)
+        return draw;
+
+    // Seed: pre-committed a full epoch ahead — the epoch-start block
+    // hash of the PREVIOUS epoch plus this epoch's boundary height
+    // (lucky_draw::Digest is the §6.1 helper, KAT-pinned).
+    CBlockIndex *seedBlock = boundaryParent;
+    for (uint32_t i = 0; i < epochLen - 1 && seedBlock && seedBlock->pprev; i++)
+        seedBlock = seedBlock->pprev;
+    if (!seedBlock)
+        return draw;
+    uint256 seed = lucky_draw::Digest(seedBlock->GetBlockHash(), (int32_t)boundary);
+
+    // Budget: 10% of the prize inflow over the previous epoch, capped
+    // at the fund balance at the boundary (doc 06 §6.7.3). Inflow =
+    // balance delta over the window plus what claims drained.
+    uint64_t claimsInWindow = 0;
+    CBlockIndex *pwalk = boundaryParent;
+    while (pwalk && (uint32_t)pwalk->GetHeight() >= boundary - epochLen)
+    {
+        if (pwalk->nPrizeClaimEpoch == epochNum - 1)
+            claimsInWindow += pwalk->nPrizeClaimAmount;
+        pwalk = pwalk->pprev;
+    }
+    // The first epoch's window starts at the genesis balance (the seed
+    // itself is not inflow — the release term pays it out).
+    uint64_t balanceThen = lucky_prize::PRIZE_SEED;
+    if (boundary >= epochLen + 1)
+    {
+        CBlockIndex *pthen = boundaryParent;
+        for (uint32_t i = 0; i < epochLen && pthen && pthen->pprev; i++)
+            pthen = pthen->pprev;
+        if (pthen)
+            balanceThen = pthen->nPrizeReserve;
+    }
+    uint64_t inflow = lucky_prize::TrailingInflow(boundaryParent->nPrizeReserve, balanceThen, claimsInWindow);
+    draw.budget = lucky_prize::Budget(inflow, boundaryParent->nPrizeReserve, lucky_prize::PRIZE_SLICE_BPS, lucky_prize::PRIZE_SEED);
+
+    // Entrants: the `ln-` top-level identity namespace — registration
+    // is an identity name; liveness = an identity update inside the
+    // window; tenure tiers from the first registration's block time.
+    // Enumeration prefix-scans the identity type of the block-tree
+    // address index (mandatory in this fork), then resolves each ID at
+    // the boundary height.
+    std::vector<std::pair<std::string, uint64_t>> entrants; // (id hex, weight millis)
+    std::map<std::string, std::pair<CScript, std::string>> idScripts; // id hex -> (script, address)
+    std::set<uint160> ids;
+    {
+        CAddressIndexIteratorKey startKey((unsigned int)CScript::P2ID, uint160());
+        std::unique_ptr<CDBIterator> it(pblocktree ? pblocktree->NewIterator() : nullptr);
+        if (it)
+        {
+            it->Seek(startKey);
+            while (it->Valid())
+            {
+                CAddressIndexKey key;
+                if (!it->GetKey(key) || key.type != (unsigned int)CScript::P2ID)
+                    break;
+                ids.insert(key.hashBytes);
+                it->Next();
+            }
+        }
+    }
+    for (const auto &identID : ids)
+    {
+        uint32_t updatedHeight = 0;
+        CIdentity ident = CIdentity::LookupIdentity(identID, boundary, &updatedHeight);
+        if (!ident.IsValid() || ident.IsRevoked())
+            continue;
+        // Top-level `ln-` namespace, case-insensitive (names are
+        // normalized by the identity system; be liberal here).
+        std::string lname = ident.name;
+        std::transform(lname.begin(), lname.end(), lname.begin(), ::tolower);
+        if (lname.size() < 3 || lname.compare(0, 3, "ln-") != 0 ||
+            lname.find('@') != std::string::npos)
+            continue;
+        // Liveness: updated within the last epoch.
+        if (updatedHeight == 0 || updatedHeight < boundary - epochLen)
+            continue;
+        if (ident.primaryAddresses.empty())
+            continue;
+        // Tenure: tiers on wall time since first registration.
+        uint32_t firstHeight = 0;
+        CIdentity firstIdent = CIdentity::LookupFirstIdentity(identID, &firstHeight);
+        if (!firstIdent.IsValid() || firstHeight == 0 || firstHeight > boundary)
+            continue;
+        CBlockIndex *firstBlock = chainActive[firstHeight];
+        if (!firstBlock)
+            continue;
+        int64_t tenureSecs = (int64_t)boundaryParent->nTime - (int64_t)firstBlock->nTime;
+        uint64_t weight = tenureSecs >= 90 * 86400 ? 2000 : (tenureSecs >= 30 * 86400 ? 1500 : 1000);
+        std::string idHex = identID.GetHex();
+        entrants.push_back(std::make_pair(idHex, weight));
+        idScripts[idHex] = std::make_pair(
+            GetScriptForDestination(ident.primaryAddresses[0]),
+            EncodeDestination(ident.primaryAddresses[0]));
+    }
+    if (entrants.empty())
+        return draw; // budget rolls forward; no winner to pay
+
+    std::string winnerHex = lucky_prize::Winner(entrants, seed.begin());
+    if (winnerHex.empty())
+        return draw;
+    auto wit = idScripts.find(winnerHex);
+    if (wit == idScripts.end())
+        return draw;
+    draw.winnerId.SetHex(winnerHex);
+    draw.winnerScript = wit->second.first;
+    draw.winnerAddress = wit->second.second;
+    draw.valid = true;
+    return draw;
+}
+
 bool ConnectBlock(const CBlock& block, CValidationState& state, CBlockIndex* pindex, CCoinsViewCache& view, const CChainParams& chainparams, bool fJustCheck, bool fCheckPOW, bool updateCumulativeIndex)
 {
     uint32_t nHeight = pindex->GetHeight();
@@ -5208,6 +5358,8 @@ bool ConnectBlock(const CBlock& block, CValidationState& state, CBlockIndex* pin
     uint64_t luckyReserveAfter = 0, luckyPotAfter = 0, luckyDroughtAfter = 0;
     uint64_t luckyFaucetAfter = 0, luckyDevAfter = 0;
     uint64_t luckyPrizeAfter = 0;
+    uint64_t luckyPrizeDebit = 0;
+    uint32_t luckyPrizeClaimEpoch = 0;
     bool luckyMoney = false;
 
     if (ASSETCHAINS_ALGO == ASSETCHAINS_LUCKYHASH)
@@ -5296,6 +5448,53 @@ bool ConnectBlock(const CBlock& block, CValidationState& state, CBlockIndex* pin
         CAmount claimedPot = claimed - claimedJackpot;
         if (claimedPot > (CAmount)lp.pot_splash)
             claimedPot = (CAmount)lp.pot_splash; // ceiling check rejects the block anyway
+        // Prize Fund draw claim (doc 06 §6.7): the leftover after the
+        // canonical jackpot→pot attribution is a Luckynode Draw claim.
+        // Zero leftover (every ordinary block) costs nothing — the draw
+        // is computed only when a claim is present.
+        CAmount claimedPrize = claimed - claimedJackpot - claimedPot;
+        if (claimedPrize < 0)
+            claimedPrize = 0;
+        if (claimedPrize > 0)
+        {
+            uint32_t epochLen = LuckyPrizeEpoch();
+            uint32_t epochNum = (uint32_t)(pindex->GetHeight() / epochLen);
+            if (epochNum < 1)
+                return state.DoS(100, error("ConnectBlock(): prize claim before the first epoch"),
+                                 REJECT_INVALID, "bad-prize-claim");
+            CLuckyPrizeDraw prizeDraw = ComputeLuckyPrizeDraw(epochNum, pindex->pprev);
+            if (!prizeDraw.valid)
+                return state.DoS(100, error("ConnectBlock(): prize claim with no valid draw"),
+                                 REJECT_INVALID, "bad-prize-claim");
+            // Credit-once per epoch: claims so far in this epoch.
+            uint64_t claimedSoFar = 0;
+            for (CBlockIndex *pwalk = pindex->pprev;
+                 pwalk && (uint32_t)pwalk->GetHeight() >= epochNum * epochLen;
+                 pwalk = pwalk->pprev)
+            {
+                if (pwalk->nPrizeClaimEpoch == epochNum)
+                    claimedSoFar += pwalk->nPrizeClaimAmount;
+            }
+            if (claimedSoFar > prizeDraw.budget ||
+                (uint64_t)claimedPrize > prizeDraw.budget - claimedSoFar)
+                return state.DoS(100, error("ConnectBlock(): prize claim exceeds the epoch budget"),
+                                 REJECT_INVALID, "bad-prize-claim");
+            // Directed: the excess must ride coinbase outputs paying the
+            // winner's registered script exactly. Claim outputs are
+            // dedicated outputs (every reference builder makes them so);
+            // a normal payout that happens to share the winner script
+            // makes the sum drift and the claim is refused.
+            CAmount toWinner = 0;
+            for (const CTxOut &out : block.vtx[0].vout)
+                if (out.scriptPubKey == prizeDraw.winnerScript && out.nValue > 0)
+                    toWinner += out.nValue;
+            if (toWinner != claimedPrize)
+                return state.DoS(100, error("ConnectBlock(): prize claim not paid to the draw winner"),
+                                 REJECT_INVALID, "bad-prize-claim");
+            nativeBlockReward += claimedPrize;
+            luckyPrizeDebit = (uint64_t)claimedPrize;
+            luckyPrizeClaimEpoch = epochNum;
+        }
         // Deferred pindex write: only the block's own passing checks
         // may commit money state (see the assignment near the end of
         // ConnectBlock).
@@ -5596,7 +5795,11 @@ bool ConnectBlock(const CBlock& block, CValidationState& state, CBlockIndex* pin
         pindex->nLuckyDrought = luckyDroughtAfter;
         pindex->nFaucetReserve = luckyFaucetAfter;
         pindex->nDevReserve = luckyDevAfter;
-        pindex->nPrizeReserve = luckyPrizeAfter;
+        // Draw claims debit the fund (never below zero by
+        // construction: debit ≤ budget ≤ boundary balance ≤ live).
+        pindex->nPrizeReserve = luckyPrizeAfter >= luckyPrizeDebit ? luckyPrizeAfter - luckyPrizeDebit : 0;
+        pindex->nPrizeClaimEpoch = luckyPrizeClaimEpoch;
+        pindex->nPrizeClaimAmount = luckyPrizeDebit;
     }
 
     // Erase orphan transactions include or precluded by this block
@@ -6945,7 +7148,13 @@ bool ContextualCheckBlockHeader(
     // tolerate variable size solutions, but ensure that we have at least 16 bytes extra space to fit the clhash at the end
     int modSpace = GetSerializeSize(block, SER_NETWORK, PROTOCOL_VERSION) % 32;
     int solutionVer = CConstLuckySolutionVector::GetVersionByHeight(nHeight);
-    if (!(solutionVer < CActivationHeight::ACTIVATE_VERUSHASH2_1 || (modSpace >= 1 && modSpace <= 16)))
+    // The extraspace rule exists for the VerusHash clhash tail.
+    // LuckyHash never carries a clhash in the solution, so the rule is
+    // exempted for LuckyHash chains (without this, activating the
+    // identity-era solution version would reject every block).
+    if (!(ASSETCHAINS_ALGO != ASSETCHAINS_LUCKYHASH ||
+          solutionVer < CActivationHeight::ACTIVATE_VERUSHASH2_1 ||
+          (modSpace >= 1 && modSpace <= 16)))
     {
         return state.DoS(100, error("%s: invalid header format", __func__), REJECT_INVALID, "insufficient-extraspace");
     }
@@ -7467,7 +7676,7 @@ bool ProcessNewBlock(bool from_miner, int32_t height, CValidationState &state, c
             {
                 Misbehaving(pfrom->GetId(), 1);
             }
-            return error("%s: CheckBlock FAILED", __func__);
+            return error("%s: CheckBlock FAILED (%s)", __func__, state.GetRejectReason().c_str());
         }
         // Store to disk
         CBlockIndex *pindex = NULL;

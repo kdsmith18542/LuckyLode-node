@@ -33,6 +33,13 @@ static const uint64_t PRIZE_SEED = 100000000000ULL;
 static const uint64_t PRIZE_SLICE_BPS = 1000;
 static const uint64_t PRIZE_SLICE_DENOM = 10000;
 
+// Seed release: the genesis seed pays out as a fixed per-epoch release
+// (seed / 1000 = 1 LKYL per epoch at the 1,000 LKYL seed — the fund's
+// front-load, draining over ~1,000 epochs). Without it a pure
+// inflow-slice budget would recycle organic inflow forever while the
+// seed sat dead (doc 06 §6.7.3).
+static const uint64_t PRIZE_SEED_RELEASE_DIVISOR = 1000;
+
 /// Credit one block's overflow into the fund (saturating).
 inline uint64_t Credit(uint64_t balance, uint64_t overflow)
 {
@@ -54,13 +61,21 @@ inline uint64_t TrailingInflow(uint64_t balance_now, uint64_t balance_then, uint
     return delta > 0 ? (uint64_t)delta : 0;
 }
 
-/// Draw budget: the slice of the trailing inflow, capped at the fund
-/// balance (a draw may only spend what the fund holds). Zero inflow
-/// means zero budget — self-throttling, no pity timer.
-inline uint64_t Budget(uint64_t inflow, uint64_t balance, uint64_t slice_bps)
+/// Seed release for one epoch: seed / 1000 (0 when seed is 0).
+inline uint64_t SeedRelease(uint64_t seed)
+{
+    return seed / PRIZE_SEED_RELEASE_DIVISOR;
+}
+
+/// Draw budget: the slice of the trailing inflow plus the fixed seed
+/// release, capped at the fund balance (a draw may only spend what the
+/// fund holds). Zero inflow still pays the seed release — the fund's
+/// front-load — while organic inflow scales the budget with hashrate.
+inline uint64_t Budget(uint64_t inflow, uint64_t balance, uint64_t slice_bps, uint64_t seed)
 {
     __uint128_t slice = (__uint128_t)inflow * (__uint128_t)slice_bps / (__uint128_t)PRIZE_SLICE_DENOM;
-    return slice > (__uint128_t)balance ? balance : (uint64_t)slice;
+    uint64_t budget = (uint64_t)slice + SeedRelease(seed);
+    return budget > balance ? balance : budget;
 }
 
 /// Deterministic tenure-weighted winner over the entrant set:

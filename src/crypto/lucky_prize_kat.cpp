@@ -30,12 +30,17 @@ int main()
     CHECK(TrailingInflow(100, 150, 200) == 150); // claims exceed the fall
     CHECK(TrailingInflow(~uint64_t(0), 0, 0) == ~uint64_t(0));
 
-    // Budget: 10% slice, floored, capped at the balance.
-    CHECK(Budget(0, PRIZE_SEED, PRIZE_SLICE_BPS) == 0);
-    CHECK(Budget(1000, PRIZE_SEED, PRIZE_SLICE_BPS) == 100);
-    CHECK(Budget(999, PRIZE_SEED, PRIZE_SLICE_BPS) == 99);
-    CHECK(Budget(100, 5, PRIZE_SLICE_BPS) == 5);   // slice 10 capped at balance
-    CHECK(Budget(2952381, 2952381, PRIZE_SLICE_BPS) == 295238); // draw 51 live vector
+    // Budget: 10% slice + the fixed seed release, capped at the
+    // balance. Seed release = seed/1000 (1 LKYL at the frozen seed).
+    CHECK(SeedRelease(PRIZE_SEED) == 100000000ULL);
+    CHECK(SeedRelease(0) == 0);
+    CHECK(Budget(0, PRIZE_SEED, PRIZE_SLICE_BPS, 0) == 0);                   // no seed, no inflow
+    CHECK(Budget(0, PRIZE_SEED, PRIZE_SLICE_BPS, PRIZE_SEED) == 100000000ULL); // release only
+    CHECK(Budget(1000, PRIZE_SEED, PRIZE_SLICE_BPS, PRIZE_SEED) == 100000100ULL);
+    CHECK(Budget(999, PRIZE_SEED, PRIZE_SLICE_BPS, PRIZE_SEED) == 100000099ULL);
+    CHECK(Budget(100, 5, PRIZE_SLICE_BPS, PRIZE_SEED) == 5);   // capped at balance
+    // Draw 51 live vector (v1 shape, seed 0): inflow 2,952,381 -> floor 10%.
+    CHECK(Budget(2952381, 2952381, PRIZE_SLICE_BPS, 0) == 295238);
 
     // Winner: the v1 selection math, byte-identical.
     uint8_t seed1[32]; memset(seed1, 7, 32);

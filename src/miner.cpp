@@ -3859,6 +3859,33 @@ CBlockTemplate* CreateNewBlock(const CChainParams& chainparams, const std::vecto
                 LogPrintf("%s: internal miner claim at height %d: jackpot %lu, pot splash %lu\n",
                     __func__, nHeight, (unsigned long)lp.jackpot_bonus, (unsigned long)lp.pot_splash);
             }
+            // Luckynode Draw claim (doc 06 §6.7): a dedicated output
+            // paying the epoch's consensus winner, up to the remaining
+            // budget — the builder pays the winner, costs itself nothing.
+            uint32_t prizeEpochLen = LuckyPrizeEpoch();
+            uint32_t prizeEpochNum = (uint32_t)(nHeight / prizeEpochLen);
+            if (prizeEpochNum >= 1)
+            {
+                CLuckyPrizeDraw prizeDraw = ComputeLuckyPrizeDraw(prizeEpochNum, pindexPrev);
+                if (prizeDraw.valid && prizeDraw.budget > 0 && prizeDraw.winnerScript.size())
+                {
+                    uint64_t claimedSoFar = 0;
+                    for (CBlockIndex *pwalk = pindexPrev;
+                         pwalk && (uint32_t)pwalk->GetHeight() >= prizeEpochNum * prizeEpochLen;
+                         pwalk = pwalk->pprev)
+                    {
+                        if (pwalk->nPrizeClaimEpoch == prizeEpochNum)
+                            claimedSoFar += pwalk->nPrizeClaimAmount;
+                    }
+                    uint64_t remaining = prizeDraw.budget > claimedSoFar ? prizeDraw.budget - claimedSoFar : 0;
+                    if (remaining > 0)
+                    {
+                        coinbaseTx.vout.push_back(CTxOut((CAmount)remaining, prizeDraw.winnerScript));
+                        LogPrintf("%s: internal miner prize claim at height %d: epoch %u, winner %s, amount %lu\n",
+                            __func__, nHeight, prizeEpochNum, prizeDraw.winnerAddress.c_str(), (unsigned long)remaining);
+                    }
+                }
+            }
         }
 
         nLastBlockTx = nBlockTx;

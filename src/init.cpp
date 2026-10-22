@@ -1268,6 +1268,24 @@ bool AppInit2(boost::thread_group& threadGroup, CScheduler& scheduler)
         CVerusHash::init();
         CVerusHashV2::init();
         CBlockHeader::SetLuckyHash();
+
+        // The solution-version activation table applies to LuckyHash
+        // chains too — identities (LuckyID) gate on ACTIVATE_IDENTITY
+        // (SOLUTION_V4), and this branch used to skip the table
+        // entirely, leaving the version at V1 forever and the identity
+        // APIs unreachable on every LuckyHash chain (caught live trying
+        // to register a Luckynode identity). The ladder must be
+        // CONTIGUOUS (ActiveVersion walks and breaks at the first
+        // unset version), so V2/V3 activate alongside V4; nothing above
+        // V4 activates — V5+ pulls in extended-stake/PBaaS/Vault
+        // solution formats (including the block MMR root in every
+        // header) that were never adapted to LuckyHash. The only
+        // V4-gated header constraint (the VerusHash clhash extraspace
+        // rule) is exempted for LuckyHash in CheckBlock; historical
+        // V1 blocks remain valid.
+        CConstLuckySolutionVector::activationHeight.SetActivationHeight(CActivationHeight::SOLUTION_V2, 1, true);
+        CConstLuckySolutionVector::activationHeight.SetActivationHeight(CActivationHeight::SOLUTION_V3, 1, true);
+        CConstLuckySolutionVector::activationHeight.SetActivationHeight(CActivationHeight::SOLUTION_V4, 1, true);
     }
     else if (ASSETCHAINS_ALGO == ASSETCHAINS_VERUSHASH)
     {
