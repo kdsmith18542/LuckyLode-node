@@ -326,6 +326,17 @@ public:
     uint64_t nFaucetReserve;
     uint64_t nDevReserve;
 
+    //! Lucky Lode Prize Fund balance resulting from this block (doc 06
+    //! §6.7): the third consensus fund, credited with the jackpot-levy
+    //! cap overflow and spent only by Luckynode Draw claims. Reorg-safe
+    //! like the others; seeded at genesis.
+    uint64_t nPrizeReserve;
+    //! The epoch this block's coinbase claimed a Luckynode Draw for
+    //! (0 = no claim; epoch numbering starts at 1 so 0 is never live).
+    uint32_t nPrizeClaimEpoch;
+    //! Amount this block's coinbase claimed from that epoch's budget.
+    uint64_t nPrizeClaimAmount;
+
     //! Branch ID corresponding to the consensus rules used to validate this block.
     //! Only cached if block validity is BLOCK_VALID_CONSENSUS.
     //! Persisted at each activation height, memory-only for intervening blocks.
@@ -388,6 +399,9 @@ public:
         nLuckyDrought = 0;
         nFaucetReserve = 0;
         nDevReserve = 0;
+        nPrizeReserve = 0;
+        nPrizeClaimEpoch = 0;
+        nPrizeClaimAmount = 0;
         nCachedBranchId = boost::none;
         hashSproutAnchor = uint256();
         hashFinalSproutRoot = uint256();
@@ -724,6 +738,12 @@ public:
         // Lucky Lode: faucet + dev seed-fund reserves (internal/20).
         READWRITE(VARINT(nFaucetReserve));
         READWRITE(VARINT(nDevReserve));
+
+        // Lucky Lode: Prize Fund balance + draw-claim bookkeeping
+        // (doc 06 §6.7).
+        READWRITE(VARINT(nPrizeReserve));
+        READWRITE(VARINT(nPrizeClaimEpoch));
+        READWRITE(VARINT(nPrizeClaimAmount));
 
         // If you have just added new serialized fields above, remember to add
         // them to CBlockTreeDB::LoadBlockIndexGuts() in txdb.cpp :)

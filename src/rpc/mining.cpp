@@ -1145,6 +1145,10 @@ UniValue getblocktemplate(const UniValue& params, bool fHelp)
         // overflows the reserve cap (doc 06 §6.2). No consensus output —
         // pools credit their prize ledger (Luckynode Draw budgets) with it.
         result.push_back(Pair("prizeoverflow", (int64_t)potEst.to_prize));
+        // Prize Fund balance (doc 06 §6.7) for dashboards + future draw
+        // claims.
+        uint64_t tipPrize = chainActive.Tip() ? chainActive.Tip()->nPrizeReserve : 0;
+        result.push_back(Pair("prizereserve", (int64_t)tipPrize));
         result.push_back(Pair("potdrought", (int64_t)tipDrought));
         // Pity-aware pools need the effective limit to decide whether the
         // NEXT block is a forced (claimable) pot event.

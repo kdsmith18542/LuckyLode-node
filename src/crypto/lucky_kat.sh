@@ -56,6 +56,10 @@ $CXX -O2 -std=c++11 -I"$(dirname "$DIR")" "$DIR/lucky_jackpot_kat.cpp" -o "$OUT/
 $CXX -O2 -std=c++11 -I"$(dirname "$DIR")" "$DIR/lucky_pot_kat.cpp" -o "$OUT/lucky_pot_kat"
 "$OUT/lucky_pot_kat"
 
+# Prize Fund money KAT (doc 06 §6.7, rev 1.3): header-only math.
+$CXX -O2 -std=c++11 -I"$(dirname "$DIR")" "$DIR/lucky_prize_kat.cpp" -o "$OUT/lucky_prize_kat"
+"$OUT/lucky_prize_kat"
+
 # Pre-committable draw trigger KAT (doc 06 rev 1.2): uint256 + sha256.
 $CXX -O2 -I"$(dirname "$DIR")" $SODIUM_INC $SYS_DEFS \
     "$DIR/lucky_draw_kat.cpp" \

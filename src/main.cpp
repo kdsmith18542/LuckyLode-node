@@ -23,6 +23,7 @@
 #include "consensus/lucky_pot.h"
 #include "consensus/lucky_draw.h"
 #include "consensus/lucky_seed.h"
+#include "consensus/lucky_prize.h"
 #include "deprecation.h"
 #include "init.h"
 #include "merkleblock.h"
@@ -5206,6 +5207,7 @@ bool ConnectBlock(const CBlock& block, CValidationState& state, CBlockIndex* pin
     // write at all).
     uint64_t luckyReserveAfter = 0, luckyPotAfter = 0, luckyDroughtAfter = 0;
     uint64_t luckyFaucetAfter = 0, luckyDevAfter = 0;
+    uint64_t luckyPrizeAfter = 0;
     bool luckyMoney = false;
 
     if (ASSETCHAINS_ALGO == ASSETCHAINS_LUCKYHASH)
@@ -5267,6 +5269,13 @@ bool ConnectBlock(const CBlock& block, CValidationState& state, CBlockIndex* pin
                 REJECT_INVALID, "bad-seed-claim");
         luckyFaucetAfter = sp.faucet;
         luckyDevAfter = sp.dev;
+        // Prize Fund (doc 06 §6.7): credited with this block's
+        // jackpot-levy cap overflow — real consensus money from here
+        // on, spendable only by Luckynode Draw claims (claims land with
+        // the identity-namespace draw validation; until then the fund
+        // accumulates exactly).
+        uint64_t parentPrize = pindex->pprev ? pindex->pprev->nPrizeReserve : 0;
+        luckyPrizeAfter = lucky_prize::Credit(parentPrize, lp.to_prize);
         nativeBlockReward = (CAmount)lp.miner + validExtraNative + (CAmount)faucetSum + (CAmount)devSum;
         // Funds are debited only by the bonus/splash the coinbase ACTUALLY
         // claims (found in testing on the jackpot: assuming a full claim
@@ -5587,6 +5596,7 @@ bool ConnectBlock(const CBlock& block, CValidationState& state, CBlockIndex* pin
         pindex->nLuckyDrought = luckyDroughtAfter;
         pindex->nFaucetReserve = luckyFaucetAfter;
         pindex->nDevReserve = luckyDevAfter;
+        pindex->nPrizeReserve = luckyPrizeAfter;
     }
 
     // Erase orphan transactions include or precluded by this block
@@ -6462,6 +6472,7 @@ CBlockIndex* AddToBlockIndex(const CBlockHeader& block)
         pindexNew->nLuckyReserve = lucky_pot::LUCKY_SEED;
         pindexNew->nLuckyDrought = 0;
         pindexNew->nFaucetReserve = lucky_seed::FAUCET_SEED;
+        pindexNew->nPrizeReserve = lucky_prize::PRIZE_SEED;
         pindexNew->nDevReserve = lucky_seed::DEV_SEED;
     }
     if (pindexBestHeader == NULL || pindexBestHeader->chainPower < pindexNew->chainPower)
@@ -8328,6 +8339,7 @@ bool InitBlockIndex(const CChainParams& chainparams)
             pindex->nLuckyReserve = lucky_pot::LUCKY_SEED;
             pindex->nLuckyDrought = 0;
             pindex->nFaucetReserve = lucky_seed::FAUCET_SEED;
+            pindex->nPrizeReserve = lucky_prize::PRIZE_SEED;
             pindex->nDevReserve = lucky_seed::DEV_SEED;
             if (!ReceivedBlockTransactions(block, state, chainparams, pindex, blockPos))
                 return error("LoadBlockIndex(): genesis block not accepted");
