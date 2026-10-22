@@ -122,6 +122,7 @@ src/komodod.exe
 src/komodo-tx.exe
 src/verusd
 src/luckyd
+src/luckyd.pre-*
 src/lucky
 src/lucky-tx
 src/lucky.exe
