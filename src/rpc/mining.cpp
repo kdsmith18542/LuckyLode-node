@@ -1190,6 +1190,11 @@ UniValue getblocktemplate(const UniValue& params, bool fHelp)
             uint32_t nextHeight = (uint32_t)(pindexPrev->GetHeight() + 1);
             uint32_t prizeEpochNum = nextHeight / prizeEpochLen;
             result.push_back(Pair("prizedrawepoch", (int64_t)prizeEpochNum));
+            // Epoch length for heartbeat math: daemons/wallets/explorer
+            // derive windows from this, never from a local default (a
+            // regtest/testnet/mainnet mix-up would silently expire
+            // liveness or spam updates).
+            result.push_back(Pair("prizeepochlen", (int64_t)prizeEpochLen));
             if (prizeEpochNum >= 1)
             {
                 CLuckyPrizeDraw prizeDraw = ComputeLuckyPrizeDraw(prizeEpochNum, pindexPrev);
