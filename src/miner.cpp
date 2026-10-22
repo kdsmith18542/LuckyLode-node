@@ -18,6 +18,8 @@
 #include "consensus/upgrades.h"
 #include "consensus/validation.h"
 #include "consensus/jackpot.h"
+#include "consensus/lucky_pot.h"
+#include "consensus/lucky_draw.h"
 #ifdef ENABLE_MINING
 #include "crypto/equihash.h"
 #include "crypto/verus_hash.h"
@@ -2033,7 +2035,7 @@ uint256 RandomizedNonce()
     return ArithToUint256(nonce);
 }
 
-CBlockTemplate* CreateNewBlock(const CChainParams& chainparams, const std::vector<CTxOut> &minerOutputs, bool isStake, uint256 useNonce)
+CBlockTemplate* CreateNewBlock(const CChainParams& chainparams, const std::vector<CTxOut> &minerOutputs, bool isStake, uint256 useNonce, bool fLuckyClaims)
 {
     // instead of one scriptPubKeyIn, we take a vector of them along with relative weight. each is assigned a percentage of the block subsidy and
     // mining reward based on its weight relative to the total
@@ -3827,6 +3829,38 @@ CBlockTemplate* CreateNewBlock(const CChainParams& chainparams, const std::vecto
             }
         }
 
+        // Lucky Lode claim-aware internal mining: on pre-committed draw
+        // heights the coinbase claims the exact jackpot bonus and pot
+        // splash, paying the miner's own first declared output. Pools
+        // splice the same exact amounts from the GBT advisories; without
+        // this, the internal path paid the 5% levy on every block and
+        // silently forfeited every draw to future claimants (audit item
+        // 50, fix A). ConnectBlock debits the funds only by what the
+        // coinbase actually claims, so an exact claim conserves exactly.
+        if (fLuckyClaims && ASSETCHAINS_ALGO == ASSETCHAINS_LUCKYHASH && !isStake && minerOutputs.size())
+        {
+            uint256 drawDigest = lucky_draw::Digest(pindexPrev->GetBlockHash(), (int32_t)nHeight);
+            lucky_pot::BlockDraws draws;
+            draws.jackpot = lucky_draw::Jackpot(drawDigest, LuckyJackpotDrawDivisor());
+            draws.pot_event = lucky_draw::PotEvent(drawDigest, LuckyPotDrawDivisor());
+            draws.tier = lucky_draw::Tier(drawDigest);
+            draws.isPow = true; // the internal miner builds PoW templates only
+            lucky_pot::PotState parentPot;
+            parentPot.pot = pindexPrev->nLuckyReserve;
+            parentPot.drought = pindexPrev->nLuckyDrought;
+            lucky_pot::PotPayout lp = lucky_pot::ApplyPotBlock(
+                pindexPrev->nJackpotReserve, parentPot,
+                (uint64_t)GetBlockSubsidy((int)nHeight, chainparams.GetConsensus()),
+                (uint64_t)rewardFees, draws, LuckyPotDroughtLimit());
+            if (lp.jackpot_bonus || lp.pot_splash)
+            {
+                coinbaseTx.vout.push_back(CTxOut((CAmount)lp.jackpot_bonus, minerOutputs[0].scriptPubKey));
+                coinbaseTx.vout.push_back(CTxOut((CAmount)lp.pot_splash, minerOutputs[0].scriptPubKey));
+                LogPrintf("%s: internal miner claim at height %d: jackpot %lu, pot splash %lu\n",
+                    __func__, nHeight, (unsigned long)lp.jackpot_bonus, (unsigned long)lp.pot_splash);
+            }
+        }
+
         nLastBlockTx = nBlockTx;
         nLastBlockSize = nBlockSize;
 
@@ -3900,10 +3934,10 @@ CBlockTemplate* CreateNewBlock(const CChainParams& chainparams, const std::vecto
     return pblocktemplate.release();
 }
 
-CBlockTemplate* CreateNewBlock(const CChainParams& chainparams, const CScript& _scriptPubKeyIn, bool isStake, uint256 useNonce)
+CBlockTemplate* CreateNewBlock(const CChainParams& chainparams, const CScript& _scriptPubKeyIn, bool isStake, uint256 useNonce, bool fLuckyClaims)
 {
     std::vector<CTxOut> minerOutputs = _scriptPubKeyIn.size() ? std::vector<CTxOut>({CTxOut(1, _scriptPubKeyIn)}) : std::vector<CTxOut>();
-    return CreateNewBlock(chainparams, minerOutputs, isStake, useNonce);
+    return CreateNewBlock(chainparams, minerOutputs, isStake, useNonce, fLuckyClaims);
 }
 
 //////////////////////////////////////////////////////////////////////////////
@@ -3941,7 +3975,7 @@ void GetScriptForMinerAddress(boost::shared_ptr<CReserveScript> &script)
 // Internal miner
 //
 
-CBlockTemplate* CreateNewBlockWithKey(CReserveKey& reservekey, int32_t nHeight, bool isStake, uint256 useNonce)
+CBlockTemplate* CreateNewBlockWithKey(CReserveKey& reservekey, int32_t nHeight, bool isStake, uint256 useNonce, bool fLuckyClaims)
 {
     CPubKey pubkey;
     CScript scriptPubKey;
@@ -3969,7 +4003,7 @@ CBlockTemplate* CreateNewBlockWithKey(CReserveKey& reservekey, int32_t nHeight, 
         }
         if (minerOutputs.size())
         {
-            return CreateNewBlock(Params(), minerOutputs, false, useNonce);
+            return CreateNewBlock(Params(), minerOutputs, false, useNonce, fLuckyClaims);
         }
         LogPrintf("%s: invalid -miningdistribution parameter\n", __func__);
     }
@@ -3993,7 +4027,7 @@ CBlockTemplate* CreateNewBlockWithKey(CReserveKey& reservekey, int32_t nHeight, 
             scriptPubKey = GetScriptForDestination(pubkey);
         }
     }
-    return CreateNewBlock(Params(), scriptPubKey, isStake, useNonce);
+    return CreateNewBlock(Params(), scriptPubKey, isStake, useNonce, fLuckyClaims);
 }
 
 void komodo_broadcast(const CBlock *pblock,int32_t limit)
@@ -4665,7 +4699,7 @@ void static BitcoinMiner_noeq()
             else
             {
 #ifdef ENABLE_WALLET
-                CBlockTemplate *ptr = CreateNewBlockWithKey(reservekey, Mining_height);
+                CBlockTemplate *ptr = CreateNewBlockWithKey(reservekey, Mining_height, false, uint256(), true);
 #else
                 CBlockTemplate *ptr = CreateNewBlockWithKey();
 #endif
