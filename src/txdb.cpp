@@ -431,6 +431,29 @@ bool CBlockTreeDB::ReadAddressIndex(
     return true;
 }
 
+bool CBlockTreeDB::ReadAddressIndexHashesByType(unsigned int type, std::set<uint160> &hashes)
+{
+    boost::scoped_ptr<CDBIterator> pcursor(NewIterator());
+    pcursor->Seek(make_pair(DB_ADDRESSINDEX, CAddressIndexIteratorKey(type, uint160())));
+
+    while (pcursor->Valid()) {
+        boost::this_thread::interruption_point();
+        try {
+            pair<char, CAddressIndexKey> keyObj;
+            if (!pcursor->GetKey(keyObj))
+                break;
+            if (keyObj.first != DB_ADDRESSINDEX || keyObj.second.type != type)
+                break;
+            hashes.insert(keyObj.second.hashBytes);
+            pcursor->Next();
+        } catch (const std::exception& e) {
+            break;
+        }
+    }
+
+    return true;
+}
+
 bool CBlockTreeDB::UpdateAddressReserveBalance(const std::vector<CAddressReserveBalanceEntry> &vect) {
     CDBBatch batch(*this);
     for (const auto &entry : vect) {

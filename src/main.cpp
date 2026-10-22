@@ -4041,22 +4041,8 @@ CLuckyPrizeDraw ComputeLuckyPrizeDraw(uint32_t epochNum, CBlockIndex *pindexPrev
     std::vector<std::pair<std::string, uint64_t>> entrants; // (id hex, weight millis)
     std::map<std::string, std::pair<CScript, std::string>> idScripts; // id hex -> (script, address)
     std::set<uint160> ids;
-    {
-        CAddressIndexIteratorKey startKey((unsigned int)CScript::P2ID, uint160());
-        std::unique_ptr<CDBIterator> it(pblocktree ? pblocktree->NewIterator() : nullptr);
-        if (it)
-        {
-            it->Seek(startKey);
-            while (it->Valid())
-            {
-                CAddressIndexKey key;
-                if (!it->GetKey(key) || key.type != (unsigned int)CScript::P2ID)
-                    break;
-                ids.insert(key.hashBytes);
-                it->Next();
-            }
-        }
-    }
+    if (pblocktree)
+        pblocktree->ReadAddressIndexHashesByType((unsigned int)CScript::P2ID, ids);
     for (const auto &identID : ids)
     {
         uint32_t updatedHeight = 0;

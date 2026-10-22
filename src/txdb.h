@@ -11,6 +11,7 @@
 #include "chain.h"
 
 #include <map>
+#include <set>
 #include <string>
 #include <utility>
 #include <vector>
@@ -122,6 +123,7 @@ public:
     bool WriteAddressIndex(const std::vector<CAddressIndexDbEntry> &vect);
     bool EraseAddressIndex(const std::vector<CAddressIndexDbEntry> &vect);
     bool ReadAddressIndex(uint160 addressHash, int type, std::vector<CAddressIndexDbEntry> &addressIndex, int start = 0, int end = 0);
+    bool ReadAddressIndexHashesByType(unsigned int type, std::set<uint160> &hashes);
     bool UpdateAddressReserveBalance(const std::vector<CAddressReserveBalanceEntry> &vect);
     bool ReadAddressReserveBalance(uint160 addressHash, int type, std::map<uint160, CAddressReserveBalanceValue> &balanceMap);
     bool WriteTimestampIndex(const CTimestampIndexKey &timestampIndex);
