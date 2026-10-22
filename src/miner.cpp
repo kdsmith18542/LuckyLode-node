@@ -3880,9 +3880,36 @@ CBlockTemplate* CreateNewBlock(const CChainParams& chainparams, const std::vecto
                     uint64_t remaining = prizeDraw.budget > claimedSoFar ? prizeDraw.budget - claimedSoFar : 0;
                     if (remaining > 0)
                     {
-                        coinbaseTx.vout.push_back(CTxOut((CAmount)remaining, prizeDraw.winnerScript));
-                        LogPrintf("%s: internal miner prize claim at height %d: epoch %u, winner %s, amount %lu\n",
-                            __func__, nHeight, prizeEpochNum, prizeDraw.winnerAddress.c_str(), (unsigned long)remaining);
+                        // Directed-sum rule (§6.7.3): ConnectBlock accepts
+                        // a prize claim only when the sum of coinbase
+                        // outputs paying the winner's script equals the
+                        // claimed amount. Any other output already paying
+                        // that script (the normal reward, a jackpot/pot
+                        // claim on the same address) would make the sum
+                        // drift and the block invalid. When that happens,
+                        // skip the claim instead of building a block the
+                        // network will reject; the budget stays available
+                        // to another block in the epoch.
+                        bool winnerAlreadyPaid = false;
+                        for (const CTxOut &out : coinbaseTx.vout)
+                        {
+                            if (out.scriptPubKey == prizeDraw.winnerScript)
+                            {
+                                winnerAlreadyPaid = true;
+                                break;
+                            }
+                        }
+                        if (winnerAlreadyPaid)
+                        {
+                            LogPrintf("%s: internal miner skips prize claim at height %d: winner script already paid by the coinbase\n",
+                                __func__, nHeight);
+                        }
+                        else
+                        {
+                            coinbaseTx.vout.push_back(CTxOut((CAmount)remaining, prizeDraw.winnerScript));
+                            LogPrintf("%s: internal miner prize claim at height %d: epoch %u, winner %s, amount %lu\n",
+                                __func__, nHeight, prizeEpochNum, prizeDraw.winnerAddress.c_str(), (unsigned long)remaining);
+                        }
                     }
                 }
             }
