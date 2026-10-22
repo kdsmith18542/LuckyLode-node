@@ -10,6 +10,11 @@ extern char ASSETCHAINS_SYMBOL[65];
 
 arith_uint256 CPOSNonce::entropyMask = UintToArith256(uint256S("00000000000000000000000000000000ffffffffffffffffffffffff00000000"));
 arith_uint256 CPOSNonce::posDiffMask = UintToArith256(uint256S("00000000000000000000000000000000000000000000000000000000ffffffff"));
+// Lucky Lode solo-PoS liveness (internal/22): attempt counter lives in
+// nonce bits 32..39; retry entropy occupies bits 40..127. Invariant (KAT
+// pinned): attemptMask | retryEntropyMask == entropyMask (disjoint).
+arith_uint256 CPOSNonce::attemptMask = UintToArith256(uint256S("000000000000000000000000000000000000000000000000000000ff00000000"));
+arith_uint256 CPOSNonce::retryEntropyMask = UintToArith256(uint256S("00000000000000000000000000000000ffffffffffffffffffffff0000000000"));
 
 bool CPOSNonce::NewPOSActive(int32_t height)
 {
@@ -27,8 +32,11 @@ bool CPOSNonce::NewNonceActive(int32_t height)
         return true;
 }
 
-void CPOSNonce::SetPOSEntropy(const uint256 &pastHash, uint256 txid, int32_t voutNum, uint32_t version)
+void CPOSNonce::SetPOSEntropy(const uint256 &pastHash, uint256 txid, int32_t voutNum, uint32_t version, bool fRetryRules)
 {
+    // The attempt counter rides in the nonce itself (bits 32..39, written
+    // by the staker via SetStakeAttempt before this call).
+    uint32_t attempt = fRetryRules ? GetStakeAttempt() : 0;
     if (version == VERUS_V2)
     {
         // get low 96 bits of past hash and put it in top 96 bits of low 128 bits of nonce
@@ -39,8 +47,22 @@ void CPOSNonce::SetPOSEntropy(const uint256 &pastHash, uint256 txid, int32_t vou
         hashWriter << txid;
         hashWriter << voutNum;
 
-        arith_uint256 arNonce = (UintToArith256(*this) & posDiffMask) |
-            (UintToArith256(hashWriter.GetHash()) & entropyMask);
+        arith_uint256 arNonce;
+        if (fRetryRules)
+        {
+            // Solo-PoS liveness: the attempt is mixed into the entropy and
+            // carried in bits 32..39; retry entropy occupies bits 40..127.
+            // Target nBits (bits 0..31) are preserved, not re-derived.
+            hashWriter << attempt;
+            arNonce = (UintToArith256(*this) & (posDiffMask | attemptMask)) |
+                (UintToArith256(hashWriter.GetHash()) & retryEntropyMask);
+        }
+        else
+        {
+            // Legacy derivation, bit-identical to pre-change behavior.
+            arNonce = (UintToArith256(*this) & posDiffMask) |
+                (UintToArith256(hashWriter.GetHash()) & entropyMask);
+        }
 
         // printf("before %s\n", ArithToUint256(arNonce).GetHex().c_str());
 
@@ -61,8 +83,19 @@ void CPOSNonce::SetPOSEntropy(const uint256 &pastHash, uint256 txid, int32_t vou
         hashWriter << txid;
         hashWriter << voutNum;
 
-        arith_uint256 arNonce = (UintToArith256(*this) & posDiffMask) |
-            (UintToArith256(hashWriter.GetHash()) & entropyMask);
+        arith_uint256 arNonce;
+        if (fRetryRules)
+        {
+            hashWriter << attempt;
+            arNonce = (UintToArith256(*this) & (posDiffMask | attemptMask)) |
+                (UintToArith256(hashWriter.GetHash()) & retryEntropyMask);
+        }
+        else
+        {
+            // Legacy derivation, bit-identical to pre-change behavior.
+            arNonce = (UintToArith256(*this) & posDiffMask) |
+                (UintToArith256(hashWriter.GetHash()) & entropyMask);
+        }
 
         // printf("before %s\n", ArithToUint256(arNonce).GetHex().c_str());
 
@@ -75,8 +108,11 @@ void CPOSNonce::SetPOSEntropy(const uint256 &pastHash, uint256 txid, int32_t vou
     }
 }
 
-bool CPOSNonce::CheckPOSEntropy(const uint256 &pastHash, uint256 txid, int32_t voutNum, uint32_t version)
+bool CPOSNonce::CheckPOSEntropy(const uint256 &pastHash, uint256 txid, int32_t voutNum, uint32_t version, bool fRetryRules)
 {
+    // The attempt counter rides in the nonce itself (bits 32..39); the
+    // validator re-derives with the same attempt the staker used.
+    uint32_t attempt = fRetryRules ? GetStakeAttempt() : 0;
     if (version == VERUS_V2)
     {
         // get low 96 bits of past hash and put it in top 96 bits of low 128 bits of nonce
@@ -87,8 +123,19 @@ bool CPOSNonce::CheckPOSEntropy(const uint256 &pastHash, uint256 txid, int32_t v
         hashWriter << txid;
         hashWriter << voutNum;
 
-        arith_uint256 arNonce = (UintToArith256(*this) & posDiffMask) |
-            (UintToArith256(hashWriter.GetHash()) & entropyMask);
+        arith_uint256 arNonce;
+        if (fRetryRules)
+        {
+            hashWriter << attempt;
+            arNonce = (UintToArith256(*this) & (posDiffMask | attemptMask)) |
+                (UintToArith256(hashWriter.GetHash()) & retryEntropyMask);
+        }
+        else
+        {
+            // Legacy check, bit-identical to pre-change behavior.
+            arNonce = (UintToArith256(*this) & posDiffMask) |
+                (UintToArith256(hashWriter.GetHash()) & entropyMask);
+        }
 
         hashWriter.Reset();
         hashWriter << ArithToUint256(arNonce);
@@ -105,8 +152,19 @@ bool CPOSNonce::CheckPOSEntropy(const uint256 &pastHash, uint256 txid, int32_t v
         hashWriter << txid;
         hashWriter << voutNum;
 
-        arith_uint256 arNonce = (UintToArith256(*this) & posDiffMask) |
-            (UintToArith256(hashWriter.GetHash()) & entropyMask);
+        arith_uint256 arNonce;
+        if (fRetryRules)
+        {
+            hashWriter << attempt;
+            arNonce = (UintToArith256(*this) & (posDiffMask | attemptMask)) |
+                (UintToArith256(hashWriter.GetHash()) & retryEntropyMask);
+        }
+        else
+        {
+            // Legacy check, bit-identical to pre-change behavior.
+            arNonce = (UintToArith256(*this) & posDiffMask) |
+                (UintToArith256(hashWriter.GetHash()) & entropyMask);
+        }
 
         hashWriter.Reset();
         hashWriter << ArithToUint256(arNonce);

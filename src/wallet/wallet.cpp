@@ -63,6 +63,7 @@ extern int32_t KOMODO_EXCHANGEWALLET;
 extern char ASSETCHAINS_SYMBOL[KOMODO_ASSETCHAIN_MAXLEN];
 extern uint160 ASSETCHAINS_CHAINID;
 extern int32_t VERUS_MIN_STAKEAGE;
+extern uint32_t MAX_STAKE_ATTEMPTS; // Lucky Lode solo-PoS liveness (internal/22)
 CBlockIndex *komodo_chainactive(int32_t height);
 extern std::string DONATION_PUBKEY;
 extern BlockMap mapBlockIndex;
@@ -2114,85 +2115,97 @@ bool CWallet::VerusSelectStakeOutput(CBlock *pBlock, arith_uint256 &hashResult, 
 
         bool isVerusETHBridgeCleanup = IsBridgeCleanupWindowOpen(pBlock->nTime);
 
-        BOOST_FOREACH(COutput &txout, vecOutputs)
+        // Lucky Lode solo-PoS liveness (internal/22): retry the draw with
+        // a bounded attempt counter carried in the nonce (bits 32..39).
+        // Each attempt is a fresh independent draw at this height; with a
+        // single deterministic draw a missed height waits for the tip
+        // forever, so a stalled chain can never resume on stake alone.
+        // Pre-activation: exactly one attempt (legacy behavior).
+        const bool fRetryRules = (nHeight >= consensusParams.nStakeRetryActivationHeight);
+        const uint32_t maxAttempts = fRetryRules ? MAX_STAKE_ATTEMPTS : 1;
+        for (uint32_t attempt = 0; attempt < maxAttempts && !pwinner; ++attempt)
         {
-            COptCCParams p;
-            std::vector<CTxDestination> destinations;
-            int nRequired = 0;
-            bool canSign = false, canSpend = false;
-
-            if (UintToArith256(txout.tx->GetVerusPOSHash(&(pBlock->nNonce), txout.i, nHeight, pastHash)) <= target)
+            pBlock->nNonce.SetStakeAttempt(attempt);
+            BOOST_FOREACH(COutput &txout, vecOutputs)
             {
-                if (isVerusETHBridgeCleanup && txout.tx->vout[txout.i].scriptPubKey.ReserveOutValue().Intersects(BridgeCurrencyAdjustmentMap()))
+                COptCCParams p;
+                std::vector<CTxDestination> destinations;
+                int nRequired = 0;
+                bool canSign = false, canSpend = false;
+
+                if (UintToArith256(txout.tx->GetVerusPOSHash(&(pBlock->nNonce), txout.i, nHeight, pastHash, fRetryRules)) <= target)
                 {
-                    continue;
-                }
-
-                LOCK2(cs_main, cs_wallet);
-
-                if (ExtractDestinations(txout.tx->vout[txout.i].scriptPubKey, whichType, destinations, nRequired, this, &canSign, &canSpend) &&
-                    ((txout.tx->vout[txout.i].scriptPubKey.IsPayToCryptoCondition(p) &&
-                    extendedStake &&
-                    canSpend) ||
-                    (!p.IsValid() && (whichType == TX_PUBKEY || whichType == TX_PUBKEYHASH) && ::IsMine(*this, destinations[0]) == ISMINE_SPENDABLE)))
-                {
-                    uint256 txHash = txout.tx->GetHash();
-                    checkStakeTx.vin.push_back(CTxIn(COutPoint(txHash, txout.i)));
-
-                    if ((!pwinner || UintToArith256(curNonce) < UintToArith256(pBlock->nNonce)) &&
-                        !cheatList.IsUTXOInList(COutPoint(txHash, txout.i), nHeight <= 100 ? 1 : nHeight-100))
+                    if (isVerusETHBridgeCleanup && txout.tx->vout[txout.i].scriptPubKey.ReserveOutValue().Intersects(BridgeCurrencyAdjustmentMap()))
                     {
-                        if (view.HaveCoins(txHash) && Consensus::CheckTxInputs(checkStakeTx, state, view, nHeight, consensusParams))
+                        continue;
+                    }
+
+                    LOCK2(cs_main, cs_wallet);
+
+                    if (ExtractDestinations(txout.tx->vout[txout.i].scriptPubKey, whichType, destinations, nRequired, this, &canSign, &canSpend) &&
+                        ((txout.tx->vout[txout.i].scriptPubKey.IsPayToCryptoCondition(p) &&
+                        extendedStake &&
+                        canSpend) ||
+                        (!p.IsValid() && (whichType == TX_PUBKEY || whichType == TX_PUBKEYHASH) && ::IsMine(*this, destinations[0]) == ISMINE_SPENDABLE)))
+                    {
+                        uint256 txHash = txout.tx->GetHash();
+                        checkStakeTx.vin.push_back(CTxIn(COutPoint(txHash, txout.i)));
+
+                        if ((!pwinner || UintToArith256(curNonce) < UintToArith256(pBlock->nNonce)) &&
+                            !cheatList.IsUTXOInList(COutPoint(txHash, txout.i), nHeight <= 100 ? 1 : nHeight-100))
                         {
-                            bool isValid = true;
-                            // after PBaaS activation,
-                            // we can't stake an output that has a destination to an ID,
-                            // which has been modified more recently than stakeage
-                            if (whichType == txnouttype::TX_CRYPTOCONDITION && isPBaaS)
+                            if (view.HaveCoins(txHash) && Consensus::CheckTxInputs(checkStakeTx, state, view, nHeight, consensusParams))
                             {
-                                for (auto &oneDest : destinations)
+                                bool isValid = true;
+                                // after PBaaS activation,
+                                // we can't stake an output that has a destination to an ID,
+                                // which has been modified more recently than stakeage
+                                if (whichType == txnouttype::TX_CRYPTOCONDITION && isPBaaS)
                                 {
-                                    if (oneDest.which() == COptCCParams::ADDRTYPE_ID)
+                                    for (auto &oneDest : destinations)
                                     {
-                                        uint256 idTxId;
-                                        CIdentity destIdentity;
-                                        uint32_t idHeight;
-                                        if (!(destIdentity = CIdentity::LookupIdentity(GetDestinationID(oneDest), 0, &idHeight)).IsValid() ||
-                                            (nHeight - idHeight) < VERUS_MIN_STAKEAGE)
+                                        if (oneDest.which() == COptCCParams::ADDRTYPE_ID)
                                         {
-                                            if (LogAcceptCategory("staking"))
+                                            uint256 idTxId;
+                                            CIdentity destIdentity;
+                                            uint32_t idHeight;
+                                            if (!(destIdentity = CIdentity::LookupIdentity(GetDestinationID(oneDest), 0, &idHeight)).IsValid() ||
+                                                (nHeight - idHeight) < VERUS_MIN_STAKEAGE)
                                             {
-                                                if (!destIdentity.IsValid())
+                                                if (LogAcceptCategory("staking"))
                                                 {
-                                                    LogPrintf("%s: Invalid ID %s as UTXO destination\n", __func__, EncodeDestination(CIdentityID(GetDestinationID(oneDest))).c_str());
+                                                    if (!destIdentity.IsValid())
+                                                    {
+                                                        LogPrintf("%s: Invalid ID %s as UTXO destination\n", __func__, EncodeDestination(CIdentityID(GetDestinationID(oneDest))).c_str());
+                                                    }
+                                                    else
+                                                    {
+                                                        LogPrintf("%s: Identity, %s, has been updated more recently than minimum stake age (%d) blocks renders UTXO ineligible to stake\n", __func__, EncodeDestination(CIdentityID(GetDestinationID(oneDest))).c_str(), VERUS_MIN_STAKEAGE);
+                                                    }
                                                 }
-                                                else
-                                                {
-                                                    LogPrintf("%s: Identity, %s, has been updated more recently than minimum stake age (%d) blocks renders UTXO ineligible to stake\n", __func__, EncodeDestination(CIdentityID(GetDestinationID(oneDest))).c_str(), VERUS_MIN_STAKEAGE);
-                                                }
+                                                isValid = false;
                                             }
-                                            isValid = false;
                                         }
                                     }
                                 }
-                            }
 
-                            if (isValid)
+                                if (isValid)
+                                {
+                                    //printf("Found PoS block\nnNonce:    %s\n", pBlock->nNonce.GetHex().c_str());
+                                    pwinner = &txout;
+                                    curNonce = pBlock->nNonce;
+                                    srcIndex = nHeight - txout.nDepth;
+                                }
+                            }
+                            else
                             {
-                                //printf("Found PoS block\nnNonce:    %s\n", pBlock->nNonce.GetHex().c_str());
-                                pwinner = &txout;
-                                curNonce = pBlock->nNonce;
-                                srcIndex = nHeight - txout.nDepth;
+                                LogPrintf("Transaction %s failed to stake due to %s\n", txout.tx->GetHash().GetHex().c_str(),
+                                                                                        view.HaveCoins(txHash) ? "bad inputs" : "unavailable coins");
                             }
                         }
-                        else
-                        {
-                            LogPrintf("Transaction %s failed to stake due to %s\n", txout.tx->GetHash().GetHex().c_str(),
-                                                                                    view.HaveCoins(txHash) ? "bad inputs" : "unavailable coins");
-                        }
-                    }
 
-                    checkStakeTx.vin.pop_back();
+                        checkStakeTx.vin.pop_back();
+                    }
                 }
             }
         }

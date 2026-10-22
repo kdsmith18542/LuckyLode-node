@@ -305,6 +305,19 @@ std::tuple<int32_t, int32_t, int32_t, arith_uint256, uint32_t> GetPoSCheckParams
         nProofOfStakeDefault = bnLimit.GetCompact();
     }
 
+    // Lucky Lode solo-PoS liveness (internal/22): with bounded retries the
+    // staker wins most heights, so the legacy consecutive-PoS wall (target
+    // 0 after ~7-9 straight PoS blocks, or 3 on PBaaS-active chains) would
+    // permanently stall a miner-less chain. At/after the retry activation
+    // the cap moves to ~3 days of blocks (4320): solo operation stays
+    // practical while an eventual PoW-anchoring backstop remains. The
+    // halving soft-brake in the LWMA below is untouched. nHeight here is
+    // the tip; the target being computed is for block nHeight+1.
+    if (nHeight + 1 >= (uint32_t)params.nStakeRetryActivationHeight)
+    {
+        maxConsecutivePos = 4320;
+    }
+
     return {maxConsecutivePos, maxConsecutiveNoPos, nProofOfWorkBlockPOSUnits, bnLimit, nProofOfStakeDefault};
 }
 

@@ -67,3 +67,17 @@ $CXX -O2 -I"$(dirname "$DIR")" $SODIUM_INC $SYS_DEFS \
 # Seed-fund money KAT (internal/20: faucet/dev reserves; header-only math).
 $CXX -O2 -std=c++11 -I"$(dirname "$DIR")" "$DIR/lucky_seed_kat.cpp" -o "$OUT/lucky_seed_kat"
 "$OUT/lucky_seed_kat"
+
+# Solo-PoS liveness KAT (internal/22: bounded stake attempts in the PoS
+# nonce + legacy bit-identity). Needs the portable haraka + clhash (no AES).
+$CC -O2 $SYS_DEFS -c -I"$DIR" "$DIR/haraka_portable.c" -o "$OUT/haraka_portable.o"
+$CXX -O2 -I"$(dirname "$DIR")" $SODIUM_INC $SYS_DEFS \
+    "$DIR/lucky_pos_kat.cpp" \
+    "$(dirname "$DIR")/primitives/nonce.cpp" \
+    "$(dirname "$DIR")/arith_uint256.cpp" "$(dirname "$DIR")/uint256.cpp" \
+    "$DIR/sha256.cpp" \
+    "$DIR/verus_hash.cpp" "$DIR/verus_clhash_portable.cpp" \
+    "$OUT/haraka_portable.o" \
+    -I"$(dirname "$DIR")/univalue/include" \
+    -o "$OUT/lucky_pos_kat" -lpthread
+"$OUT/lucky_pos_kat"

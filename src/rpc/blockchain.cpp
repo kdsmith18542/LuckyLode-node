@@ -329,7 +329,7 @@ UniValue blockToJSON(const CBlock& block, const CBlockIndex* blockindex, bool tx
         {
             uint256 pastHash = chainActive.GetVerusEntropyHash(height);
 
-            result.push_back(Pair("poshashtx", posSourceTx.GetVerusPOSHash(&scratchNonce, block.vtx.back().vin[0].prevout.n, height, pastHash).GetHex()));
+            result.push_back(Pair("poshashtx", posSourceTx.GetVerusPOSHash(&scratchNonce, block.vtx.back().vin[0].prevout.n, height, pastHash, height >= Params().GetConsensus().nStakeRetryActivationHeight).GetHex()));
             result.push_back(Pair("possourcetxid", block.vtx.back().vin[0].prevout.hash.GetHex()));
             result.push_back(Pair("possourcevoutnum", (int)block.vtx.back().vin[0].prevout.n));
             COptCCParams p;

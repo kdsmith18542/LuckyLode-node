@@ -4272,11 +4272,16 @@ CPBaaSNotarization IsValidPrimaryChainEvidence(const CCurrencyDefinition &extern
 
                     bool stakeHeadersPassed = !posEntropyHeadersAsTxes.size() ||
                                                (outTx.vin.size() &&
+                                                // Legacy derivation (fRetryRules=false): this path only
+                                                // verifies historical proofs; post-activation stake
+                                                // validation lives in the slow path (pbaas.cpp).
+                                                // Revisit if notarization is ever activated.
                                                 CPOSNonce(posBlockHeaderAndProof.blockHeader.nNonce).CheckPOSEntropy(
                                                                 CChain::CombineForPastHash(entropyHashes[0], entropyHashes[1]),
                                                                 outTx.vin[0].prevout.hash,
                                                                 outTx.vin[0].prevout.n,
-                                                                posBlockHeaderAndProof.blockHeader.nVersion));
+                                                                posBlockHeaderAndProof.blockHeader.nVersion,
+                                                                false));
 
                     if (proofPreHeader.hashPrevMMRRoot != posSourceProof.CheckPartialTransaction(lastSourceTx, &isPartial) ||
                         posSourceProof.GetProofHeight() != (proofPreHeaderHeight - 1))

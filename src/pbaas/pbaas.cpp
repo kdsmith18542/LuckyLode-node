@@ -24,6 +24,7 @@
 
 CConnectedChains ConnectedChains;
 extern uint32_t KOMODO_STOPAT;
+extern uint32_t MAX_STAKE_ATTEMPTS; // Lucky Lode solo-PoS liveness (internal/22)
 
 // this adds an opret to a mutable transaction and returns the voutnum if it could be added
 int32_t AddOpRetOutput(CMutableTransaction &mtx, const CScript &opRetScript)
@@ -2542,15 +2543,21 @@ bool verusCheckPOSBlock(int32_t slowflag, const CBlock *pblock, int32_t height)
                 {
                     uint256 pastHash = chainActive.GetVerusEntropyHash(height);
 
-                    // if we are on a version requiring the new nonce format, we check that the new format is correct
-                    // if over when we have the new POS hash function, we validate that as well
-                    // they are 100 blocks apart
-                    CPOSNonce nonce = pblock->nNonce;
+                // if we are on a version requiring the new nonce format, we check that the new format is correct
+                // if over when we have the new POS hash function, we validate that as well
+                // they are 100 blocks apart
+                CPOSNonce nonce = pblock->nNonce;
 
-                    //printf("before nNonce: %s, height: %d\n", pblock->nNonce.GetHex().c_str(), height);
-                    validHash = pblock->GetRawVerusPOSHash(rawHash, height);
+                // Lucky Lode solo-PoS liveness (internal/22): at/after the
+                // activation height the nonce carries a bounded attempt
+                // counter (re-tried draws within one height). Pre-activation
+                // heights use the legacy single-attempt derivation.
+                const bool fRetryRules = (height >= Params().GetConsensus().nStakeRetryActivationHeight);
 
-                    hash = UintToArith256(tx.GetVerusPOSHash(&nonce, voutNum, height, pastHash));
+                //printf("before nNonce: %s, height: %d\n", pblock->nNonce.GetHex().c_str(), height);
+                validHash = pblock->GetRawVerusPOSHash(rawHash, height);
+
+                hash = UintToArith256(tx.GetVerusPOSHash(&nonce, voutNum, height, pastHash, fRetryRules));
 
                     if ((!newPOSEnforcement || posHash == hash) && hash <= target)
                     {
@@ -2581,9 +2588,17 @@ bool verusCheckPOSBlock(int32_t slowflag, const CBlock *pblock, int32_t height)
                                 //if (nonce != pblock->nNonce)
                                 //    printf("Mismatched nNonce: %s\nblkHash: %s, height: %d\n", nonce.GetHex().c_str(), pblock->GetHash().GetHex().c_str(), height);
 
-                                if (CPOSNonce::NewNonceActive(height) && !nonce.CheckPOSEntropy(pastHash, txid, voutNum, pblock->nVersion))
+                                if (CPOSNonce::NewNonceActive(height) && !nonce.CheckPOSEntropy(pastHash, txid, voutNum, pblock->nVersion, fRetryRules))
                                 {
                                     fprintf(stderr,"ERROR: invalid PoS block %s - nonce entropy corrupted or forged\n",blkHash.ToString().c_str());
+                                    return false;
+                                }
+                                // Lucky Lode solo-PoS liveness: the attempt
+                                // counter is consensus-bounded (unbounded
+                                // retries would be an effortless grind).
+                                if (fRetryRules && nonce.GetStakeAttempt() >= MAX_STAKE_ATTEMPTS)
+                                {
+                                    fprintf(stderr,"ERROR: invalid PoS block %s - stake attempt %u exceeds maximum %u\n",blkHash.ToString().c_str(), nonce.GetStakeAttempt(), MAX_STAKE_ATTEMPTS);
                                     return false;
                                 }
                                 else

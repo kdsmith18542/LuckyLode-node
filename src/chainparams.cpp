@@ -311,6 +311,10 @@ void *chainparams_commandline(void *ptr)
             // nLwmaPOSAjustedWeight = (N+1)/2 * (0.9989^(500/nPOSAveragingWindow)) * nPOSTargetSpacing
             // this needs to be recalculated if VERUS_BLOCK_POSUNITS is changed
             mainParams.consensus.nLwmaPOSAjustedWeight = 46531;
+            // Lucky Lode solo-PoS liveness (internal/22): bounded stake
+            // attempts + relaxed consecutive-PoS cap apply from genesis
+            // (PoS is impossible before h151 anyway: 150-conf stake age).
+            mainParams.consensus.nStakeRetryActivationHeight = 1;
         }
 
         // this includes VRSCTEST, unlike the checkpoints and changes below
@@ -421,6 +425,10 @@ public:
         consensus.nPOSAveragingWindow = 45;
         consensus.nPOSTargetSpacing = VERUS_BLOCK_POSUNITS * 2;
         consensus.nLwmaPOSAjustedWeight = 46531;
+        // Lucky Lode solo-PoS liveness (internal/22): post-reset testnet
+        // activates the bounded-attempt rule at h200 (PoS impossible before
+        // h151 anyway; 200 leaves a visible pre-activation window).
+        consensus.nStakeRetryActivationHeight = 200;
         consensus.nMaxFutureBlockTime = 7 * 60;
 
         nDefaultPort = 19270;
@@ -609,6 +617,10 @@ public:
         consensus.nPOSAveragingWindow = 45;
         consensus.nPOSTargetSpacing = VERUS_BLOCK_POSUNITS * 2;
         consensus.nLwmaPOSAjustedWeight = 46531;
+        // Lucky Lode solo-PoS liveness (internal/22): regtest activates
+        // early so the solo-PoS e2e (zero-PoW chain advance) exercises the
+        // new rule within a short chain.
+        consensus.nStakeRetryActivationHeight = 10;
         consensus.nMaxFutureBlockTime = 7 * 60; // 7 mins
         assert(maxUint/UintToArith256(consensus.powLimit) >= consensus.nPowAveragingWindow);
         consensus.nPowMaxAdjustDown = 0; // Turn off adjustment down

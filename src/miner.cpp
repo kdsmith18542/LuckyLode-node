@@ -4428,7 +4428,8 @@ void static VerusStaker(CWallet *pwallet)
                                                      sTx.vin[0].prevout.n,
                                                      newHeight,
                                                      chainActive.GetVerusEntropyHash(newHeight),
-                                                     sTx.vout[0].nValue).GetHex().c_str(),
+                                                     sTx.vout[0].nValue,
+                                                     newHeight >= consensusParams.nStakeRetryActivationHeight).GetHex().c_str(),
                                                      ArithToUint256(post).GetHex().c_str());
             }
             else

@@ -25,6 +25,25 @@ public:
 
     static arith_uint256 entropyMask;
     static arith_uint256 posDiffMask;
+    // Lucky Lode solo-PoS liveness (internal/22): bits 32..39 of the low
+    // 128 nonce bits carry a bounded stake attempt counter, letting the
+    // staker retry a draw within one height. 0 = legacy single attempt.
+    // The retry entropy occupies bits 40..127 (see retryEntropyMask).
+    static arith_uint256 attemptMask;
+    static arith_uint256 retryEntropyMask;
+
+    uint32_t GetStakeAttempt() const
+    {
+        return (uint32_t)((UintToArith256(*this) & attemptMask) >> 32).GetLow64();
+    }
+
+    void SetStakeAttempt(uint32_t attempt)
+    {
+        arith_uint256 arNonce = UintToArith256(*this);
+        arNonce &= ~attemptMask;
+        arNonce |= arith_uint256(attempt & 0xff) << 32;
+        (uint256 &)(*this) = ArithToUint256(arNonce);
+    }
 
     CPOSNonce() : uint256() { }
     CPOSNonce(const base_blob<256> &b) : uint256(b) { }
@@ -78,8 +97,12 @@ public:
         }
     }
 
-    void SetPOSEntropy(const uint256 &pastHash, uint256 txid, int32_t voutNum, uint32_t version=VERUS_V1);
-    bool CheckPOSEntropy(const uint256 &pastHash, uint256 txid, int32_t voutNum, uint32_t version=VERUS_V1);
+    // fRetryRules selects the post-activation derivation (attempt mixed
+    // into the entropy, attempt bits preserved). No default: every caller
+    // must state which rule it wants, so a missed call site fails to
+    // compile instead of silently validating under the wrong rule.
+    void SetPOSEntropy(const uint256 &pastHash, uint256 txid, int32_t voutNum, uint32_t version, bool fRetryRules);
+    bool CheckPOSEntropy(const uint256 &pastHash, uint256 txid, int32_t voutNum, uint32_t version, bool fRetryRules);
 };
 
 #endif // BITCOIN_PRIMITIVES_NONCE_H

@@ -132,6 +132,11 @@ struct Params {
     int64_t nPOSAveragingWindow;    // can be completely different than POW and initially trying a relatively large number, like 100
     int64_t nPOSTargetSpacing;      // spacing is 1000 units per block to get better resolution, (100 % = 1000, 50% = 2000, 10% = 10000)
     int64_t nLwmaPOSAjustedWeight;
+    // Lucky Lode solo-PoS liveness (internal/22): first height at which
+    // the bounded stake-attempt rule applies (nonce attempt counter +
+    // relaxed consecutive-PoS cap). Pre-activation heights use the legacy
+    // single-attempt rule, so old blocks keep validating.
+    int nStakeRetryActivationHeight;
 
     /* applied to all block times */
     int64_t nMaxFutureBlockTime;

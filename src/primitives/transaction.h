@@ -725,7 +725,11 @@ public:
     }
 
     // verus hash will be the same for a given txid, output number, block height, and blockhash from >= 100 blocks past
-    static uint256 _GetVerusPOSHash(CPOSNonce *pNonce, const uint256 &txid, int32_t voutNum, int32_t height, const uint256 &pastHash, int64_t value)
+    // fRetryRules selects the post-activation entropy derivation (stake
+    // attempt counter mixed in; bits carried by the nonce, set by the
+    // staker via SetStakeAttempt). No default: every caller must state
+    // which rule it wants.
+    static uint256 _GetVerusPOSHash(CPOSNonce *pNonce, const uint256 &txid, int32_t voutNum, int32_t height, const uint256 &pastHash, int64_t value, bool fRetryRules)
     {
         //printf("Nonce:%s\n txid:%s\nnvout:%d\nheight:%d\npastHash:%s\nvalue:%lu\n",
         //       pNonce->GetHex().c_str(),
@@ -734,9 +738,9 @@ public:
         //       height,
         //       pastHash.GetHex().c_str(),
         //       value);
-        if (CVerusSolutionVector::GetVersionByHeight(height) > 0)
+        if (CConstVerusSolutionVector::GetVersionByHeight(height) > 0)
         {
-            pNonce->SetPOSEntropy(pastHash, txid, voutNum, CPOSNonce::VERUS_V2);
+            pNonce->SetPOSEntropy(pastHash, txid, voutNum, CPOSNonce::VERUS_V2, fRetryRules);
             CVerusHashV2Writer hashWriter  = CVerusHashV2Writer(SER_GETHASH, PROTOCOL_VERSION);
 
             hashWriter << ASSETCHAINS_MAGIC;
@@ -759,7 +763,7 @@ public:
         }
         else
         {
-            pNonce->SetPOSEntropy(pastHash, txid, voutNum, CPOSNonce::VERUS_V1);
+            pNonce->SetPOSEntropy(pastHash, txid, voutNum, CPOSNonce::VERUS_V1, fRetryRules);
             CVerusHashWriter hashWriter  = CVerusHashWriter(SER_GETHASH, PROTOCOL_VERSION);
 
             hashWriter << ASSETCHAINS_MAGIC;
@@ -783,14 +787,14 @@ public:
     }
 
     // Nonce is modified to include the transaction information
-    uint256 GetVerusPOSHash(CPOSNonce *pNonce, int32_t voutNum, int32_t height, const uint256 &pastHash) const
+    uint256 GetVerusPOSHash(CPOSNonce *pNonce, int32_t voutNum, int32_t height, const uint256 &pastHash, bool fRetryRules) const
     {
         uint256 txid = GetHash();
 
         if (voutNum >= vout.size())
-            return uint256S("ff0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f");
+            return uint256S("ff0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f");
 
-        return _GetVerusPOSHash(pNonce, txid, voutNum, height, pastHash, (uint64_t)vout[voutNum].nValue);
+        return _GetVerusPOSHash(pNonce, txid, voutNum, height, pastHash, (uint64_t)vout[voutNum].nValue, fRetryRules);
     }
 
     std::string ToString() const;
