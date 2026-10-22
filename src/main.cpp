@@ -3813,7 +3813,7 @@ bool FindUndoPos(CValidationState &state, int nFile, CDiskBlockPos &pos, unsigne
 static CCheckQueue<CScriptCheck> scriptcheckqueue(128);
 
 void ThreadScriptCheck() {
-    RenameThread("verus-scriptch");
+    RenameThread("lucky-scriptch");
     scriptcheckqueue.Thread();
 }
 
@@ -5198,7 +5198,7 @@ bool ConnectBlock(const CBlock& block, CValidationState& state, CBlockIndex* pin
     // jackpot bonus when this block's PoW digest wins the 1/100 draw, plus
     // the pot splash when it wins the 1/1000 pot draw (tier = digest mod
     // 100). Reserve and pot ride on the block index (reorg-safe by
-    // construction). League/burn overflow is accounted here; league has no
+    // construction). Prize/burn overflow is accounted here; the prize fund has no
     // consensus output, the pot excess burns (unspendable by construction).
     // Lucky Lode money state for THIS block, computed in the branch below
     // and committed to pindex only after every check passes (a rejected
@@ -6186,7 +6186,7 @@ static bool ActivateBestChainStep(CValidationState& state, const CChainParams& c
             if ( !DisconnectTip(state, chainparams) )
                 break;
         }
-        fprintf(stderr,"reached rewind.%d, best to do: ./verus -ac_name=%s stop\n",KOMODO_REWIND,ASSETCHAINS_SYMBOL);
+        fprintf(stderr,"reached rewind.%d, best to do: ./lucky -ac_name=%s stop\n",KOMODO_REWIND,ASSETCHAINS_SYMBOL);
         sleep(20);
         fprintf(stderr,"resuming normal operations\n");
         KOMODO_REWIND = 0;

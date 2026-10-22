@@ -185,7 +185,7 @@ bool AppInit(int argc, char* argv[])
 
         if (fCommandLine)
         {
-            fprintf(stderr, "Error: There is no RPC client functionality in luckyd. Use the verus utility instead.\n");
+            fprintf(stderr, "Error: There is no RPC client functionality in luckyd. Use the lucky utility instead.\n");
             exit(EXIT_FAILURE);
         }
 
@@ -193,7 +193,7 @@ bool AppInit(int argc, char* argv[])
         fDaemon = GetBoolArg("-daemon", false);
         if (fDaemon)
         {
-            fprintf(stdout, "verus %s server starting\n",ASSETCHAINS_SYMBOL);
+            fprintf(stdout, "luckyd %s server starting\n",ASSETCHAINS_SYMBOL);
 
             // Daemonize
             pid_t pid = fork();

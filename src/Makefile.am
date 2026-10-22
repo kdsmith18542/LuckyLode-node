@@ -108,7 +108,7 @@ TESTS =
 #endif
 
 if BUILD_BITCOIN_UTILS
-  bin_PROGRAMS += verus verus-tx
+  bin_PROGRAMS += lucky lucky-tx
 endif
 if ENABLE_WALLET
   bin_PROGRAMS += wallet-utility
@@ -603,10 +603,10 @@ luckyd_LDADD += \
   $(LIBZCASH_LIBS)
 
 # bitcoin-cli binary #
-verus_SOURCES = bitcoin-cli.cpp
-verus_CPPFLAGS = $(AM_CPPFLAGS) $(BITCOIN_INCLUDES) $(EVENT_CFLAGS)
-verus_CXXFLAGS = $(AM_CXXFLAGS) $(PIE_FLAGS)
-verus_LDFLAGS = $(RELDFLAGS) $(AM_LDFLAGS) $(LIBTOOL_APP_LDFLAGS)
+lucky_SOURCES = bitcoin-cli.cpp
+lucky_CPPFLAGS = $(AM_CPPFLAGS) $(BITCOIN_INCLUDES) $(EVENT_CFLAGS)
+lucky_CXXFLAGS = $(AM_CXXFLAGS) $(PIE_FLAGS)
+lucky_LDFLAGS = $(RELDFLAGS) $(AM_LDFLAGS) $(LIBTOOL_APP_LDFLAGS)
 
 # wallet-utility binary #
 if ENABLE_WALLET
@@ -617,10 +617,10 @@ wallet_utility_LDFLAGS = $(RELDFLAGS) $(AM_LDFLAGS) $(LIBTOOL_APP_LDFLAGS)
 endif
 
 if TARGET_WINDOWS
-verus_SOURCES += bitcoin-cli-res.rc
+lucky_SOURCES += bitcoin-cli-res.rc
 endif
 
-verus_LDADD = \
+lucky_LDADD = \
 	$(LIBBITCOIN_CLI) \
 	$(LIBUNIVALUE) \
 	$(LIBBITCOIN_UTIL) \
@@ -655,17 +655,17 @@ wallet_utility_LDADD = \
 	$(LIBCRYPTOCONDITIONS)
 endif
 
-# zcash-tx binary #
-verus_tx_SOURCES = komodo-tx.cpp
-verus_tx_CPPFLAGS = $(AM_CPPFLAGS) $(BITCOIN_INCLUDES)
-verus_tx_CXXFLAGS = $(AM_CXXFLAGS) $(PIE_FLAGS)
-verus_tx_LDFLAGS = $(RELDFLAGS) $(AM_LDFLAGS) $(LIBTOOL_APP_LDFLAGS)
+# lucky-tx binary #
+lucky_tx_SOURCES = komodo-tx.cpp
+lucky_tx_CPPFLAGS = $(AM_CPPFLAGS) $(BITCOIN_INCLUDES)
+lucky_tx_CXXFLAGS = $(AM_CXXFLAGS) $(PIE_FLAGS)
+lucky_tx_LDFLAGS = $(RELDFLAGS) $(AM_LDFLAGS) $(LIBTOOL_APP_LDFLAGS)
 
 if TARGET_WINDOWS
-verus_tx_SOURCES += bitcoin-tx-res.rc
+lucky_tx_SOURCES += bitcoin-tx-res.rc
 endif
 
-verus_tx_LDADD = \
+lucky_tx_LDADD = \
   $(LIBUNIVALUE) \
   $(BOOST_LIBS) \
   $(LIBBITCOIN_COMMON) \
@@ -680,7 +680,7 @@ verus_tx_LDADD = \
   $(LIBZCASH_LIBS) \
   $(LIBCRYPTOCONDITIONS)
 
-verus_tx_LDADD += $(BOOST_LIBS) $(CRYPTO_LIBS) $(LIBCURL)
+lucky_tx_LDADD += $(BOOST_LIBS) $(CRYPTO_LIBS) $(LIBCURL)
 #
 
 # zcash protocol primitives #

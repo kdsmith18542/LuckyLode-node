@@ -26,7 +26,7 @@ int main()
         {
             uint64_t levy = levies[i];
             PotPayout p = ApplyPotBlock(0, st(0, 0), levy * 20, 0, dr(false, false, 0));
-            if (p.to_pot + p.to_burn != levy / 5 || p.to_reserve + p.to_league != levy - levy / 5)
+            if (p.to_pot + p.to_burn != levy / 5 || p.to_reserve + p.to_prize != levy - levy / 5)
             {
                 failures++;
                 printf("FAIL split levy=%llu\n", (unsigned long long)levy);
@@ -109,7 +109,7 @@ int main()
         CHECK(p.pot == credited - credited / 2);
     }
 
-    // Conservation sweep: miner + dReserve + dPot + league + burn == R + F.
+    // Conservation sweep: miner + dReserve + dPot + prize + burn == R + F.
     {
         struct Case { uint64_t reserve, pot, drought, base, fees; };
         Case cases[] = {
@@ -134,7 +134,7 @@ int main()
                                                 cases[k].base, cases[k].fees,
                                                 dr(jackpots[j], draws[e].event, draws[e].tier));
                     __uint128_t inflow = (__uint128_t)cases[k].base + cases[k].fees;
-                    __uint128_t outflow = (__uint128_t)p.miner + p.reserve + p.pot + p.to_league + p.to_burn
+                    __uint128_t outflow = (__uint128_t)p.miner + p.reserve + p.pot + p.to_prize + p.to_burn
                                           - cases[k].reserve - cases[k].pot;
                     if (outflow != inflow)
                     {

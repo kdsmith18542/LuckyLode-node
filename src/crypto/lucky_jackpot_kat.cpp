@@ -25,9 +25,9 @@ int main()
         CHECK(p.miner == 96900000ULL);
         CHECK(p.bonus == 0);
         CHECK(p.to_reserve == 5100000ULL);
-        CHECK(p.to_league == 0);
+        CHECK(p.to_prize == 0);
         CHECK(p.reserve == 5100000ULL);
-        CHECK(p.miner + (p.reserve - 0) + p.to_league == 102000000ULL);
+        CHECK(p.miner + (p.reserve - 0) + p.to_prize == 102000000ULL);
     }
 
     // warm-up: reserve starts at 0, first jackpot pays only its own levy
@@ -47,20 +47,20 @@ int main()
         CHECK(p.reserve == 4500);
     }
 
-    // cap overflow feeds the league pool; conservation still exact
+    // cap overflow feeds the prize fund; conservation still exact
     // (R=100, F=2: normal = 97, bonus = 500, miner = 597)
     {
         Payout p = ApplyBlock(5000, 100, 2, true); // cap = 5000, already full
         CHECK(p.to_reserve == 0);
-        CHECK(p.to_league == 5);
+        CHECK(p.to_prize == 5);
         CHECK(p.bonus == 500);
         CHECK(p.miner == 597);
         CHECK(p.reserve == 4500);
         uint64_t before = 5000;
-        CHECK(p.miner + (p.reserve >= before ? p.reserve - before : 0) + p.to_league - (before > p.reserve ? before - p.reserve : 0) == 102);
+        CHECK(p.miner + (p.reserve >= before ? p.reserve - before : 0) + p.to_prize - (before > p.reserve ? before - p.reserve : 0) == 102);
     }
 
-    // every-block conservation sweep: miner + dReserve + league == R + F
+    // every-block conservation sweep: miner + dReserve + prize == R + F
     {
         struct Case { uint64_t r, b, f; bool j; };
         Case cases[] = {
@@ -72,7 +72,7 @@ int main()
         {
             Payout p = ApplyBlock(cases[k].r, cases[k].b, cases[k].f, cases[k].j);
             __uint128_t inflow = (__uint128_t)cases[k].b + cases[k].f;
-            __uint128_t outflow = (__uint128_t)p.miner + p.reserve + p.to_league - cases[k].r;
+            __uint128_t outflow = (__uint128_t)p.miner + p.reserve + p.to_prize - cases[k].r;
             if (outflow != inflow)
             {
                 failures++;

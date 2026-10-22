@@ -25,7 +25,7 @@ struct Payout
     uint64_t miner;       // total coinbase value for the finder
     uint64_t bonus;       // jackpot bonus included in miner (0 normally)
     uint64_t to_reserve;  // levy slice credited to the reserve
-    uint64_t to_league;   // levy slice overflowing to the league pool
+    uint64_t to_prize;   // levy slice overflowing to the prize fund
     uint64_t reserve;     // reserve balance after this block
 };
 
@@ -62,8 +62,8 @@ inline uint64_t JackpotBonus(uint64_t base, uint64_t reserve)
 }
 
 /// One block's money transition. Order (doc 06 §6.2): levy first (capped,
-/// overflow to league), then the jackpot bonus from the credited reserve.
-/// Conservation: miner + (reserve - reserve_before) + to_league == R + F.
+/// overflow to the prize fund), then the jackpot bonus from the credited reserve.
+/// Conservation: miner + (reserve - reserve_before) + to_prize == R + F.
 inline Payout ApplyBlock(uint64_t reserve, uint64_t base, uint64_t fees, bool isJackpot)
 {
     uint64_t levy = Levy(base, fees);
@@ -72,11 +72,11 @@ inline Payout ApplyBlock(uint64_t reserve, uint64_t base, uint64_t fees, bool is
     uint64_t cap = ReserveCap(base);
     uint64_t room = cap >= reserve ? cap - reserve : 0;
     uint64_t to_reserve = levy < room ? levy : room;
-    uint64_t to_league = levy - to_reserve;
+    uint64_t to_prize = levy - to_reserve;
     uint64_t credited = reserve + to_reserve; // cannot overflow: to_reserve <= cap - reserve
     Payout p;
     p.to_reserve = to_reserve;
-    p.to_league = to_league;
+    p.to_prize = to_prize;
     if (!isJackpot)
     {
         p.miner = normal;

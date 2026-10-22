@@ -1141,10 +1141,10 @@ UniValue getblocktemplate(const UniValue& params, bool fHelp)
         // verbatim. potreserve/potdrought stay for dashboards.
         result.push_back(Pair("potreserve", (int64_t)tipPot));
         result.push_back(Pair("potcredited", (int64_t)potEst.pot_splash));
-        // League pool inflow for this height: the jackpot-levy slice that
+        // Prize-fund inflow for this height: the jackpot-levy slice that
         // overflows the reserve cap (doc 06 §6.2). No consensus output —
-        // pools credit their league ledger (Luckynode Draw budgets) with it.
-        result.push_back(Pair("leagueoverflow", (int64_t)potEst.to_league));
+        // pools credit their prize ledger (Luckynode Draw budgets) with it.
+        result.push_back(Pair("prizeoverflow", (int64_t)potEst.to_prize));
         result.push_back(Pair("potdrought", (int64_t)tipDrought));
         // Pity-aware pools need the effective limit to decide whether the
         // NEXT block is a forced (claimable) pot event.

@@ -189,7 +189,7 @@ void Shutdown()
     /// for example if the data directory was found to be locked.
     /// Be sure that anything that writes files or flushes caches only does this if the respective
     /// module was initialized.
-    RenameThread("verus-shutoff");
+    RenameThread("lucky-shutoff");
     mempool.AddTransactionsUpdated(1);
 
     StopHTTPRPC();
@@ -641,7 +641,7 @@ void CleanupBlockRevFiles()
 void ThreadImport(std::vector<boost::filesystem::path> vImportFiles)
 {
     const CChainParams& chainparams = Params();
-    RenameThread("verus-loadblk");
+    RenameThread("lucky-loadblk");
     // -reindex
     if (fReindex) {
         CImportingNow imp;
@@ -2470,16 +2470,19 @@ bool AppInit2(boost::thread_group& threadGroup, CScheduler& scheduler)
     // are stakeable) and by validation; assigning it here keeps every
     // reader consistent. Hard-gated to regtest and logged loudly — a
     // consensus-affecting test knob, never for shared chains.
-    if (Params().NetworkIDString() == "regtest" && IsArgSet("-verus-min-stakeage")) {
+    // Regtest-only test knobs take -lucky-* names; the historical
+    // -verus-* spellings stay readable so existing regtest recipes keep
+    // working (both are hard-gated to regtest either way).
+    if (Params().NetworkIDString() == "regtest" && (IsArgSet("-lucky-min-stakeage") || IsArgSet("-verus-min-stakeage"))) {
         extern int32_t VERUS_MIN_STAKEAGE;
-        VERUS_MIN_STAKEAGE = GetArg("-verus-min-stakeage", 150);
+        VERUS_MIN_STAKEAGE = GetArg(IsArgSet("-lucky-min-stakeage") ? "-lucky-min-stakeage" : "-verus-min-stakeage", 150);
         if (VERUS_MIN_STAKEAGE < 1)
             VERUS_MIN_STAKEAGE = 1;
         LogPrintf("regtest: VERUS_MIN_STAKEAGE overridden to %d\n", VERUS_MIN_STAKEAGE);
     }
-    if (Params().NetworkIDString() == "regtest" && IsArgSet("-verus-coinbase-maturity")) {
+    if (Params().NetworkIDString() == "regtest" && (IsArgSet("-lucky-coinbase-maturity") || IsArgSet("-verus-coinbase-maturity"))) {
         extern int COINBASE_MATURITY;
-        COINBASE_MATURITY = GetArg("-verus-coinbase-maturity", 100);
+        COINBASE_MATURITY = GetArg(IsArgSet("-lucky-coinbase-maturity") ? "-lucky-coinbase-maturity" : "-verus-coinbase-maturity", 100);
         if (COINBASE_MATURITY < 1)
             COINBASE_MATURITY = 1;
         LogPrintf("regtest: COINBASE_MATURITY overridden to %d\n", COINBASE_MATURITY);

@@ -22,7 +22,7 @@
 //  5. Jackpot leg is unchanged (jackpot.h formulas, jackpot slice).
 //
 // Conservation: miner + (reserve - reserve_before) + (pot - pot_before)
-// + to_league + to_burn == R + F.
+// + to_prize + to_burn == R + F.
 #ifndef LUCKYLODE_LUCKY_POT_H
 #define LUCKYLODE_LUCKY_POT_H
 
@@ -77,7 +77,7 @@ struct PotPayout
     uint64_t to_reserve;    // jackpot-levy slice credited to the reserve
     uint64_t to_pot;        // pot-levy slice credited to the pot
     uint64_t to_burn;       // pot-levy slice burned (pot cap overflow)
-    uint64_t to_league;     // jackpot-levy slice overflowing to league
+    uint64_t to_prize;     // jackpot-levy slice overflowing to the prize fund
     uint64_t reserve;       // jackpot reserve after (as if fully claimed)
     uint64_t pot;           // pot after (as if fully claimed)
     uint64_t drought;       // event-less run after this block (0 at event)
@@ -132,11 +132,11 @@ inline PotPayout ApplyPotBlock(uint64_t reserve, PotState state, uint64_t base, 
     uint64_t cap = jackpot::ReserveCap(base);
     uint64_t room = cap >= reserve ? cap - reserve : 0;
     uint64_t to_reserve = jackpot_levy < room ? jackpot_levy : room;
-    uint64_t to_league = jackpot_levy - to_reserve;
+    uint64_t to_prize = jackpot_levy - to_reserve;
     uint64_t credited_reserve = reserve + to_reserve;
     uint64_t bonus = draws.jackpot ? jackpot::JackpotBonus(base, credited_reserve) : 0;
 
-    // Pot leg (cap overflow burns instead of feeding the league pool).
+    // Pot leg (cap overflow burns instead of feeding the prize fund).
     uint64_t pcap = PotCap(base);
     uint64_t proom = pcap >= state.pot ? pcap - state.pot : 0;
     uint64_t to_pot = pot_levy < proom ? pot_levy : proom;
@@ -163,7 +163,7 @@ inline PotPayout ApplyPotBlock(uint64_t reserve, PotState state, uint64_t base, 
     p.to_reserve = to_reserve;
     p.to_pot = to_pot;
     p.to_burn = to_burn;
-    p.to_league = to_league;
+    p.to_prize = to_prize;
     p.reserve = credited_reserve - bonus;
     p.pot = credited_pot - splash;
     p.drought = pot_event ? 0 : jackpot::sat_add(state.drought, 1);

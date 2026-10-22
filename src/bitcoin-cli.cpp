@@ -99,9 +99,9 @@ static int AppInitRPC(int argc, char* argv[])
     if (argc<2 || IsArgSet("-?") || IsArgSet("-h") || IsArgSet("-help") || IsArgSet("-version")) {
         std::string strUsage = _("Lucky Lode RPC client version") + " " + _(VERUS_VERSION) + "\n" + PrivacyInfo();
         if (!IsArgSet("-version")) {      strUsage += "\n" + _("Usage:") + "\n" +
-                  "  verus [options] <command> [params]  " + _("Send command to the node") + "\n" +
-                  "  verus [options] help                " + _("List commands") + "\n" +
-                  "  verus [options] help <command>      " + _("Get help for a command") + "\n";
+                  "  lucky [options] <command> [params]  " + _("Send command to the node") + "\n" +
+                  "  lucky [options] help                " + _("List commands") + "\n" +
+                  "  lucky [options] help <command>      " + _("Get help for a command") + "\n";
 
             strUsage += "\n" + HelpMessageCli();
         } else {

@@ -4230,7 +4230,7 @@ static int ReadPackageTempC() { return -1; }
 void static VerusStaker(CWallet *pwallet)
 {
     LogPrintf("Lucky Lode staker thread started\n");
-    RenameThread("verus-staker");
+    RenameThread("lucky-staker");
 
     const CChainParams& chainparams = Params();
     auto consensusParams = chainparams.GetConsensus();
@@ -4529,7 +4529,7 @@ void static BitcoinMiner_noeq()
 #endif
 {
     LogPrintf("%s miner started\n", ASSETCHAINS_ALGORITHMS[ASSETCHAINS_ALGO]);
-    RenameThread("verushash-miner");
+    RenameThread("luckyhash-miner");
 
 #ifdef ENABLE_WALLET
     // Each thread has its own key
