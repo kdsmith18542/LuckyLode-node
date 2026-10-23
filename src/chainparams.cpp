@@ -522,7 +522,10 @@ public:
             seed.addr[13] = 160;
             seed.addr[14] = 149;
             seed.addr[15] = 124;
-            seed.port = 9270;
+            // Testnet P2P default (19270). This used to pin mainnet's
+            // 9270, which only worked while the bootstrap node was
+            // configured with -port=9270 and hid a DNS-seed mismatch.
+            seed.port = 19270;
             vFixedSeeds.push_back(seed);
         }
 
